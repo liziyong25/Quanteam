@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/run_spec_schema_v1.json",
+  "title": "run_spec_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "Compiler output RunSpec. Declarative only. Must be replayable and must produce dossier artifacts for any PASS/FAIL/registry action.",
+  "required": [
+    "schema_version",
+    "blueprint_ref",
+    "policy_bundle_id",
+    "data_snapshot_id",
+    "segments",
+    "adapter",
+    "output_spec"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "run_spec_v1",
+      "description": "Schema version discriminator. Must be exactly 'run_spec_v1'."
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Forward-compatible extension area. Must not be used to override governance/policies."
+    },
+    "blueprint_ref": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["blueprint_id", "blueprint_hash"],
+      "properties": {
+        "blueprint_id": { "type": "string" },
+        "blueprint_hash": {
+          "type": "string",
+          "description": "Hash of the blueprint content (e.g. sha256)."
+        }
+      }
+    },
+    "policy_bundle_id": {
+      "type": "string",
+      "description": "Read-only policy bundle reference (by id)."
+    },
+    "data_snapshot_id": {
+      "type": "string",
+      "description": "Immutable data snapshot identifier used for replay."
+    },
+    "segments": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["train", "test", "holdout"],
+      "properties": {
+        "train": { "$ref": "#/$defs/segment" },
+        "test": { "$ref": "#/$defs/segment" },
+        "holdout": { "$ref": "#/$defs/segment" }
+      }
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["adapter_id"],
+      "properties": {
+        "adapter_id": {
+          "type": "string",
+          "description": "Execution adapter identifier (e.g. vectorbt_signal_v1)."
+        }
+      }
+    },
+    "output_spec": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["write_dossier", "artifacts"],
+      "properties": {
+        "write_dossier": {
+          "const": true,
+          "description": "Must be true in v1. Runs must generate dossier artifacts."
+        },
+        "artifacts": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": { "type": "string" },
+          "description": "Logical artifact name -> output relative path (for dossier manifest)."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "segment": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["start", "end", "as_of"],
+      "properties": {
+        "start": { "type": "string", "format": "date" },
+        "end": { "type": "string", "format": "date" },
+        "as_of": {
+          "type": "string",
+          "format": "date-time",
+          "description": "As-of timestamp used for data availability semantics."
+        }
+      }
+    }
+  }
+}

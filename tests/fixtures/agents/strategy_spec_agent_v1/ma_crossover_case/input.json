@@ -1,0 +1,118 @@
+{
+  "blueprint_draft": {
+    "bar_spec": {
+      "frequency": "1d"
+    },
+    "blueprint_id": "bp_f854c364c542",
+    "data_requirements": [
+      {
+        "adjustment": "none",
+        "asof_rule": {
+          "mode": "asof"
+        },
+        "dataset_id": "ohlcv_1d",
+        "fields": [
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume",
+          "available_at"
+        ],
+        "frequency": "1d"
+      }
+    ],
+    "description": "Phase-20 fixtures.",
+    "evaluation_protocol": {
+      "embargo": {
+        "bars": 0
+      },
+      "gate_suite_id": "gate_suite_v1_default",
+      "purge": {
+        "bars": 0
+      },
+      "segments": {
+        "holdout": {
+          "end": "2024-01-10",
+          "start": "2024-01-01"
+        },
+        "test": {
+          "end": "2024-01-10",
+          "start": "2024-01-01"
+        },
+        "train": {
+          "end": "2024-01-10",
+          "start": "2024-01-01"
+        }
+      }
+    },
+    "extensions": {
+      "agent_provider": "mock",
+      "evaluation_intent": "phase20_fixtures",
+      "idea_spec_title": "Fixture Idea Phase20",
+      "snapshot_id": "snap_fixture_phase20_001"
+    },
+    "policy_bundle_id": "policy_bundle_v1_default",
+    "report_spec": {
+      "plots": false,
+      "tables": true,
+      "trace": false
+    },
+    "schema_version": "blueprint_v1",
+    "strategy_spec": {
+      "dsl_version": "signal_dsl_v1",
+      "execution": {
+        "cost_model": {
+          "ref_policy": true
+        },
+        "order_timing": "next_open"
+      },
+      "expressions": {
+        "enter": {
+          "type": "const",
+          "value": true
+        },
+        "exit": {
+          "type": "const",
+          "value": false
+        }
+      },
+      "extensions": {
+        "engine_contract": "vectorbt_signal_v1",
+        "strategy_id": "buy_and_hold_mvp"
+      },
+      "signals": {
+        "entry": "enter",
+        "exit": "exit"
+      }
+    },
+    "title": "Fixture Idea Phase20",
+    "universe": {
+      "asset_pack": "demo",
+      "calendar": "DEMO",
+      "symbols": [
+        "AAA",
+        "BBB"
+      ],
+      "timezone": "Asia/Taipei"
+    }
+  },
+  "idea_spec": {
+    "end": "2024-01-10",
+    "evaluation_intent": "phase20_fixtures",
+    "extensions": {
+      "strategy_template": "ma_crossover"
+    },
+    "frequency": "1d",
+    "hypothesis_text": "Phase-20 fixtures.",
+    "policy_bundle_path": "policies/policy_bundle_v1.yaml",
+    "schema_version": "idea_spec_v1",
+    "snapshot_id": "snap_fixture_phase20_001",
+    "start": "2024-01-01",
+    "symbols": [
+      "AAA",
+      "BBB"
+    ],
+    "title": "Fixture Idea Phase20"
+  }
+}

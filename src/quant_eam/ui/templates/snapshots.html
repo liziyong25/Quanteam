@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Snapshots</h1>
+
+  <div class="card">
+    <div class="muted">Read-only snapshot review console (SSOT: DataLake manifests + quality evidence).</div>
+  </div>
+
+  <table class="table">
+    <thead>
+      <tr>
+        <th>snapshot_id</th>
+        <th>created_at</th>
+        <th>datasets</th>
+        <th>quality</th>
+        <th>ingest</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in snapshots %}
+      <tr>
+        <td><a href="/ui/snapshots/{{ s.snapshot_id }}">{{ s.snapshot_id }}</a></td>
+        <td>{{ s.created_at }}</td>
+        <td>{{ s.datasets_summary }}</td>
+        <td>{{ "yes" if s.has_quality else "no" }}</td>
+        <td>{{ "yes" if s.has_ingest_manifest else "no" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
+

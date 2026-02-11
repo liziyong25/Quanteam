@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="section">
+    <div class="card">
+      <h2>Card</h2>
+      <div class="kv">
+        <div class="k">card_id</div><div class="v"><span class="pill">{{ card.card_id }}</span></div>
+        <div class="k">title</div><div class="v">{{ card.title }}</div>
+        <div class="k">effective_status</div><div class="v"><span class="pill">{{ card.effective_status }}</span></div>
+        <div class="k">primary_run_id</div>
+        <div class="v"><a href="/ui/runs/{{ card.primary_run_id }}">{{ card.primary_run_id }}</a></div>
+        <div class="k">policy_bundle_id</div><div class="v">{{ card.policy_bundle_id }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid section">
+    <div class="card">
+      <h2>Evidence</h2>
+      <div class="kv">
+        <div class="k">dossier</div><div class="v">{{ card.evidence.dossier_path }}</div>
+        <div class="k">gate_results</div><div class="v">{{ card.evidence.gate_results_path }}</div>
+      </div>
+      <div class="section">
+        <h2>Key Artifacts</h2>
+        <table>
+          <thead><tr><th>path</th></tr></thead>
+          <tbody>
+            {% for p in card.evidence.key_artifacts %}
+              <tr><td>{{ p }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Attribution</h2>
+      {% if attribution_report %}
+        <div class="kv">
+          <div class="k">net_return</div><div class="v">{{ attribution_report.returns.net_return }}</div>
+          <div class="k">cost_drag</div><div class="v">{{ attribution_report.returns.cost_drag }}</div>
+          <div class="k">max_drawdown</div><div class="v">{{ attribution_report.drawdown.max_drawdown }}</div>
+          <div class="k">trade_count</div><div class="v">{{ attribution_report.trades.trade_count }}</div>
+        </div>
+        <div class="section">
+          <a href="/ui/runs/{{ card.primary_run_id }}#attribution">Open run attribution</a>
+        </div>
+      {% else %}
+        <div class="plot-fallback">No <code>attribution_report.json</code> found for the primary run.</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Events</h2>
+      {% if card.events and card.events|length > 0 %}
+      <table>
+        <thead><tr><th>type</th><th>recorded_at</th><th>details</th></tr></thead>
+        <tbody>
+        {% for e in card.events %}
+          <tr>
+            <td>{{ e.event_type }}</td>
+            <td>{{ e.recorded_at }}</td>
+            <td>{{ e.new_status if e.new_status else e.notes if e.notes else "" }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <div class="plot-fallback">No events.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{
+  "end": "2024-01-05",
+  "evaluation_intent": "phase19_regression",
+  "frequency": "1d",
+  "hypothesis_text": "Phase-19 regression fixture (deterministic).",
+  "policy_bundle_path": "policies/policy_bundle_v1.yaml",
+  "schema_version": "idea_spec_v1",
+  "snapshot_id": "snap_fixture_phase19_001",
+  "start": "2024-01-01",
+  "symbols": [
+    "AAA",
+    "BBB"
+  ],
+  "title": "Fixture Idea"
+}

@@ -1,0 +1,36 @@
+{
+  "schema_version": "calc_trace_plan_v1",
+  "samples": [
+    {
+      "symbols": ["AAPL"],
+      "start": "2024-01-01",
+      "end": "2024-03-31",
+      "max_rows": 200
+    }
+  ],
+  "steps": [
+    {
+      "step_id": "s1",
+      "title": "Inputs",
+      "type": "table",
+      "render": { "mode": "table" },
+      "variables": ["open", "close", "sma_10"]
+    },
+    {
+      "step_id": "s2",
+      "title": "Signals",
+      "type": "table",
+      "render": { "mode": "table" },
+      "variables": ["entry_signal"]
+    }
+  ],
+  "assertions": [
+    {
+      "assertion_id": "a1",
+      "type": "lag_enforced",
+      "variables": ["entry_signal"],
+      "min_lag_bars": 1
+    }
+  ]
+}
+

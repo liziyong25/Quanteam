@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/sweep_trial_schema_v1.json",
+  "title": "sweep_trial_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "One line in jobs/<job_id>/outputs/sweep/trials.jsonl (Phase-23).",
+  "required": ["schema_version", "job_id", "trial_index", "params", "metric", "higher_is_better", "test_metric", "overall_pass", "holdout_pass_minimal", "run_id", "dossier_path"],
+  "properties": {
+    "schema_version": { "const": "sweep_trial_v1" },
+    "job_id": { "type": "string", "pattern": "^[0-9a-f]{12}$" },
+    "trial_index": { "type": "integer", "minimum": 0 },
+    "params": { "type": "object", "additionalProperties": { "type": ["number", "string", "boolean", "null"] } },
+    "metric": { "type": "string" },
+    "higher_is_better": { "type": "boolean" },
+    "test_metric": { "type": ["number", "null"] },
+    "overall_pass": { "type": "boolean" },
+    "holdout_pass_minimal": { "type": ["boolean", "null"] },
+    "run_id": { "type": ["string", "null"] },
+    "dossier_path": { "type": ["string", "null"] },
+    "gate_results_path": { "type": ["string", "null"] },
+    "gaterunner_exit_code": { "type": "integer" },
+    "error": { "type": "string" }
+  }
+}
+

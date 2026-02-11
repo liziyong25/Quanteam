@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/llm_session_schema_v1.json",
+  "title": "llm_session_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "LLMSession summarizes a single agent run's LLM interactions (call count + prompt hashes + evidence/cassette references).",
+  "required": ["schema_version", "provider_id", "mode", "call_count", "prompt_hashes", "cassette_path", "evidence_calls_path"],
+  "properties": {
+    "schema_version": { "const": "llm_session_v1" },
+    "provider_id": { "type": "string", "minLength": 1 },
+    "mode": { "type": "string", "enum": ["live", "record", "replay"] },
+    "call_count": { "type": "integer", "minimum": 0 },
+    "prompt_hashes": { "type": "array", "items": { "type": "string", "pattern": "^[0-9a-f]{64}$" } },
+    "cassette_path": { "type": "string", "minLength": 1 },
+    "evidence_calls_path": { "type": "string", "minLength": 1 },
+    "extensions": { "type": "object", "additionalProperties": true }
+  }
+}
+

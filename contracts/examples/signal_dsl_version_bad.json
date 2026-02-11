@@ -1,0 +1,7 @@
+{
+  "dsl_version": "signal_dsl_v2",
+  "signals": { "entry": "e", "exit": "x" },
+  "expressions": { "e": { "type": "const", "value": true }, "x": { "type": "const", "value": false } },
+  "execution": { "order_timing": "next_open", "cost_model": { "ref_policy": true, "policy_id": "cost_model_v1" } }
+}
+

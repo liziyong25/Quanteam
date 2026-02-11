@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/experience_pack_schema_v1.json",
+  "title": "experience_pack_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "Deterministic, evidence-first experience retrieval pack (Phase-29). Written as append-only job output to provide reference context to agents and UI. Must not contain holdout internals.",
+  "required": ["schema_version", "created_at", "query_input", "results"],
+  "properties": {
+    "schema_version": { "const": "experience_pack_v1" },
+    "job_id": { "type": ["string", "null"] },
+    "created_at": { "type": "string", "minLength": 1 },
+    "query_input": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["query", "top_k"],
+      "properties": {
+        "query": { "type": "string" },
+        "symbols": { "type": "array", "items": { "type": "string" } },
+        "frequency": { "type": ["string", "null"] },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "top_k": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "results": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["card_id", "run_id", "score", "ranking_explain"],
+        "properties": {
+          "card_id": { "type": "string", "minLength": 1 },
+          "run_id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string" },
+          "effective_status": { "type": "string" },
+          "score": { "type": "number" },
+          "policy_bundle_id": { "type": ["string", "null"] },
+          "symbols": { "type": "array", "items": { "type": "string" } },
+          "evidence_paths": { "type": "object", "additionalProperties": true },
+          "ranking_explain": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "required": ["reason", "field", "weight"],
+              "properties": {
+                "reason": { "type": "string" },
+                "field": { "type": "string" },
+                "token": { "type": ["string", "null"] },
+                "weight": { "type": "number" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "extensions": { "type": "object", "additionalProperties": true }
+  }
+}
+

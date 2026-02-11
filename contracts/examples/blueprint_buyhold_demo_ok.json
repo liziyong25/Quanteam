@@ -1,0 +1,51 @@
+{
+  "schema_version": "blueprint_v1",
+  "blueprint_id": "blueprint_buyhold_demo_v1",
+  "title": "Buy & Hold Demo (Compiler MVP)",
+  "description": "Minimal blueprint for compiler demo. Strategy is declarative; runner executes a fixed MVP strategy.",
+  "policy_bundle_id": "policy_bundle_v1_default",
+  "universe": {
+    "asset_pack": "demo",
+    "symbols": ["AAA", "BBB"],
+    "timezone": "Asia/Taipei",
+    "calendar": "DEMO"
+  },
+  "bar_spec": {
+    "frequency": "1d"
+  },
+  "data_requirements": [
+    {
+      "dataset_id": "ohlcv_1d",
+      "fields": ["open", "high", "low", "close", "volume", "available_at"],
+      "frequency": "1d",
+      "adjustment": "none",
+      "asof_rule": { "mode": "asof" }
+    }
+  ],
+  "strategy_spec": {
+    "dsl_version": "signal_dsl_v1",
+    "signals": { "entry": "enter", "exit": "exit" },
+    "expressions": {
+      "enter": { "type": "const", "value": true },
+      "exit": { "type": "const", "value": false }
+    },
+    "execution": {
+      "order_timing": "next_open",
+      "cost_model": { "ref_policy": true }
+    },
+    "extensions": { "engine_contract": "vectorbt_signal_v1", "strategy_id": "buy_and_hold_mvp" }
+  },
+  "evaluation_protocol": {
+    "segments": {
+      "train": { "start": "2024-01-01", "end": "2024-01-10" },
+      "test": { "start": "2024-01-01", "end": "2024-01-10" },
+      "holdout": { "start": "2024-01-01", "end": "2024-01-10" }
+    },
+    "purge": { "bars": 0 },
+    "embargo": { "bars": 0 },
+    "gate_suite_id": "gate_suite_v1_default"
+  },
+  "report_spec": { "plots": false, "tables": true, "trace": false },
+  "extensions": { "compiler_demo": true }
+}
+

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/idea_spec_schema_v1.json",
+  "title": "idea_spec_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "IdeaSpec is an upstream intent artifact for agents. It is not executable. It must not inline or override policies; any policy references are by id only.",
+  "required": [
+    "schema_version",
+    "title",
+    "hypothesis_text",
+    "symbols",
+    "frequency",
+    "start",
+    "end",
+    "evaluation_intent",
+    "snapshot_id"
+  ],
+  "properties": {
+    "schema_version": { "const": "idea_spec_v1" },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Forward-compatible metadata only. Must not override governance/policies."
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "hypothesis_text": { "type": "string", "minLength": 1 },
+    "symbols": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "universe_hint": { "type": "string" },
+    "frequency": { "type": "string", "description": "e.g. 1d" },
+    "start": { "type": "string", "description": "YYYY-MM-DD" },
+    "end": { "type": "string", "description": "YYYY-MM-DD" },
+    "evaluation_intent": { "type": "string", "minLength": 1 },
+    "policy_bundle_id": {
+      "type": "string",
+      "description": "Optional read-only reference by id. If omitted, kernel defaults apply."
+    },
+    "policy_bundle_path": {
+      "type": "string",
+      "description": "Optional repo-relative path to policy bundle asset (read-only)."
+    },
+    "snapshot_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Data snapshot id for compilation/run (required for deterministic job_id in workflow)."
+    }
+  }
+}
+

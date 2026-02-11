@@ -1,0 +1,12 @@
+policy_bundle_id: policy_bundle_v2_holdout_guard_default
+policy_version: "v1"
+title: Policy Bundle v2 (holdout leak guard)
+description: >
+  Bundle of frozen governance policies. Identical to policy_bundle_v1_default but uses a gate suite that
+  includes the holdout leak guard.
+execution_policy_id: execution_policy_v1_default
+cost_policy_id: cost_policy_v1_default
+asof_latency_policy_id: asof_latency_policy_v1_default
+risk_policy_id: risk_policy_v1_default
+gate_suite_id: gate_suite_v2_holdout_guard_default
+

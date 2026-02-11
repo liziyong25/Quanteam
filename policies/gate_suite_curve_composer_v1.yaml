@@ -1,0 +1,24 @@
+policy_id: gate_suite_v1_curve_composer_default
+policy_version: "v1"
+title: Gate Suite v1 (curve composer)
+description: >
+  Gate suite for curve-level composition runs. Composition is allowed only when each component run
+  has Gate PASS evidence; arbitration output remains GateResults + Dossier only.
+params:
+  gates:
+    - gate_id: basic_sanity
+      gate_version: v1
+      params:
+        require_artifacts:
+          - components.json
+    - gate_id: determinism_guard
+      gate_version: v1
+      params:
+        require_config_snapshot: true
+    - gate_id: components_integrity_v1
+      gate_version: v1
+      params:
+        require_overall_pass: true
+  holdout_policy:
+    output: pass_fail_minimal_summary
+

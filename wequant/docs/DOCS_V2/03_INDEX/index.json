@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-02-03T04:21:08Z",
+  "repo_root": ".",
+  "docs_v2": {
+    "templates": [
+      "docs/DOCS_V2/02_TEMPLATES/TEMPLATE_DOSSIER_PACKAGE.md",
+      "docs/DOCS_V2/02_TEMPLATES/TEMPLATE_DATAFLOW_FUNCTION_LEVEL.md",
+      "docs/DOCS_V2/02_TEMPLATES/TEMPLATE_LESSON.md"
+    ],
+    "kbs": [
+      "docs/DOCS_V2/20_KB/KB_DEV_RULES.md",
+      "docs/DOCS_V2/20_KB/data_layer/KB_data_layer_fetch_api_contract.md",
+      "docs/DOCS_V2/20_KB/data_layer/KB_data_layer_save_api_contract.md",
+      "docs/DOCS_V2/20_KB/data_layer/KB_data_layer_schema_and_indexing.md",
+      "docs/DOCS_V2/20_KB/data_layer/KB_data_layer_cli_contract.md",
+      "docs/DOCS_V2/20_KB/data_layer/KB_data_layer_function_mapping.md"
+    ],
+    "dossiers": [
+      "docs/DOCS_V2/10_DOSSIERS/DOSSIER_20260202_wequant_data_layer/00_OVERVIEW.md",
+      "docs/DOCS_V2/10_DOSSIERS/DOSSIER_20260203_wequant_wefetch_wesu_migration/00_OVERVIEW.md",
+      "docs/DOCS_V2/10_DOSSIERS/DOSSIER_20260203_wefetch_full_coverage/00_OVERVIEW.md"
+    ],
+    "lessons": [
+      "docs/DOCS_V2/30_LESSONS/LESSON_20260202_path_contract_gatekeeping.md"
+    ]
+  }
+}

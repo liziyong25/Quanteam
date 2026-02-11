@@ -1,0 +1,50 @@
+{
+  "schema_version": "variable_dictionary_v1",
+  "variables": [
+    {
+      "var_id": "open",
+      "kind": "field",
+      "dtype": "float",
+      "source": { "dataset_id": "ohlcv", "field": "open", "adjustment": "split_dividend" },
+      "alignment": { "lag_bars": 0 },
+      "missing_policy": { "mode": "drop" }
+    },
+    {
+      "var_id": "close",
+      "kind": "field",
+      "dtype": "float",
+      "source": { "dataset_id": "ohlcv", "field": "close", "adjustment": "split_dividend" },
+      "alignment": { "lag_bars": 0 },
+      "missing_policy": { "mode": "drop" }
+    },
+    {
+      "var_id": "sma_10",
+      "kind": "feature",
+      "dtype": "float",
+      "compute": {
+        "ast": {
+          "type": "op",
+          "op": "sma",
+          "args": [{ "type": "var", "var_id": "close" }, { "type": "const", "value": 10 }]
+        }
+      },
+      "alignment": { "lag_bars": 0 },
+      "missing_policy": { "mode": "ffill" }
+    },
+    {
+      "var_id": "entry_signal",
+      "kind": "signal",
+      "dtype": "bool",
+      "compute": {
+        "ast": {
+          "type": "op",
+          "op": "gt",
+          "args": [{ "type": "var", "var_id": "close" }, { "type": "var", "var_id": "sma_10" }]
+        }
+      },
+      "alignment": { "lag_bars": 1 },
+      "missing_policy": { "mode": "false" }
+    }
+  ]
+}
+

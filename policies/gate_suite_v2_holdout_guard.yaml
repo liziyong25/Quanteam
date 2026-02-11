@@ -1,0 +1,24 @@
+policy_id: gate_suite_v2_holdout_guard_default
+policy_version: "v1"
+title: Gate Suite v2 (holdout leak guard)
+description: >
+  Default gate suite + holdout leak guard. This is a governance hardening suite:
+  any holdout numeric leakage into iteration-facing artifacts must fail.
+params:
+  gates:
+    - gate_id: basic_sanity
+      gate_version: v1
+      params:
+        require_artifacts:
+          - metrics.json
+          - gate_results.json
+    - gate_id: determinism_guard
+      gate_version: v1
+      params:
+        require_config_snapshot: true
+    - gate_id: holdout_leak_guard_v1
+      gate_version: v1
+      params: {}
+  holdout_policy:
+    output: pass_fail_minimal_summary
+

@@ -1,0 +1,24 @@
+policy_id: gate_suite_v1_snapshot_integrity_default_v2
+policy_version: "v1"
+title: Gate Suite v1 (snapshot integrity) v2
+description: >
+  v2 suite adds data snapshot integrity verification without changing existing v1 policy assets.
+  Modules select this suite by referencing the matching policy_bundle_id.
+params:
+  gates:
+    - gate_id: data_snapshot_integrity_v1
+      gate_version: v1
+      params: {}
+    - gate_id: basic_sanity
+      gate_version: v1
+      params:
+        require_artifacts:
+          - metrics.json
+          - gate_results.json
+    - gate_id: determinism_guard
+      gate_version: v1
+      params:
+        require_config_snapshot: true
+  holdout_policy:
+    output: pass_fail_minimal_summary
+

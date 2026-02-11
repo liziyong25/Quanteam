@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/signal_dsl_v1.json",
+  "title": "signal_dsl_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "Contracts define I/O only. This DSL is declarative (no executable scripts). Policies must be referenced by id only.",
+  "required": ["dsl_version", "signals", "expressions", "execution"],
+  "properties": {
+    "dsl_version": {
+      "const": "signal_dsl_v1",
+      "description": "DSL version discriminator. Must be exactly 'signal_dsl_v1'."
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Forward-compatible extension area. Must not be used to override governance/policies."
+    },
+    "signals": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["entry", "exit"],
+      "properties": {
+        "entry": {
+          "type": "string",
+          "description": "Expression key in `expressions` used as the entry signal."
+        },
+        "exit": {
+          "type": "string",
+          "description": "Expression key in `expressions` used as the exit signal."
+        }
+      }
+    },
+    "expressions": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[A-Za-z][A-Za-z0-9_]*$" },
+      "additionalProperties": {
+        "$ref": "https://quant-eam.local/contracts/defs/expression_ast_v1.json"
+      },
+      "description": "Named expressions (AST). `signals.entry/exit` reference these keys. AST definition is shared via contracts/defs/expression_ast_v1.json."
+    },
+    "params": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["number", "string", "boolean", "null"]
+      },
+      "description": "Optional parameter values referenced by AST param nodes."
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["order_timing", "cost_model"],
+      "properties": {
+        "order_timing": {
+          "type": "string",
+          "enum": ["next_open", "next_close", "open", "close"],
+          "description": "Order timing semantics for signal execution."
+        },
+        "cost_model": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["ref_policy"],
+          "properties": {
+            "ref_policy": {
+              "const": true,
+              "description": "Must be true. Inline cost parameters are forbidden; cost model must be a policy reference."
+            },
+            "policy_id": {
+              "type": "string",
+              "description": "Optional read-only policy id reference for the cost model."
+            }
+          }
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "max_turnover": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Optional turnover constraint (fraction)."
+        }
+      }
+    }
+  }
+}

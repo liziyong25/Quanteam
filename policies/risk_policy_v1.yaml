@@ -1,0 +1,11 @@
+policy_id: risk_policy_v1_default
+policy_version: "v1"
+title: Risk Policy v1 (default)
+description: >
+  Governance policy for declared risk constraints. Enforcement is implemented in later phases.
+params:
+  max_leverage: 1.0
+  max_positions: 20
+  max_turnover: 1.0
+  max_drawdown: 0.2
+

@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="grid">
+    <div class="card">
+      <h2>Experience Cards</h2>
+      {% if cards and cards|length > 0 %}
+      <table>
+        <thead>
+          <tr><th>card_id</th><th>status</th><th>title</th></tr>
+        </thead>
+        <tbody>
+          {% for c in cards %}
+          <tr>
+            <td><a href="/ui/cards/{{ c.card_id }}">{{ c.card_id }}</a></td>
+            <td><span class="pill">{{ c.status }}</span></td>
+            <td>{{ c.title }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <div class="plot-fallback">No cards yet. Create one via Registry after Gate PASS.</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Recent Trials</h2>
+      {% if trials and trials|length > 0 %}
+      <table>
+        <thead>
+          <tr><th>run_id</th><th>pass</th><th>recorded_at</th></tr>
+        </thead>
+        <tbody>
+          {% for t in trials %}
+          <tr>
+            <td><a href="/ui/runs/{{ t.run_id }}">{{ t.run_id }}</a></td>
+            <td>
+              {% if t.overall_pass %}
+                <span class="pill good">PASS</span>
+              {% else %}
+                <span class="pill bad">FAIL</span>
+              {% endif %}
+            </td>
+            <td>{{ t.recorded_at }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        <div class="plot-fallback">No trials recorded. Run: registry record-trial.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
+

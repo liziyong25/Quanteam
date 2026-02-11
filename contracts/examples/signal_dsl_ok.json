@@ -1,0 +1,45 @@
+{
+  "dsl_version": "signal_dsl_v1",
+  "signals": {
+    "entry": "entry_cond",
+    "exit": "exit_cond"
+  },
+  "expressions": {
+    "entry_cond": {
+      "type": "op",
+      "op": "gt",
+      "args": [
+        { "type": "var", "var_id": "close" },
+        {
+          "type": "op",
+          "op": "sma",
+          "args": [
+            { "type": "var", "var_id": "close" },
+            { "type": "const", "value": 10 }
+          ]
+        }
+      ]
+    },
+    "exit_cond": {
+      "type": "op",
+      "op": "lt",
+      "args": [
+        { "type": "var", "var_id": "close" },
+        {
+          "type": "op",
+          "op": "sma",
+          "args": [
+            { "type": "var", "var_id": "close" },
+            { "type": "const", "value": 10 }
+          ]
+        }
+      ]
+    }
+  },
+  "execution": {
+    "order_timing": "next_open",
+    "cost_model": { "ref_policy": true, "policy_id": "cost_model_v1" }
+  },
+  "constraints": { "max_turnover": 0.5 }
+}
+

@@ -1,0 +1,16 @@
+{
+  "dsl_version": "signal_dsl_v1",
+  "signals": {
+    "entry": "entry_cond",
+    "exit": "exit_cond"
+  },
+  "expressions": {
+    "entry_cond": { "type": "const", "value": true },
+    "exit_cond": { "type": "const", "value": false }
+  },
+  "execution": {
+    "order_timing": "next_open",
+    "cost_model": { "ref_policy": false }
+  }
+}
+

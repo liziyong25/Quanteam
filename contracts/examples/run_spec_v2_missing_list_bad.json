@@ -1,0 +1,20 @@
+{
+  "schema_version": "run_spec_v2",
+  "blueprint_ref": {
+    "blueprint_id": "demo_blueprint_v1",
+    "blueprint_hash": "demo_blueprint_hash_v1"
+  },
+  "policy_bundle_id": "policy_bundle_v1_default",
+  "data_snapshot_id": "demo_snap_001",
+  "segments": {
+    "test": { "start": "2024-01-01", "end": "2024-01-10", "as_of": "2024-01-11T00:00:00+08:00" }
+  },
+  "adapter": { "adapter_id": "vectorbt_signal_v1" },
+  "output_spec": {
+    "write_dossier": true,
+    "artifacts": {
+      "dossier_manifest": "dossier_manifest.json"
+    }
+  }
+}
+

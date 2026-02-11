@@ -1,0 +1,25 @@
+policy_id: gate_suite_v1_curve_composer_default_v2
+policy_version: "v1"
+title: Gate Suite v1 (curve composer) v2
+description: >
+  v2 adds governance-configurable parameters for components_integrity_v1 without changing the curve-level MVP logic.
+params:
+  gates:
+    - gate_id: basic_sanity
+      gate_version: v1
+      params:
+        require_artifacts:
+          - components.json
+    - gate_id: determinism_guard
+      gate_version: v1
+      params:
+        require_config_snapshot: true
+    - gate_id: components_integrity_v1
+      gate_version: v1
+      params:
+        require_overall_pass: true
+        required_gate_ids: []
+        min_intersection_points: 1
+  holdout_policy:
+    output: pass_fail_minimal_summary
+

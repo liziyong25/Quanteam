@@ -1,0 +1,67 @@
+{
+  "schema_version": "run_spec_v2",
+  "blueprint_ref": {
+    "blueprint_id": "demo_blueprint_v1",
+    "blueprint_hash": "demo_blueprint_hash_v1"
+  },
+  "policy_bundle_id": "policy_bundle_v1_default",
+  "data_snapshot_id": "demo_snap_001",
+  "segments": {
+    "train": { "start": "2024-01-01", "end": "2024-01-05", "as_of": "2024-01-06T00:00:00+08:00" },
+    "test": { "start": "2024-01-06", "end": "2024-01-10", "as_of": "2024-01-11T00:00:00+08:00" },
+    "holdout": { "start": "2024-01-11", "end": "2024-01-12", "as_of": "2024-01-12T23:59:59+08:00" },
+    "list": [
+      {
+        "segment_id": "train_000",
+        "kind": "train",
+        "start": "2024-01-01",
+        "end": "2024-01-05",
+        "as_of": "2024-01-06T00:00:00+08:00",
+        "holdout": false,
+        "purge_days": 0,
+        "embargo_days": 0
+      },
+      {
+        "segment_id": "test_000",
+        "kind": "test",
+        "start": "2024-01-06",
+        "end": "2024-01-10",
+        "as_of": "2024-01-11T00:00:00+08:00",
+        "holdout": false,
+        "purge_days": 0,
+        "embargo_days": 0
+      },
+      {
+        "segment_id": "holdout_000",
+        "kind": "holdout",
+        "start": "2024-01-11",
+        "end": "2024-01-12",
+        "as_of": "2024-01-12T23:59:59+08:00",
+        "holdout": true,
+        "purge_days": 0,
+        "embargo_days": 0
+      }
+    ]
+  },
+  "adapter": { "adapter_id": "vectorbt_signal_v1" },
+  "output_spec": {
+    "write_dossier": true,
+    "artifacts": {
+      "dossier_manifest": "dossier_manifest.json",
+      "config_snapshot": "config_snapshot.json",
+      "data_manifest": "data_manifest.json",
+      "metrics": "metrics.json",
+      "curve": "curve.csv",
+      "trades": "trades.csv",
+      "positions": "positions.csv",
+      "turnover": "turnover.csv",
+      "exposure": "exposure.json",
+      "report_md": "reports/report.md"
+    }
+  },
+  "extensions": {
+    "symbols": ["AAA", "BBB"],
+    "strategy_id": "buy_and_hold_mvp"
+  }
+}
+

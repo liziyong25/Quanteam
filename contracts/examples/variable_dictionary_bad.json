@@ -1,0 +1,14 @@
+{
+  "schema_version": "variable_dictionary_v1",
+  "variables": [
+    {
+      "var_id": "entry_signal",
+      "kind": "signal",
+      "dtype": "bool",
+      "compute": { "ast": { "type": "const", "value": true } },
+      "alignment": { "lag_bars": 0 },
+      "missing_policy": { "mode": "false" }
+    }
+  ]
+}
+

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/attribution_report_schema_v1.json",
+  "title": "attribution_report_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "Deterministic attribution + diagnostics evidence written into a dossier (Phase-24). This artifact is for review/debugging; it must not introduce new governance knobs.",
+  "required": ["schema_version", "run_id", "created_at", "returns", "drawdown", "trades", "evidence_refs"],
+  "properties": {
+    "schema_version": { "const": "attribution_report_v1" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "report_fingerprint": { "type": "string", "minLength": 1 },
+    "returns": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["net_return"],
+      "properties": {
+        "net_return": { "type": "number" },
+        "gross_return": { "type": ["number", "null"] },
+        "cost_drag": { "type": ["number", "null"] },
+        "net_return_from_metrics": { "type": ["number", "null"] }
+      }
+    },
+    "contribution_by_symbol": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["symbol", "pnl"],
+        "properties": {
+          "symbol": { "type": "string", "minLength": 1 },
+          "pnl": { "type": "number" }
+        }
+      }
+    },
+    "contribution_by_timebucket": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "by_month": { "type": "array" },
+        "by_week": { "type": "array" }
+      }
+    },
+    "drawdown": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["max_drawdown", "dd_duration_bars", "top_dd_points"],
+      "properties": {
+        "max_drawdown": { "type": "number" },
+        "dd_duration_bars": { "type": "integer", "minimum": 0 },
+        "top_dd_points": { "type": "array" }
+      }
+    },
+    "trades": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["trade_count"],
+      "properties": {
+        "trade_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "sensitivity": { "type": "object", "additionalProperties": true },
+    "gate_summary": { "type": "object", "additionalProperties": true },
+    "evidence_refs": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["curve", "trades", "metrics", "config_snapshot"],
+      "properties": {
+        "curve": { "type": "string", "minLength": 1 },
+        "trades": { "type": "string", "minLength": 1 },
+        "metrics": { "type": "string", "minLength": 1 },
+        "config_snapshot": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}
+

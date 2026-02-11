@@ -1,0 +1,7 @@
+policy_id: execution_policy_v1_version_bad
+policy_version: "v2"
+title: "Execution Policy (bad example: wrong version)"
+description: policy_version must be "v1" for v1 policies.
+params:
+  order_timing: next_open
+  allow_short: false

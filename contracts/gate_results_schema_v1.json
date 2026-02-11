@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/gate_results_schema_v1.json",
+  "title": "gate_results_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "Gate results are arbitration evidence derived from a dossier + policies. PASS/FAIL must reference dossier artifacts. Holdout output must be minimal (pass/fail + tiny summary only).",
+  "required": ["schema_version", "run_id", "gate_suite_id", "overall_pass", "results"],
+  "properties": {
+    "schema_version": {
+      "const": "gate_results_v1",
+      "description": "Schema version discriminator. Must be exactly 'gate_results_v1'."
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Forward-compatible extension area. Must not be used to override governance/policies."
+    },
+    "run_id": { "type": "string" },
+    "gate_suite_id": { "type": "string" },
+    "overall_pass": { "type": "boolean" },
+    "results": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["gate_id", "gate_version", "pass", "metrics"],
+        "properties": {
+          "gate_id": { "type": "string" },
+          "gate_version": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["pass", "fail", "skipped"],
+            "description": "Optional explicit status. If omitted, infer from pass==true/false."
+          },
+          "pass": { "type": "boolean" },
+          "metrics": { "type": "object", "additionalProperties": true },
+          "thresholds": { "type": "object", "additionalProperties": true },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "artifacts": { "type": "array", "items": { "type": "string" } },
+              "notes": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "holdout_summary": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["pass", "summary"],
+      "properties": {
+        "pass": { "type": "boolean" },
+        "summary": {
+          "type": "string",
+          "maxLength": 240,
+          "description": "Minimal 1-2 line summary only. Must not leak holdout internals (no curves/trades)."
+        },
+        "metrics_minimal": { "type": "object", "additionalProperties": true }
+      }
+    }
+  }
+}
+

@@ -1,0 +1,12 @@
+policy_id: execution_policy_v1_default
+policy_version: "v1"
+title: Execution Policy v1 (default)
+description: >
+  Governance policy for order timing and execution mechanics. Read-only input to Kernel/Runner.
+params:
+  order_timing: next_open  # next_open | close | next_close
+  fill_price: open         # open | close | vwap
+  allow_short: false
+  lot_size: 1
+  rounding: round          # floor | round | ceil
+

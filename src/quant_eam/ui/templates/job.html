@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Job {{ job_id }}</h1>
+
+  <div class="card">
+    <div><b>state</b>: {{ state }}</div>
+    <div><b>snapshot_id</b>:
+      {% if snapshot_id %}
+        <a href="/ui/snapshots/{{ snapshot_id }}">{{ snapshot_id }}</a>
+      {% else %}
+        <span class="muted">unknown</span>
+      {% endif %}
+    </div>
+    <div><b>policy_bundle_path</b>: {{ policy_bundle_path }}</div>
+    <div><b>blueprint_id</b>: {{ blueprint_id }}</div>
+    <div><b>title</b>: {{ bp_title }}</div>
+  </div>
+
+  {% if llm_usage_report_json %}
+  <h2>LLM Budget/Usage</h2>
+  <div class="card">
+    <div><b>stopped</b>:
+      {% if llm_usage_report.stopped %}
+        <span class="pill bad">true</span>
+        <span class="muted">(reason={{ llm_usage_report.stop_reason or "unknown" }})</span>
+      {% else %}
+        <span class="pill good">false</span>
+      {% endif %}
+    </div>
+    <div><b>policy_id</b>: {{ llm_usage_report.policy_id }}</div>
+    <div><b>thresholds</b>: <code>{{ llm_usage_report.thresholds }}</code></div>
+    <div><b>totals</b>: <code>{{ llm_usage_report.totals }}</code></div>
+    {% if llm_usage_report_path %}
+    <div><b>llm_usage_report.json</b>: <code>{{ llm_usage_report_path }}</code></div>
+    {% endif %}
+    {% if llm_usage_events_path %}
+    <div><b>llm_usage_events.jsonl</b>: <code>{{ llm_usage_events_path }}</code></div>
+    {% endif %}
+    <h3>llm_usage_report.json</h3>
+    <pre class="code">{{ llm_usage_report_json }}</pre>
+  </div>
+  {% endif %}
+
+  {% if experience_pack_json %}
+  <h2>ExperiencePack</h2>
+  <div class="card">
+    <div class="muted">Phase-29: deterministic experience retrieval (evidence-first). This is reference material only; agents do not arbitrate.</div>
+    <div><b>query</b>: {{ experience_pack.query_input.query }}</div>
+    <div><b>top_k</b>: {{ experience_pack.query_input.top_k }}</div>
+    {% if experience_pack.results and experience_pack.results|length > 0 %}
+    <h3>Top Matches</h3>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>score</th>
+          <th>card</th>
+          <th>run</th>
+          <th>status</th>
+          <th>title</th>
+          <th>why matched</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for r in experience_pack.results %}
+        <tr>
+          <td>{{ r.score }}</td>
+          <td><a href="/ui/cards/{{ r.card_id }}">{{ r.card_id }}</a></td>
+          <td><a href="/ui/runs/{{ r.run_id }}">{{ r.run_id }}</a></td>
+          <td>{{ r.effective_status }}</td>
+          <td>{{ r.title }}</td>
+          <td>
+            {% if r.ranking_explain %}
+              <code>{{ r.ranking_explain }}</code>
+            {% else %}
+              <span class="muted">n/a</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+    <h3>experience_pack.json</h3>
+    <pre class="code">{{ experience_pack_json }}</pre>
+  </div>
+  {% endif %}
+
+  {% if llm_evidence and llm_evidence|length > 0 %}
+  <h2>LLM Evidence</h2>
+  <div class="card">
+    <div class="muted">Agents sanitize inputs before any LLM call. This section is read-only evidence (session + redaction + call records).</div>
+  </div>
+  {% for ev in llm_evidence %}
+    <div class="card">
+      <div><b>agent</b>: {{ ev.agent }}</div>
+      <div><b>dir</b>: <code>{{ ev.dir }}</code></div>
+      <div><b>provider_id</b>: {{ ev.provider_id or "unknown" }}</div>
+      <div><b>mode</b>: {{ ev.mode or "unknown" }}</div>
+      <div><b>prompt_version</b>: {{ ev.prompt_version or "unknown" }}</div>
+      <div><b>output_schema_version</b>: {{ ev.output_schema_version or "unknown" }}</div>
+      <div><b>guard_status</b>:
+        {% if ev.guard_passed is sameas true %}
+          <span class="pill good">PASS</span>
+        {% elif ev.guard_passed is sameas false %}
+          <span class="pill bad">FAIL</span>
+        {% else %}
+          <span class="muted">unknown</span>
+        {% endif %}
+        <span class="muted">(finding_count={{ ev.guard_finding_count or 0 }})</span>
+      </div>
+      {% if ev.error_summary_json %}
+      <h3>error_summary.json</h3>
+      <pre class="code">{{ ev.error_summary_json }}</pre>
+      {% endif %}
+      {% if ev.guard_findings_preview_json %}
+      <h3>output_guard findings (preview)</h3>
+      <pre class="code">{{ ev.guard_findings_preview_json }}</pre>
+      {% endif %}
+      <h3>llm_session.json</h3>
+      <pre class="code">{{ ev.session_json }}</pre>
+      {% if ev.redaction_json %}
+      <h3>redaction_summary.json</h3>
+      <pre class="code">{{ ev.redaction_json }}</pre>
+      {% endif %}
+      {% if ev.calls_tail %}
+      <h3>llm_calls.jsonl (tail)</h3>
+      <pre class="code">{{ ev.calls_tail }}</pre>
+      {% endif %}
+    </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if waiting_approval %}
+  <div class="card">
+    <h3>Waiting Approval</h3>
+    {% if approval_step == "llm_live_confirm" and llm_live_confirm_info %}
+      <div class="pill bad">LIVE/RECORD Confirmation Required</div>
+      <div class="muted">This job is configured to call a real LLM provider in <b>{{ llm_live_confirm_info.mode }}</b> mode. Approving will allow live calls to proceed.</div>
+      <h4>LLM Config</h4>
+      <div><b>provider_id</b>: {{ llm_live_confirm_info.provider_id }}</div>
+      <div><b>model</b>: {{ llm_live_confirm_info.model or "unknown" }}</div>
+      {% if llm_live_confirm_info.budget_policy_id %}
+      <h4>Budget</h4>
+      <div><b>policy_id</b>: {{ llm_live_confirm_info.budget_policy_id }}</div>
+      <div><b>policy_path</b>: <code>{{ llm_live_confirm_info.budget_policy_path }}</code></div>
+      <div><b>thresholds</b>: <code>{{ llm_live_confirm_info.thresholds }}</code></div>
+      <div><b>totals</b>: <code>{{ llm_live_confirm_info.totals }}</code></div>
+      <div><b>estimated_remaining_calls</b>: {{ llm_live_confirm_info.estimated_remaining_calls }}</div>
+      {% endif %}
+    {% endif %}
+    <form method="post" action="/ui/jobs/{{ job_id }}/approve{% if approval_step %}?step={{ approval_step }}{% endif %}">
+      <button type="submit">Approve</button>
+    </form>
+    <div class="muted">Approval writes an append-only APPROVED event under EAM_JOB_ROOT. It does not modify dossier/registry history.</div>
+  </div>
+  {% endif %}
+
+  {% if blueprint_draft_json %}
+  <h2>Blueprint Draft (IntentAgent output)</h2>
+  <pre class="code">{{ blueprint_draft_json }}</pre>
+  {% endif %}
+
+  {% if blueprint_final_json %}
+  <h2>Blueprint Final (StrategySpecAgent output)</h2>
+  <pre class="code">{{ blueprint_final_json }}</pre>
+  {% endif %}
+
+  {% if signal_dsl_json %}
+  <h2>signal_dsl_v1</h2>
+  <pre class="code">{{ signal_dsl_json }}</pre>
+  {% endif %}
+
+  {% if variable_dictionary_json %}
+  <h2>variable_dictionary_v1</h2>
+  <pre class="code">{{ variable_dictionary_json }}</pre>
+  {% endif %}
+
+  {% if calc_trace_plan_json %}
+  <h2>calc_trace_plan_v1</h2>
+  <pre class="code">{{ calc_trace_plan_json }}</pre>
+  {% endif %}
+
+  {% if runspec_json %}
+  <h2>RunSpec (Compiler output)</h2>
+  <pre class="code">{{ runspec_json }}</pre>
+  {% endif %}
+
+  {% if trace_meta_json %}
+  <h2>CalcTrace Preview Meta</h2>
+  <pre class="code">{{ trace_meta_json }}</pre>
+  {% endif %}
+
+  {% if trace_preview_rows %}
+  <h2>CalcTrace Preview (first rows)</h2>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>dt</th>
+        <th>symbol</th>
+        <th>close</th>
+        <th>available_at</th>
+        <th>eligible</th>
+        <th>entry_raw</th>
+        <th>entry_lagged</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in trace_preview_rows %}
+      <tr>
+        <td>{{ r.dt }}</td>
+        <td>{{ r.symbol }}</td>
+        <td>{{ r.close }}</td>
+        <td>{{ r.available_at }}</td>
+        <td>{{ r.eligible }}</td>
+        <td>{{ r.entry_raw }}</td>
+        <td>{{ r.entry_lagged }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if report_text %}
+  <h2>Report (ReportAgent output)</h2>
+  <pre class="code">{{ report_text }}</pre>
+  {% endif %}
+
+  {% if report_summary_json %}
+  <h2>Report Summary</h2>
+  <pre class="code">{{ report_summary_json }}</pre>
+  {% endif %}
+
+  {% if improvement_proposals_json %}
+  <h2>Improvement Proposals</h2>
+  <div class="card">
+    <div class="muted">Proposals are candidates only. Spawn creates a new job and returns to the blueprint review checkpoint.</div>
+  </div>
+  {% if improvement_proposals_list %}
+  <table class="table">
+    <thead>
+      <tr>
+        <th>proposal_id</th>
+        <th>title</th>
+        <th>action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in improvement_proposals_list %}
+      <tr>
+        <td>{{ p.proposal_id }}</td>
+        <td>{{ p.title }}</td>
+        <td>
+          <form method="post" action="/ui/jobs/{{ job_id }}/spawn?proposal_id={{ p.proposal_id }}">
+            <button type="submit">Spawn Job</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  <pre class="code">{{ improvement_proposals_json }}</pre>
+  {% endif %}
+
+  {% if sweep_leaderboard_json or (sweep_trials_tail and sweep_trials_tail|length > 0) %}
+  <h2>Param Sweep</h2>
+  <div class="card">
+    <div class="muted">Phase-23: deterministic grid sweep under budget_policy. Selection is based on test metric only; holdout is filter-only and remains minimal.</div>
+    {% if sweep_leaderboard_obj and sweep_leaderboard_obj.best and sweep_leaderboard_obj.best.params %}
+    <form method="post" action="/ui/jobs/{{ job_id }}/spawn_best">
+      <button type="submit">Spawn Best Candidate</button>
+    </form>
+    {% endif %}
+  </div>
+  {% if sweep_trials_tail and sweep_trials_tail|length > 0 %}
+  <h3>trials.jsonl (tail)</h3>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>trial</th>
+        <th>test_metric</th>
+        <th>overall_pass</th>
+        <th>holdout_pass</th>
+        <th>run_id</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in sweep_trials_tail %}
+      <tr>
+        <td>{{ t.trial_index }}</td>
+        <td>{{ t.test_metric }}</td>
+        <td>{{ t.overall_pass }}</td>
+        <td>{{ t.holdout_pass_minimal }}</td>
+        <td>
+          {% if t.run_id %}
+            <a href="/ui/runs/{{ t.run_id }}">{{ t.run_id }}</a>
+          {% else %}
+            <span class="muted">n/a</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% if sweep_leaderboard_json %}
+  <h3>leaderboard.json</h3>
+  <pre class="code">{{ sweep_leaderboard_json }}</pre>
+  {% endif %}
+  {% endif %}
+
+  <h2>Outputs</h2>
+  <pre class="code">{{ outputs_json }}</pre>
+
+  <h2>Events (append-only)</h2>
+  <pre class="code">{{ events_json }}</pre>
+{% endblock %}

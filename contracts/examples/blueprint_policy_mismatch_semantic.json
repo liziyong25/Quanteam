@@ -1,0 +1,43 @@
+{
+  "schema_version": "blueprint_v1",
+  "blueprint_id": "blueprint_policy_mismatch_bad_v1",
+  "title": "Policy Bundle Mismatch (Bad)",
+  "policy_bundle_id": "policy_bundle_v1_NOT_MATCHING",
+  "universe": {
+    "asset_pack": "demo",
+    "symbols": ["AAA"],
+    "timezone": "Asia/Taipei",
+    "calendar": "DEMO"
+  },
+  "bar_spec": { "frequency": "1d" },
+  "data_requirements": [
+    {
+      "dataset_id": "ohlcv_1d",
+      "fields": ["close", "available_at"],
+      "frequency": "1d",
+      "adjustment": "none",
+      "asof_rule": { "mode": "asof" }
+    }
+  ],
+  "strategy_spec": {
+    "dsl_version": "signal_dsl_v1",
+    "signals": { "entry": "enter", "exit": "exit" },
+    "expressions": {
+      "enter": { "type": "const", "value": true },
+      "exit": { "type": "const", "value": false }
+    },
+    "execution": { "order_timing": "next_open", "cost_model": { "ref_policy": true } }
+  },
+  "evaluation_protocol": {
+    "segments": {
+      "train": { "start": "2024-01-01", "end": "2024-01-02" },
+      "test": { "start": "2024-01-01", "end": "2024-01-02" },
+      "holdout": { "start": "2024-01-01", "end": "2024-01-02" }
+    },
+    "purge": { "bars": 0 },
+    "embargo": { "bars": 0 },
+    "gate_suite_id": "gate_suite_v1_default"
+  },
+  "report_spec": { "plots": false, "tables": false, "trace": false }
+}
+

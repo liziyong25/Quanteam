@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/ingest_manifest_schema_v1.json",
+  "title": "ingest_manifest_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "Ingest manifest is an auditable record of a single ingest request and its written snapshot outputs. It is not an execution policy; it must not override governance/policies.",
+  "required": ["schema_version", "snapshot_id", "dataset_id", "provider_id", "request_spec", "rows_written", "sha256_of_data_file", "created_at"],
+  "properties": {
+    "schema_version": { "const": "ingest_manifest_v1" },
+    "snapshot_id": { "type": "string", "minLength": 1 },
+    "dataset_id": { "type": "string", "minLength": 1 },
+    "provider_id": { "type": "string", "minLength": 1 },
+    "provider_version": { "type": "string" },
+    "created_at": { "type": "string", "minLength": 1 },
+    "rows_written": { "type": "integer", "minimum": 0 },
+    "sha256_of_data_file": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "asof_latency_policy_id": { "type": "string" },
+    "asof_rule": { "type": "string" },
+    "request_spec": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["symbols", "start", "end", "frequency"],
+      "properties": {
+        "symbols": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+        "start": { "type": "string", "minLength": 1 },
+        "end": { "type": "string", "minLength": 1 },
+        "frequency": { "type": "string", "minLength": 1 }
+      }
+    },
+    "output_paths": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "data_file": { "type": "string", "minLength": 1 },
+        "snapshot_manifest": { "type": "string", "minLength": 1 },
+        "ingest_manifest": { "type": "string", "minLength": 1 },
+        "quality_report": { "type": "string", "minLength": 1 }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Forward-compatible metadata only."
+    }
+  }
+}
+

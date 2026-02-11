@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/llm_usage_report_schema_v1.json",
+  "title": "llm_usage_report_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "LLMUsageReport is a deterministic, job-level aggregate of append-only llm_usage_events.jsonl. It is used for audit, budget enforcement, and UI review.",
+  "required": ["schema_version", "job_id", "policy_id", "thresholds", "totals", "by_agent", "stopped"],
+  "properties": {
+    "schema_version": { "const": "llm_usage_report_v1" },
+    "job_id": { "type": "string", "pattern": "^[0-9a-f]{12}$" },
+    "policy_id": { "type": "string", "minLength": 1 },
+    "thresholds": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["max_calls_per_job", "max_prompt_chars_per_job", "max_response_chars_per_job", "max_wall_seconds_per_job"],
+      "properties": {
+        "max_calls_per_job": { "type": "integer", "minimum": 0 },
+        "max_prompt_chars_per_job": { "type": "integer", "minimum": 0 },
+        "max_response_chars_per_job": { "type": "integer", "minimum": 0 },
+        "max_wall_seconds_per_job": { "type": "integer", "minimum": 0 },
+        "max_calls_per_agent_run": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "totals": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["calls", "prompt_chars", "response_chars", "wall_seconds"],
+      "properties": {
+        "calls": { "type": "integer", "minimum": 0 },
+        "prompt_chars": { "type": "integer", "minimum": 0 },
+        "response_chars": { "type": "integer", "minimum": 0 },
+        "wall_seconds": { "type": "number", "minimum": 0 }
+      }
+    },
+    "by_agent": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["calls", "prompt_chars", "response_chars", "wall_seconds"],
+        "properties": {
+          "calls": { "type": "integer", "minimum": 0 },
+          "prompt_chars": { "type": "integer", "minimum": 0 },
+          "response_chars": { "type": "integer", "minimum": 0 },
+          "wall_seconds": { "type": "number", "minimum": 0 }
+        }
+      }
+    },
+    "stopped": { "type": "boolean" },
+    "stop_reason": { "type": "string" },
+    "evidence_refs": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "usage_events_path": { "type": "string" },
+        "usage_report_path": { "type": "string" }
+      }
+    },
+    "extensions": { "type": "object", "additionalProperties": true }
+  }
+}
+

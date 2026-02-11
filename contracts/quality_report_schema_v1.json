@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/quality_report_schema_v1.json",
+  "title": "quality_report_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "Data quality report emitted by DataLake after writing a snapshot. This is evidence for review, not a policy/config.",
+  "required": [
+    "schema_version",
+    "snapshot_id",
+    "dataset_id",
+    "created_at",
+    "rows_before_dedupe",
+    "rows_after_dedupe",
+    "duplicate_count",
+    "null_count_by_col",
+    "dt_min",
+    "dt_max",
+    "available_at_min",
+    "available_at_max",
+    "min_by_col",
+    "max_by_col"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "enum": ["quality_report_v1", "data_quality_report_v1"],
+      "description": "Schema discriminator. 'data_quality_report_v1' is accepted for backward compatibility."
+    },
+    "snapshot_id": { "type": "string", "minLength": 1 },
+    "dataset_id": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "minLength": 1 },
+    "rows_before_dedupe": { "type": "integer", "minimum": 0 },
+    "rows_after_dedupe": { "type": "integer", "minimum": 0 },
+    "duplicate_count": { "type": "integer", "minimum": 0 },
+    "null_count_by_col": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "dt_min": { "type": "string", "minLength": 1 },
+    "dt_max": { "type": "string", "minLength": 1 },
+    "available_at_min": { "type": "string", "minLength": 1 },
+    "available_at_max": { "type": "string", "minLength": 1 },
+    "min_by_col": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "max_by_col": {
+      "type": "object",
+      "additionalProperties": { "type": "number" }
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

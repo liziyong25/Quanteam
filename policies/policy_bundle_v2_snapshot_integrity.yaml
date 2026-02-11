@@ -1,0 +1,12 @@
+policy_bundle_id: policy_bundle_v1_default_snapshot_integrity_v2
+policy_version: "v1"
+title: Policy Bundle v1 (snapshot integrity gates) v2
+description: >
+  v2 bundle switches gate_suite_id to include deterministic data snapshot integrity verification.
+  Policies remain read-only references by id.
+execution_policy_id: execution_policy_v1_default
+cost_policy_id: cost_policy_v1_default
+asof_latency_policy_id: asof_latency_policy_v1_default
+risk_policy_id: risk_policy_v1_default
+gate_suite_id: gate_suite_v1_snapshot_integrity_default_v2
+

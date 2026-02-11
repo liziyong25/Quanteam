@@ -1,0 +1,427 @@
+{
+  "blueprint_final": {
+    "bar_spec": {
+      "frequency": "1d"
+    },
+    "blueprint_id": "bp_f854c364c542",
+    "data_requirements": [
+      {
+        "adjustment": "none",
+        "asof_rule": {
+          "mode": "asof"
+        },
+        "dataset_id": "ohlcv_1d",
+        "fields": [
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume",
+          "available_at"
+        ],
+        "frequency": "1d"
+      }
+    ],
+    "description": "Phase-20 fixtures.",
+    "evaluation_protocol": {
+      "embargo": {
+        "bars": 0
+      },
+      "gate_suite_id": "gate_suite_v1_default",
+      "purge": {
+        "bars": 0
+      },
+      "segments": {
+        "holdout": {
+          "end": "2024-01-10",
+          "start": "2024-01-01"
+        },
+        "test": {
+          "end": "2024-01-10",
+          "start": "2024-01-01"
+        },
+        "train": {
+          "end": "2024-01-10",
+          "start": "2024-01-01"
+        }
+      }
+    },
+    "extensions": {
+      "agent_provider": "mock",
+      "evaluation_intent": "phase20_fixtures",
+      "idea_spec_title": "Fixture Idea Phase20",
+      "snapshot_id": "snap_fixture_phase20_001",
+      "strategy_spec_agent": {
+        "agent_id": "strategy_spec_agent_v1",
+        "calc_trace_plan_ref": "calc_trace_plan.json",
+        "input_fingerprint": "f090209aee6e",
+        "variable_dictionary_ref": "variable_dictionary.json"
+      }
+    },
+    "policy_bundle_id": "policy_bundle_v1_default",
+    "report_spec": {
+      "plots": false,
+      "tables": true,
+      "trace": false
+    },
+    "schema_version": "blueprint_v1",
+    "strategy_spec": {
+      "dsl_version": "signal_dsl_v1",
+      "execution": {
+        "cost_model": {
+          "ref_policy": true
+        },
+        "order_timing": "next_open"
+      },
+      "expressions": {
+        "entry": {
+          "args": [
+            {
+              "type": "var",
+              "var_id": "sma_fast"
+            },
+            {
+              "type": "var",
+              "var_id": "sma_slow"
+            }
+          ],
+          "op": "cross_above",
+          "type": "op"
+        },
+        "exit": {
+          "args": [
+            {
+              "type": "var",
+              "var_id": "sma_fast"
+            },
+            {
+              "type": "var",
+              "var_id": "sma_slow"
+            }
+          ],
+          "op": "cross_below",
+          "type": "op"
+        },
+        "sma_fast": {
+          "args": [
+            {
+              "type": "var",
+              "var_id": "close"
+            },
+            {
+              "param_id": "fast",
+              "type": "param"
+            }
+          ],
+          "op": "sma",
+          "type": "op"
+        },
+        "sma_slow": {
+          "args": [
+            {
+              "type": "var",
+              "var_id": "close"
+            },
+            {
+              "param_id": "slow",
+              "type": "param"
+            }
+          ],
+          "op": "sma",
+          "type": "op"
+        }
+      },
+      "extensions": {
+        "engine_contract": "vectorbt_signal_v1",
+        "policy_bundle_path": "policies/policy_bundle_v1.yaml",
+        "strategy_id": "ma_crossover_v1"
+      },
+      "params": {
+        "fast": 5,
+        "slow": 20
+      },
+      "signals": {
+        "entry": "entry",
+        "exit": "exit"
+      }
+    },
+    "title": "Fixture Idea Phase20",
+    "universe": {
+      "asset_pack": "demo",
+      "calendar": "DEMO",
+      "symbols": [
+        "AAA",
+        "BBB"
+      ],
+      "timezone": "Asia/Taipei"
+    }
+  },
+  "calc_trace_plan": {
+    "assertions": [
+      {
+        "assertion_id": "lag_enforced_entry",
+        "min_lag_bars": 1,
+        "type": "lag_enforced",
+        "variables": [
+          "entry_lagged"
+        ]
+      }
+    ],
+    "extensions": {
+      "agent_provider": "mock"
+    },
+    "samples": [
+      {
+        "end": "2024-01-10",
+        "max_rows": 20,
+        "start": "2024-01-01",
+        "symbols": [
+          "AAA",
+          "BBB"
+        ]
+      }
+    ],
+    "schema_version": "calc_trace_plan_v1",
+    "steps": [
+      {
+        "render": {
+          "mode": "table"
+        },
+        "step_id": "preview_table",
+        "title": "CalcTrace Preview (MVP)",
+        "type": "table",
+        "variables": [
+          "close",
+          "available_at",
+          "sma_fast",
+          "sma_slow",
+          "entry_raw",
+          "exit_raw",
+          "entry_lagged",
+          "exit_lagged"
+        ]
+      }
+    ]
+  },
+  "signal_dsl": {
+    "dsl_version": "signal_dsl_v1",
+    "execution": {
+      "cost_model": {
+        "ref_policy": true
+      },
+      "order_timing": "next_open"
+    },
+    "expressions": {
+      "entry": {
+        "args": [
+          {
+            "type": "var",
+            "var_id": "sma_fast"
+          },
+          {
+            "type": "var",
+            "var_id": "sma_slow"
+          }
+        ],
+        "op": "cross_above",
+        "type": "op"
+      },
+      "exit": {
+        "args": [
+          {
+            "type": "var",
+            "var_id": "sma_fast"
+          },
+          {
+            "type": "var",
+            "var_id": "sma_slow"
+          }
+        ],
+        "op": "cross_below",
+        "type": "op"
+      },
+      "sma_fast": {
+        "args": [
+          {
+            "type": "var",
+            "var_id": "close"
+          },
+          {
+            "param_id": "fast",
+            "type": "param"
+          }
+        ],
+        "op": "sma",
+        "type": "op"
+      },
+      "sma_slow": {
+        "args": [
+          {
+            "type": "var",
+            "var_id": "close"
+          },
+          {
+            "param_id": "slow",
+            "type": "param"
+          }
+        ],
+        "op": "sma",
+        "type": "op"
+      }
+    },
+    "extensions": {
+      "engine_contract": "vectorbt_signal_v1",
+      "policy_bundle_path": "policies/policy_bundle_v1.yaml",
+      "strategy_id": "ma_crossover_v1"
+    },
+    "params": {
+      "fast": 5,
+      "slow": 20
+    },
+    "signals": {
+      "entry": "entry",
+      "exit": "exit"
+    }
+  },
+  "variable_dictionary": {
+    "extensions": {
+      "agent_provider": "mock",
+      "policy_bundle_path": "policies/policy_bundle_v1.yaml"
+    },
+    "schema_version": "variable_dictionary_v1",
+    "variables": [
+      {
+        "alignment": {
+          "lag_bars": 0
+        },
+        "dtype": "float",
+        "kind": "field",
+        "missing_policy": {
+          "mode": "drop"
+        },
+        "source": {
+          "adjustment": "none",
+          "asof_rule": {
+            "mode": "asof"
+          },
+          "dataset_id": "ohlcv_1d",
+          "field": "close",
+          "frequency": "1d"
+        },
+        "var_id": "close"
+      },
+      {
+        "alignment": {
+          "lag_bars": 0
+        },
+        "dtype": "datetime",
+        "kind": "field",
+        "missing_policy": {
+          "mode": "drop"
+        },
+        "source": {
+          "adjustment": "none",
+          "asof_rule": {
+            "mode": "asof"
+          },
+          "dataset_id": "ohlcv_1d",
+          "field": "available_at",
+          "frequency": "1d"
+        },
+        "var_id": "available_at"
+      },
+      {
+        "alignment": {
+          "lag_bars": 0
+        },
+        "compute": {
+          "ast": {
+            "args": [
+              {
+                "type": "var",
+                "var_id": "sma_fast"
+              },
+              {
+                "type": "var",
+                "var_id": "sma_slow"
+              }
+            ],
+            "op": "cross_above",
+            "type": "op"
+          }
+        },
+        "dtype": "bool",
+        "kind": "feature",
+        "missing_policy": {
+          "mode": "false"
+        },
+        "notes": "Raw entry intent (unlagged). For execution, use entry_lagged (signal with lag>=1).",
+        "var_id": "entry_raw"
+      },
+      {
+        "alignment": {
+          "lag_bars": 1
+        },
+        "compute": {
+          "ast": {
+            "type": "var",
+            "var_id": "entry_raw"
+          }
+        },
+        "dtype": "bool",
+        "kind": "signal",
+        "missing_policy": {
+          "mode": "false"
+        },
+        "notes": "Execution-safe entry signal (lag enforced).",
+        "var_id": "entry_lagged"
+      },
+      {
+        "alignment": {
+          "lag_bars": 0
+        },
+        "compute": {
+          "ast": {
+            "args": [
+              {
+                "type": "var",
+                "var_id": "sma_fast"
+              },
+              {
+                "type": "var",
+                "var_id": "sma_slow"
+              }
+            ],
+            "op": "cross_below",
+            "type": "op"
+          }
+        },
+        "dtype": "bool",
+        "kind": "feature",
+        "missing_policy": {
+          "mode": "false"
+        },
+        "notes": "Raw exit intent (unlagged). For execution, use exit_lagged (signal with lag>=1).",
+        "var_id": "exit_raw"
+      },
+      {
+        "alignment": {
+          "lag_bars": 1
+        },
+        "compute": {
+          "ast": {
+            "type": "var",
+            "var_id": "exit_raw"
+          }
+        },
+        "dtype": "bool",
+        "kind": "signal",
+        "missing_policy": {
+          "mode": "false"
+        },
+        "notes": "Execution-safe exit signal (lag enforced).",
+        "var_id": "exit_lagged"
+      }
+    ]
+  }
+}

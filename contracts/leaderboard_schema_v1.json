@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/leaderboard_schema_v1.json",
+  "title": "leaderboard_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "Workflow evidence for Phase-23 param sweep. This is not a kernel contract; it is an audit artifact written under jobs/<job_id>/outputs/sweep/.",
+  "required": ["schema_version", "job_id", "metric", "higher_is_better", "grid_total", "max_trials", "trials_recorded", "budget_policy_ref", "best", "top"],
+  "properties": {
+    "schema_version": { "const": "leaderboard_v1" },
+    "job_id": { "type": "string", "pattern": "^[0-9a-f]{12}$" },
+    "metric": { "type": "string" },
+    "higher_is_better": { "type": "boolean" },
+    "grid_total": { "type": "integer", "minimum": 1 },
+    "max_trials": { "type": "integer", "minimum": 1 },
+    "trials_recorded": { "type": "integer", "minimum": 0 },
+    "budget_policy_ref": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["budget_policy_path", "budget_policy_id", "budget_policy_sha256"],
+      "properties": {
+        "budget_policy_path": { "type": "string" },
+        "budget_policy_id": { "type": "string" },
+        "budget_policy_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "best": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["trial_index", "params", "test_metric", "run_id", "dossier_path", "gate_results_path"],
+      "properties": {
+        "trial_index": { "type": ["integer", "null"], "minimum": 0 },
+        "params": { "type": ["object", "null"], "additionalProperties": true },
+        "test_metric": { "type": ["number", "null"] },
+        "run_id": { "type": ["string", "null"] },
+        "dossier_path": { "type": ["string", "null"] },
+        "gate_results_path": { "type": ["string", "null"] }
+      }
+    },
+    "top": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["trial_index", "params", "test_metric", "run_id", "dossier_path", "overall_pass", "holdout_pass_minimal"],
+        "properties": {
+          "trial_index": { "type": ["integer", "null"] },
+          "params": { "type": "object", "additionalProperties": true },
+          "test_metric": { "type": ["number", "null"] },
+          "run_id": { "type": ["string", "null"] },
+          "dossier_path": { "type": ["string", "null"] },
+          "overall_pass": { "type": "boolean" },
+          "holdout_pass_minimal": { "type": ["boolean", "null"] }
+        }
+      }
+    }
+  }
+}
+

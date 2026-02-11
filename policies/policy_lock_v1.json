@@ -1,0 +1,86 @@
+{
+  "generated_at": "2026-02-11T01:39:21.623667+00:00",
+  "items": [
+    {
+      "file": "policies/asof_latency_policy_v1.yaml",
+      "id": "asof_latency_policy_v1_default",
+      "sha256": "ed6f4ba6755d12d051a7f904a8708a7458af25947400449c043efbd47a0ce506"
+    },
+    {
+      "file": "policies/budget_policy_v1.yaml",
+      "id": "budget_policy_v1_default",
+      "sha256": "d35de6abfbbd2ac6467b6086bcc3fa0e880b1f6b765cb1529866517abb76dba0"
+    },
+    {
+      "file": "policies/cost_policy_v1.yaml",
+      "id": "cost_policy_v1_default",
+      "sha256": "704b7212865e418fe262688e60b382d22f6b28f454e2d2157eb0d5d1f74a09f5"
+    },
+    {
+      "file": "policies/execution_policy_v1.yaml",
+      "id": "execution_policy_v1_default",
+      "sha256": "5ca7d125fb142428eca20fa4e3403e36a93a05ad955b08a6bf3a21143e046286"
+    },
+    {
+      "file": "policies/gate_suite_curve_composer_v1.yaml",
+      "id": "gate_suite_v1_curve_composer_default",
+      "sha256": "a2612a9981d0f20f994951c9d65f911ee26619c546de5ebe74c188a1514cee11"
+    },
+    {
+      "file": "policies/gate_suite_curve_composer_v2.yaml",
+      "id": "gate_suite_v1_curve_composer_default_v2",
+      "sha256": "07d6058def4e1a55014db3efa0be7545ac3b1ea07529c2d419df0f3d1c1d1f39"
+    },
+    {
+      "file": "policies/gate_suite_v1.yaml",
+      "id": "gate_suite_v1_default",
+      "sha256": "0e8390fa0f5c7caf29bfb42fa42d6a925cd746c5c0ab8ae38fbf6ff81917a354"
+    },
+    {
+      "file": "policies/gate_suite_v2_snapshot_integrity.yaml",
+      "id": "gate_suite_v1_snapshot_integrity_default_v2",
+      "sha256": "7044b5c5ab647798efad1ba6af2b0e1c2ffbed056de50a22693d43d2ca3ea9fb"
+    },
+    {
+      "file": "policies/gate_suite_v2_holdout_guard.yaml",
+      "id": "gate_suite_v2_holdout_guard_default",
+      "sha256": "807410edbf26a3406601a9a3201e90aaca5539a31a6056844e513b450e706465"
+    },
+    {
+      "file": "policies/llm_budget_policy_v1.yaml",
+      "id": "llm_budget_policy_v1_default",
+      "sha256": "ca3bcce4aeeec47b5274e160f4042b8df349d2d8acc22a8d5687b0c35e64ff72"
+    },
+    {
+      "file": "policies/policy_bundle_curve_composer_v1.yaml",
+      "id": "policy_bundle_curve_composer_v1_default",
+      "sha256": "50541d45e1261c40f832219e61d03a75e153cf08c4ffd074d4587ec99c390068"
+    },
+    {
+      "file": "policies/policy_bundle_curve_composer_v2.yaml",
+      "id": "policy_bundle_curve_composer_v1_default_v2",
+      "sha256": "a1a3a978980b275e58e1c63d4dc9cf32333795afa7af0d4e43c2745d3de45a03"
+    },
+    {
+      "file": "policies/policy_bundle_v1.yaml",
+      "id": "policy_bundle_v1_default",
+      "sha256": "41ebec6e5461c6afb47aa49f4a039c34f20f0ae83ddcee5f3381cd6d7da0741c"
+    },
+    {
+      "file": "policies/policy_bundle_v2_snapshot_integrity.yaml",
+      "id": "policy_bundle_v1_default_snapshot_integrity_v2",
+      "sha256": "56eb66fa6689837c8e23da4ffacf076796d344d6fd9534d693440c1350661a18"
+    },
+    {
+      "file": "policies/policy_bundle_v2_holdout_guard.yaml",
+      "id": "policy_bundle_v2_holdout_guard_default",
+      "sha256": "ec9f94326e1c3bd452c0002d762ef878f066d7d6b74bbb8c1d27698766eb0179"
+    },
+    {
+      "file": "policies/risk_policy_v1.yaml",
+      "id": "risk_policy_v1_default",
+      "sha256": "4adafc751124180e145a946acb6cb8d13be9c00dbf7bcfb7f111daa65979c557"
+    }
+  ],
+  "lock_version": "policy_lock_v1"
+}
