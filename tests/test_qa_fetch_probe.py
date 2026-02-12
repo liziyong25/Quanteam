@@ -11,16 +11,16 @@ from quant_eam.qa_fetch.probe import (
 
 
 def test_parse_matrix_v3_count() -> None:
-    rows = parse_matrix_v3(Path("docs/05_data_plane/_draft_qa_fetch_rename_matrix_v3.md"))
+    rows = parse_matrix_v3(Path("docs/05_data_plane/qa_fetch_function_baseline_v1.md"))
     assert len(rows) > 0
-    assert rows[0].source in {"wequant", "wbdata"}
+    assert rows[0].source in {"mongo_fetch", "mysql_fetch"}
     assert rows[0].function.startswith("fetch_")
 
 
 def test_write_probe_artifacts(tmp_path: Path) -> None:
     results = [
         ProbeResult(
-            source="wequant",
+            source="mongo_fetch",
             function="fetch_stock_day",
             status="pass_has_data",
             reason="ok",
@@ -32,7 +32,7 @@ def test_write_probe_artifacts(tmp_path: Path) -> None:
             args_preview={"args": ["000001", "2024-01-02", "2024-01-05"], "kwargs": {"format": "pd"}},
         ),
         ProbeResult(
-            source="wbdata",
+            source="mysql_fetch",
             function="fetch_bond_min",
             status="blocked_source_missing",
             reason="missing mysql tables: clean_execreport_1min",

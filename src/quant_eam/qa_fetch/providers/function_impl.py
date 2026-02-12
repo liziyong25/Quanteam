@@ -168,6 +168,52 @@ def fetch_realtime_min(symbol, engine=_wb_bond.DATABASE_TEST2):
         return out
 
 
+def fetch_bond_quote(symbol, start, end, vaild_type="vaild", engine=_wb_bond.DATABASE_TEST2):
+    return fetch_clean_quote(
+        symbol=symbol,
+        start=start,
+        end=end,
+        vaild_type=vaild_type,
+        engine=engine,
+    )
+
+
+def fetch_bond_transaction(symbol, start, end, vaild_type="vaild", engine=_wb_bond.DATABASE_TEST2):
+    return _wb_bond.fetch_clean_transaction(
+        symbol=symbol,
+        start=start,
+        end=end,
+        vaild_type=vaild_type,
+        engine=engine,
+    )
+
+
+def fetch_bond_quote_realtime(symbol="all", vaild_type="vaild", engine=_wb_bond.DATABASE_TEST2):
+    return _wb_bond.fetch_realtime_bid(symbol=symbol, vaild_type=vaild_type, engine=engine)
+
+
+def fetch_bond_transaction_realtime(symbol, vaild_type="vaild", engine=_wb_bond.DATABASE_TEST2):
+    return _wb_bond.fetch_realtime_transaction(symbol=symbol, vaild_type=vaild_type, engine=engine)
+
+
+def fetch_bond_day_cfets(symbol, start, end, engine=_wb_bond.DATABASE_TEST2):
+    return _wb_bond.fetch_settlement_bond_day(symbol=symbol, start=start, end=end, engine=engine)
+
+
+def fetch_bond_valuation_zz(symbol, start, end, engine=_wb_bond.DATABASE_TEST2, columns=None):
+    return _wb_bond.fetch_zz_bond_valuation(
+        symbol=symbol,
+        start=start,
+        end=end,
+        engine=engine,
+        columns=columns,
+    )
+
+
+def fetch_future_transaction_ctp(*args: Any, **kwargs: Any):
+    return _wq_query.fetch_ctp_tick(*args, **kwargs)
+
+
 def fetch_future_tick(*args: Any, **kwargs: Any):
     try:
         return _wq_query.fetch_future_tick(*args, **kwargs)
@@ -239,6 +285,12 @@ _WBDATA_FUNCTIONS.update(
         "fetch_bond_min": fetch_bond_min,
         "fetch_cfets_repo_item": fetch_cfets_repo_item,
         "fetch_clean_quote": fetch_clean_quote,
+        "fetch_bond_quote": fetch_bond_quote,
+        "fetch_bond_transaction": fetch_bond_transaction,
+        "fetch_bond_quote_realtime": fetch_bond_quote_realtime,
+        "fetch_bond_transaction_realtime": fetch_bond_transaction_realtime,
+        "fetch_bond_day_cfets": fetch_bond_day_cfets,
+        "fetch_bond_valuation_zz": fetch_bond_valuation_zz,
         "fetch_realtime_min": fetch_realtime_min,
     }
 )
@@ -248,6 +300,7 @@ _WEQUANT_FUNCTIONS.update(_load_fetch_map(_wq_query))
 _WEQUANT_FUNCTIONS.update(_load_fetch_map(_wq_query_adv))
 _WEQUANT_FUNCTIONS.update(
     {
+        "fetch_future_transaction_ctp": fetch_future_transaction_ctp,
         "fetch_future_tick": fetch_future_tick,
         "fetch_quotation": fetch_quotation,
         "fetch_quotations": fetch_quotations,
@@ -267,12 +320,3 @@ def resolve_mongo_fetch_callable(func_name: str) -> Callable:
     if callable(fn):
         return fn
     raise AttributeError(f"wequant callable not found: {func_name}")
-
-
-# One-cycle compatibility aliases.
-def resolve_wbdata_local_callable(func_name: str) -> Callable:
-    return resolve_mysql_fetch_callable(func_name)
-
-
-def resolve_wequant_local_callable(func_name: str) -> Callable:
-    return resolve_mongo_fetch_callable(func_name)

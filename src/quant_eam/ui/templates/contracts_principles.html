@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Whole View Contracts-System Principles and Trace Plan/Result Boundary Evidence</h1>
+    <p class="page-subtitle">
+      Read-only governance evidence sourced from Whole View section <code>5</code>
+      in root file <code>Quant‑EAM Whole View Framework.md</code>.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">section 5 evidence only</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Sections</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Evidence Summary</h2>
+      <div class="kv">
+        <div class="k">ui_route</div>
+        <div class="v"><code>/ui/contracts-principles</code></div>
+        <div class="k">principle_total</div>
+        <div class="v"><span data-testid="contracts-principles-total">{{ summary.principle_total }}</span></div>
+        <div class="k">required_contract_total</div>
+        <div class="v"><span data-testid="contracts-required-total">{{ summary.required_contract_total }}</span></div>
+        <div class="k">trace_boundary_note_present</div>
+        <div class="v">
+          <span data-testid="contracts-trace-note-present">
+            {% if summary.trace_boundary_note_present %}1{% else %}0{% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Contracts-System Principles</h2>
+    {% if whole_view.principle_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>principle</th><th>source_line</th></tr></thead>
+          <tbody>
+          {% for row in whole_view.principle_rows %}
+            <tr data-testid="contracts-principle-row-{{ loop.index }}">
+              <td>{{ row.index }}</td>
+              <td>{{ row.principle }}</td>
+              <td>{{ row.source_line }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No principles extracted from Whole View section 5.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Trace Plan/Result Boundary Note</h2>
+    {% if whole_view.trace_boundary_note %}
+      <div class="section" data-testid="contracts-trace-boundary-note">{{ whole_view.trace_boundary_note }}</div>
+    {% else %}
+      <div class="plot-fallback">No trace plan/result boundary note extracted from section 5.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Section 5.1 Required Contracts</h2>
+    {% if whole_view.contract_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>contract</th><th>detail</th><th>source_line</th></tr></thead>
+          <tbody>
+          {% for row in whole_view.contract_rows %}
+            <tr data-testid="contracts-required-row-{{ loop.index }}">
+              <td>{{ row.index }}</td>
+              <td><code>{{ row.contract_file }}</code></td>
+              <td>{{ row.detail if row.detail else "n/a" }}</td>
+              <td>{{ row.source_line }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No required contracts extracted from Whole View section 5.1.</div>
+    {% endif %}
+  </div>
+{% endblock %}

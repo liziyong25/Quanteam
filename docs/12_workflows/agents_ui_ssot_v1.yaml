@@ -3,8 +3,8 @@ timezone: Asia/Taipei
 product: quant-eam
 status: active
 source_documents:
-- docs/00_overview/Quant‑EAM Implementation Phases Playbook.md
-- docs/00_overview/Quant‑EAM Whole View Framework.md
+- Quant‑EAM Implementation Phases Playbook.md
+- Quant‑EAM Whole View Framework.md
 intent: 'UI-first, dossier-first quant research system. User reviews artifacts in
   UI and does not need to read source code. Deterministic kernel is the arbiter (GateRunner).
   Agents only propose/transform/analyze via harness.
@@ -1013,7 +1013,7 @@ goal_checklist:
     promotion chain evidence page and regression coverage.
 - id: G43
   title: Whole View UI Eight-Page Coverage Matrix
-  status_now: planned
+  status_now: implemented
   depends_on:
   - G42
   ui_path: /ui/ui-coverage-matrix
@@ -1046,9 +1046,11 @@ goal_checklist:
   notes:
   - 'Derived from Whole View section 8: eight-page IA checklist coverage must be continuously
     reviewable in UI.'
+  - Completed by phase_63 with `/ui/ui-coverage-matrix` read-only eight-page IA coverage
+    matrix and regression coverage.
 - id: G44
   title: Whole View Runtime Topology and Service Ports Page
-  status_now: planned
+  status_now: implemented
   depends_on:
   - G43
   ui_path: /ui/runtime-topology
@@ -1081,6 +1083,450 @@ goal_checklist:
   notes:
   - 'Derived from Whole View section 9: runtime topology/ports and operational commands
     should be reviewable without source inspection.'
+  - Completed by phase_64 with `/ui/runtime-topology` read-only runtime topology,
+    service port/command evidence rendering, and regression coverage.
+- id: G45
+  title: Whole View Anti-Drift Preflight Checklist Page
+  status_now: implemented
+  depends_on:
+  - G44
+  ui_path: /ui/preflight-checklist
+  expected_state_change: UI renders Whole View section 10 anti-drift checklist as
+    read-only preflight governance evidence before new feature rollout.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/preflight_checklist.html
+  - tests/test_ui_preflight_checklist_phase45.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_preflight_checklist_phase45.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_65
+  stop_condition_exception_scope:
+    exception_id: g45_preflight_checklist_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_preflight_checklist_phase45.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View section 10: anti-drift preflight checks should be visible
+    in UI as governance evidence before each feature expansion.'
+  - Completed by phase_65 with `/ui/preflight-checklist` read-only anti-drift checklist
+    evidence rendering and regression coverage.
+- id: G46
+  title: Whole View Version Roadmap Milestones Page
+  status_now: implemented
+  depends_on:
+  - G45
+  ui_path: /ui/version-roadmap
+  expected_state_change: UI renders Whole View section 11 version roadmap milestones
+    as read-only governance evidence linking v0.4/v0.5/v0.6 scope to current implementation.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/version_roadmap.html
+  - tests/test_ui_version_roadmap_phase46.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_version_roadmap_phase46.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_66
+  stop_condition_exception_scope:
+    exception_id: g46_version_roadmap_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_version_roadmap_phase46.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View section 11: v0.4/v0.5/v0.6 roadmap must be continuously
+    reviewable in UI as release governance context.'
+  - Completed by phase_66 with `/ui/version-roadmap` read-only version roadmap
+    milestone evidence rendering and regression coverage.
+- id: G47
+  title: Whole View System Definition and Planes Evidence Page
+  status_now: implemented
+  depends_on:
+  - G46
+  ui_path: /ui/system-definition
+  expected_state_change: UI renders Whole View section 0 system definition and section
+    2 five-planes architecture as read-only governance evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/system_definition.html
+  - tests/test_ui_system_definition_phase47.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_system_definition_phase47.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_67
+  stop_condition_exception_scope:
+    exception_id: g47_system_definition_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_system_definition_phase47.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - Derived from `Quant‑EAM Whole View Framework.md` section 0/2; UI must expose definition
+    and five-planes architecture evidence without write operations.
+  - Completed by phase_67 with `/ui/system-definition` read-only system definition
+    and five-planes evidence rendering plus regression coverage.
+- id: G48
+  title: Playbook Construction Principles and Quality Gates Evidence Page
+  status_now: implemented
+  depends_on:
+  - G47
+  ui_path: /ui/playbook-principles
+  expected_state_change: UI renders Playbook section 0 construction principles and
+    section 0.2 global quality gates as read-only implementation governance evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/playbook_principles.html
+  - tests/test_ui_playbook_principles_phase48.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_playbook_principles_phase48.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_68
+  stop_condition_exception_scope:
+    exception_id: g48_playbook_principles_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_principles_phase48.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - Derived from `Quant‑EAM Implementation Phases Playbook.md` section 0/0.2; UI
+    must expose construction boundaries and quality gate evidence in read-only form.
+  - Completed by phase_68 with `/ui/playbook-principles` read-only construction
+    principles and quality gate evidence rendering plus regression coverage.
+- id: G49
+  title: Whole View Hard Constraints Governance Evidence Page
+  status_now: implemented
+  depends_on:
+  - G48
+  ui_path: /ui/hard-constraints
+  expected_state_change: UI renders Whole View section 1 hard constraints as read-only
+    governance evidence for unattended execution boundaries.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/hard_constraints.html
+  - tests/test_ui_hard_constraints_phase49.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_hard_constraints_phase49.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_69
+  stop_condition_exception_scope:
+    exception_id: g49_hard_constraints_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_hard_constraints_phase49.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - Derived from `Quant‑EAM Whole View Framework.md` section 1; UI must expose hard
+    constraints in read-only form as governance baseline.
+  - Completed by phase_69 with `/ui/hard-constraints` read-only hard constraint
+    evidence rendering plus regression coverage.
+- id: G50
+  title: Playbook Technical Stack Baseline Evidence Page
+  status_now: implemented
+  depends_on:
+  - G49
+  ui_path: /ui/playbook-tech-stack
+  expected_state_change: UI renders Playbook section 1/1.1/1.2 technical stack baseline
+    as read-only implementation environment evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/playbook_tech_stack.html
+  - tests/test_ui_playbook_tech_stack_phase50.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_playbook_tech_stack_phase50.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_70
+  stop_condition_exception_scope:
+    exception_id: g50_playbook_tech_stack_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_tech_stack_phase50.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - Derived from `Quant‑EAM Implementation Phases Playbook.md` section 1/1.1/1.2;
+    UI must expose technical stack baseline in read-only form.
+  - Completed by phase_70 with `/ui/playbook-tech-stack` read-only technical stack
+    baseline evidence rendering plus regression coverage.
+- id: G51
+  title: Playbook Phase Template Structure Evidence Page
+  status_now: implemented
+  depends_on:
+  - G50
+  ui_path: /ui/playbook-phase-template
+  expected_state_change: UI renders Playbook section 2 and Phase-X standard output
+    structure as read-only implementation template evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/playbook_phase_template.html
+  - tests/test_ui_playbook_phase_template_phase51.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_playbook_phase_template_phase51.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_71
+  stop_condition_exception_scope:
+    exception_id: g51_playbook_phase_template_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_phase_template_phase51.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - Derived from `Quant‑EAM Implementation Phases Playbook.md` section 2 and Phase-X
+    standard output structure.
+  - Completed by phase_71 with `/ui/playbook-phase-template` read-only phase template
+    structure evidence rendering plus regression coverage.
+- id: G52
+  title: Playbook Codex Task Card Template Evidence Page
+  status_now: implemented
+  depends_on:
+  - G51
+  ui_path: /ui/playbook-codex-task-card
+  expected_state_change: UI renders Playbook section 4 Codex Task Card Template as
+    read-only implementation governance evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/playbook_codex_task_card.html
+  - tests/test_ui_playbook_codex_task_card_phase52.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_playbook_codex_task_card_phase52.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_72
+  stop_condition_exception_scope:
+    exception_id: g52_playbook_codex_task_card_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_codex_task_card_phase52.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - Derived from `Quant‑EAM Implementation Phases Playbook.md` section 4 and Codex
+    Task Card template.
+  - Completed by phase_72 with `/ui/playbook-codex-task-card` read-only task-card
+    template evidence rendering plus regression coverage.
+- id: G53
+  title: Whole View Contracts Principles and Trace Boundary Evidence Page
+  status_now: implemented
+  depends_on:
+  - G52
+  ui_path: /ui/contracts-principles
+  expected_state_change: UI renders Whole View section 5 contracts-system principles
+    and trace plan/result boundary as read-only governance evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/contracts_principles.html
+  - tests/test_ui_contracts_principles_phase53.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_contracts_principles_phase53.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_73
+  stop_condition_exception_scope:
+    exception_id: g53_contracts_principles_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_contracts_principles_phase53.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - Derived from `Quant‑EAM Whole View Framework.md` section 5 contracts-system
+    principles and trace plan/result separation note.
+  - Completed by phase_73 with `/ui/contracts-principles` read-only contracts
+    principles evidence rendering plus regression coverage.
+- id: G54
+  title: Playbook Construction Sequence Recommendation Evidence Page
+  status_now: implemented
+  depends_on:
+  - G53
+  ui_path: /ui/playbook-sequence
+  expected_state_change: UI renders Playbook section 5 construction-sequence recommendation
+    as read-only planning evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/playbook_sequence.html
+  - tests/test_ui_playbook_sequence_phase54.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_playbook_sequence_phase54.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_74
+  stop_condition_exception_scope:
+    exception_id: g54_playbook_sequence_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_sequence_phase54.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - Derived from `Quant‑EAM Implementation Phases Playbook.md` section 5 construction
+    sequence recommendation.
+  - Completed by phase_74 with `/ui/playbook-sequence` read-only construction
+    sequence evidence rendering plus regression coverage.
+- id: G55
+  title: Whole View Codex Role Boundary Evidence Page
+  status_now: implemented
+  depends_on:
+  - G54
+  ui_path: /ui/codex-role-boundary
+  expected_state_change: UI renders Whole View section 7 Codex positioning (explorer/tool
+    worker, not arbitrator) and governance boundary as read-only evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/codex_role_boundary.html
+  - tests/test_ui_codex_role_boundary_phase55.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_codex_role_boundary_phase55.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_75
+  stop_condition_exception_scope:
+    exception_id: g55_codex_role_boundary_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_codex_role_boundary_phase55.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - Derived from `Quant‑EAM Whole View Framework.md` section 7 Codex role positioning
+    and governance boundary statement.
+  - Completed by phase_75 with `/ui/codex-role-boundary` read-only role boundary
+    evidence rendering plus regression coverage.
+- id: G56
+  title: Playbook Loop-Closure Phase Detail Evidence Page
+  status_now: planned
+  depends_on:
+  - G55
+  ui_path: /ui/playbook-loop-phases
+  expected_state_change: UI renders Playbook section 3 Phase-0~Phase-6 loop-closure
+    detail as read-only execution planning evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/playbook_loop_phases.html
+  - tests/test_ui_playbook_loop_phases_phase56.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_playbook_loop_phases_phase56.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_76
+  stop_condition_exception_scope:
+    exception_id: g56_playbook_loop_phases_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_loop_phases_phase56.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - Derived from `Quant‑EAM Implementation Phases Playbook.md` section 3 and section
+    5 loop-closure priority rationale.
 agents_pipeline_v1:
   pipeline_id: agents_pipeline_v1
   execution_model: serial_pipeline_with_checkpoints
@@ -1286,6 +1732,18 @@ orchestrator_autopilot_v1:
     - planned
     dependency_rule: depends_on all implemented
     priority_order:
+    - G55
+    - G56
+    - G53
+    - G54
+    - G51
+    - G52
+    - G49
+    - G50
+    - G47
+    - G48
+    - G45
+    - G46
     - G43
     - G44
     - G41
@@ -1321,6 +1779,42 @@ phase_dispatch_plan_v2:
   status_now: active
   mode: sequential_hard_dependencies
   phases:
+  - phase_id: phase_75
+    goal_id: G55
+    title: whole_view_codex_role_boundary_evidence_page
+  - phase_id: phase_76
+    goal_id: G56
+    title: playbook_loop_closure_phase_detail_evidence_page
+  - phase_id: phase_73
+    goal_id: G53
+    title: whole_view_contracts_principles_trace_boundary_evidence_page
+  - phase_id: phase_74
+    goal_id: G54
+    title: playbook_construction_sequence_recommendation_evidence_page
+  - phase_id: phase_71
+    goal_id: G51
+    title: playbook_phase_template_structure_evidence_page
+  - phase_id: phase_72
+    goal_id: G52
+    title: playbook_codex_task_card_template_evidence_page
+  - phase_id: phase_69
+    goal_id: G49
+    title: whole_view_hard_constraints_governance_evidence_page
+  - phase_id: phase_70
+    goal_id: G50
+    title: playbook_technical_stack_baseline_evidence_page
+  - phase_id: phase_67
+    goal_id: G47
+    title: whole_view_system_definition_and_planes_evidence_page
+  - phase_id: phase_68
+    goal_id: G48
+    title: playbook_construction_principles_quality_gates_evidence_page
+  - phase_id: phase_65
+    goal_id: G45
+    title: whole_view_anti_drift_preflight_checklist_page
+  - phase_id: phase_66
+    goal_id: G46
+    title: whole_view_version_roadmap_milestones_page
   - phase_id: phase_57
     goal_id: G37
     title: ui_information_architecture_coverage_page
@@ -2161,6 +2655,316 @@ autopilot_stop_condition_exceptions_v1:
     - Topology/ports evidence is sourced from Whole View section 9 and Playbook section
       1/3 text only.
     - Subagent packet and acceptance checks must still pass.
+- exception_id: g45_preflight_checklist_ui_scope
+  enabled: true
+  applies_to_goal_id: G45
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/preflight-checklist
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_preflight_checklist_phase45.py
+    - docs/08_phases/phase_65_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_65/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Preflight checklist page is read-only and must not expose write controls.
+    - Checklist evidence is sourced from Whole View section 10 checklist text only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g46_version_roadmap_ui_scope
+  enabled: true
+  applies_to_goal_id: G46
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/version-roadmap
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_version_roadmap_phase46.py
+    - docs/08_phases/phase_66_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_66/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Version roadmap page is read-only and must not expose write controls.
+    - Roadmap evidence is sourced from Whole View section 11 text only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g47_system_definition_ui_scope
+  enabled: true
+  applies_to_goal_id: G47
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/system-definition
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_system_definition_phase47.py
+    - docs/08_phases/phase_67_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_67/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - System definition page is read-only and must not expose write controls.
+    - Evidence must be sourced from `Quant‑EAM Whole View Framework.md` section 0/2
+      only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g48_playbook_principles_ui_scope
+  enabled: true
+  applies_to_goal_id: G48
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/playbook-principles
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_principles_phase48.py
+    - docs/08_phases/phase_68_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_68/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Playbook principles page is read-only and must not expose write controls.
+    - Evidence must be sourced from `Quant‑EAM Implementation Phases Playbook.md`
+      section 0/0.2 only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g49_hard_constraints_ui_scope
+  enabled: true
+  applies_to_goal_id: G49
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/hard-constraints
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_hard_constraints_phase49.py
+    - docs/08_phases/phase_69_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_69/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Hard constraints page is read-only and must not expose write controls.
+    - Evidence must be sourced from `Quant‑EAM Whole View Framework.md` section 1
+      only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g50_playbook_tech_stack_ui_scope
+  enabled: true
+  applies_to_goal_id: G50
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/playbook-tech-stack
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_tech_stack_phase50.py
+    - docs/08_phases/phase_70_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_70/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Playbook tech stack page is read-only and must not expose write controls.
+    - Evidence must be sourced from `Quant‑EAM Implementation Phases Playbook.md`
+      section 1/1.1/1.2 only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g51_playbook_phase_template_ui_scope
+  enabled: true
+  applies_to_goal_id: G51
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/playbook-phase-template
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_phase_template_phase51.py
+    - docs/08_phases/phase_71_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_71/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Playbook phase template page is read-only and must not expose write controls.
+    - Evidence must be sourced from `Quant‑EAM Implementation Phases Playbook.md`
+      section 2 only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g52_playbook_codex_task_card_ui_scope
+  enabled: true
+  applies_to_goal_id: G52
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/playbook-codex-task-card
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_codex_task_card_phase52.py
+    - docs/08_phases/phase_72_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_72/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Playbook codex task card page is read-only and must not expose write controls.
+    - Evidence must be sourced from `Quant‑EAM Implementation Phases Playbook.md`
+      section 4 template only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g53_contracts_principles_ui_scope
+  enabled: true
+  applies_to_goal_id: G53
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/contracts-principles
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_contracts_principles_phase53.py
+    - docs/08_phases/phase_73_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_73/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Contracts principles page is read-only and must not expose write controls.
+    - Evidence must be sourced from `Quant‑EAM Whole View Framework.md` section
+      5 only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g54_playbook_sequence_ui_scope
+  enabled: true
+  applies_to_goal_id: G54
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/playbook-sequence
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_sequence_phase54.py
+    - docs/08_phases/phase_74_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_74/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Playbook sequence page is read-only and must not expose write controls.
+    - Evidence must be sourced from `Quant‑EAM Implementation Phases Playbook.md`
+      section 5 only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g55_codex_role_boundary_ui_scope
+  enabled: true
+  applies_to_goal_id: G55
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/codex-role-boundary
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_codex_role_boundary_phase55.py
+    - docs/08_phases/phase_75_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_75/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Codex role boundary page is read-only and must not expose write controls.
+    - Evidence must be sourced from `Quant‑EAM Whole View Framework.md` section
+      7 only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g56_playbook_loop_phases_ui_scope
+  enabled: true
+  applies_to_goal_id: G56
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/playbook-loop-phases
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_loop_phases_phase56.py
+    - docs/08_phases/phase_76_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_76/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Playbook loop-phases page is read-only and must not expose write controls.
+    - Evidence must be sourced from `Quant‑EAM Implementation Phases Playbook.md`
+      section 3/5 loop-closure guidance only.
+    - Subagent packet and acceptance checks must still pass.
 autopilot_stop_conditions_v1:
 - Any change touching contracts/**
 - Any change touching policies/**
@@ -2202,8 +3006,8 @@ whole_view_autopilot_v1:
     must_generate_before_done_check_when_queue_empty: true
     queue_empty_behavior: generate_new_goals_first; stop_only_if_generation_is_blocked_or_disabled
     source_documents:
-    - docs/00_overview/Quant‑EAM Whole View Framework.md
-    - docs/00_overview/Quant‑EAM Implementation Phases Playbook.md
+    - Quant‑EAM Whole View Framework.md
+    - Quant‑EAM Implementation Phases Playbook.md
     generation_batch_size:
       min: 2
       max: 4

@@ -20,7 +20,11 @@ def _result(*, status: str, mode: str, reason: str = "ok") -> FetchExecutionResu
     return FetchExecutionResult(
         status=status,
         reason=reason,
-        source="wequant",
+        source="fetch",
+        source_internal="mongo_fetch",
+        engine="mongo",
+        provider_id="fetch",
+        provider_internal="mongo_fetch",
         resolved_function="fetch_stock_day",
         public_function="fetch_stock_day",
         elapsed_sec=0.01,
@@ -66,6 +70,8 @@ def test_demo_agent_writes_fetch_evidence_bundle(tmp_path: Path, monkeypatch) ->
     fetch_meta = plan.get("fetch") or {}
     assert fetch_meta.get("enabled") is True
     assert fetch_meta.get("status") == STATUS_PASS_HAS_DATA
+    assert fetch_meta.get("source") == "fetch"
+    assert fetch_meta.get("engine") == "mongo"
     assert len(output_paths) >= 4
 
 
@@ -103,3 +109,5 @@ def test_backtest_agent_writes_fetch_error_when_runtime_fails(tmp_path: Path, mo
     fetch_meta = plan.get("fetch") or {}
     assert fetch_meta.get("enabled") is True
     assert fetch_meta.get("status") == STATUS_ERROR_RUNTIME
+    assert fetch_meta.get("source") == "fetch"
+    assert fetch_meta.get("engine") == "mongo"

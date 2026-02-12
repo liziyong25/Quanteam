@@ -13,8 +13,9 @@ from typing import Any
 
 import pandas as pd
 
-from .wbdata_bridge import resolve_wbdata_callable
-from .wequant_bridge import resolve_wequant_callable
+from .mongo_bridge import resolve_mongo_fetch_callable
+from .mysql_bridge import resolve_mysql_fetch_callable
+from .source import SOURCE_MONGO, SOURCE_MYSQL, is_mongo_source, is_mysql_source, normalize_source
 
 
 STATUS_PASS_HAS_DATA = "pass_has_data"
@@ -22,7 +23,7 @@ STATUS_PASS_EMPTY = "pass_empty"
 STATUS_BLOCKED_SOURCE_MISSING = "blocked_source_missing"
 STATUS_ERROR_RUNTIME = "error_runtime"
 
-DEFAULT_MATRIX_V3_PATH = Path("docs/05_data_plane/_draft_qa_fetch_rename_matrix_v3.md")
+DEFAULT_MATRIX_V3_PATH = Path("docs/05_data_plane/qa_fetch_function_baseline_v1.md")
 DEFAULT_EXPECTED_COUNT = 0
 DEFAULT_OUTPUT_DIR = Path("docs/05_data_plane/qa_fetch_probe_v3")
 _MYSQL_WINDOW_CACHE: dict[str, tuple[str | None, str | None]] = {}
@@ -102,7 +103,16 @@ def parse_matrix_v3(path: str | Path = DEFAULT_MATRIX_V3_PATH) -> list[MatrixFun
         parts = [item.strip() for item in line.strip("|").split("|")]
         if len(parts) < 8:
             continue
-        source = parts[0]
+        source_token = parts[0]
+        source = normalize_source(source_token)
+        if source is None and source_token.strip().lower() == "fetch":
+            raw_notes = parts[7]
+            if "/mongo_fetch/" in raw_notes:
+                source = SOURCE_MONGO
+            elif "/mysql_fetch/" in raw_notes:
+                source = SOURCE_MYSQL
+        if source is None:
+            continue
         function = parts[1].strip("`")
         rows.append(MatrixFunction(source=source, function=function))
     return rows
@@ -125,9 +135,9 @@ def probe_matrix_v3(
     out: list[ProbeResult] = []
     for row in rows:
         try:
-            if row.source == "wequant":
+            if is_mongo_source(row.source):
                 result = _probe_wequant(row.function, mongo_ctx)
-            elif row.source == "wbdata":
+            elif is_mysql_source(row.source):
                 result = _probe_wbdata(row.function, mysql_ctx)
             else:
                 result = ProbeResult(
@@ -254,21 +264,21 @@ def _source_counts(results: list[ProbeResult]) -> dict[str, int]:
 def _probe_wequant(function: str, ctx: _MongoContext) -> ProbeResult:
     if ctx.error:
         return _blocked_result(
-            source="wequant",
+            source=SOURCE_MONGO,
             function=function,
             reason=f"mongo unavailable: {ctx.error}",
             args_preview={},
         )
 
     try:
-        fn = resolve_wequant_callable(function)
+        fn = resolve_mongo_fetch_callable(function)
     except Exception as exc:  # noqa: BLE001
-        return _error_result("wequant", function, f"resolve failed: {exc}", args_preview={})
+        return _error_result(SOURCE_MONGO, function, f"resolve failed: {exc}", args_preview={})
 
     call_spec = _build_wequant_call(function=function, fn=fn, ctx=ctx)
     if call_spec.blocked_reason:
         return _pass_empty_result(
-            source="wequant",
+            source=SOURCE_MONGO,
             function=function,
             reason=f"no_data: {call_spec.blocked_reason}",
             args_preview={"args": _json_safe(call_spec.args), "kwargs": _json_safe(call_spec.kwargs)},
@@ -279,14 +289,14 @@ def _probe_wequant(function: str, ctx: _MongoContext) -> ProbeResult:
     try:
         result = _call_with_timeout(fn, call_spec.args, call_spec.kwargs, timeout_sec=PROBE_TIMEOUT_SEC)
         return _to_probe_result(
-            source="wequant",
+            source=SOURCE_MONGO,
             function=function,
             result=result,
             args_preview=args_preview,
         )
     except Exception as exc:  # noqa: BLE001
         return _classify_exception(
-            source="wequant",
+            source=SOURCE_MONGO,
             function=function,
             exc=exc,
             args_preview=args_preview,
@@ -296,21 +306,21 @@ def _probe_wequant(function: str, ctx: _MongoContext) -> ProbeResult:
 def _probe_wbdata(function: str, ctx: _MysqlContext) -> ProbeResult:
     if ctx.error:
         return _blocked_result(
-            source="wbdata",
+            source=SOURCE_MYSQL,
             function=function,
             reason=f"mysql unavailable: {ctx.error}",
             args_preview={},
         )
 
     try:
-        fn = resolve_wbdata_callable(function)
+        fn = resolve_mysql_fetch_callable(function)
     except Exception as exc:  # noqa: BLE001
-        return _error_result("wbdata", function, f"resolve failed: {exc}", args_preview={})
+        return _error_result(SOURCE_MYSQL, function, f"resolve failed: {exc}", args_preview={})
 
     call_spec = _build_wbdata_call(function=function, fn=fn, ctx=ctx)
     if call_spec.blocked_reason:
         return _blocked_result(
-            source="wbdata",
+            source=SOURCE_MYSQL,
             function=function,
             reason=call_spec.blocked_reason,
             args_preview={"args": _json_safe(call_spec.args), "kwargs": _json_safe(call_spec.kwargs)},
@@ -321,14 +331,14 @@ def _probe_wbdata(function: str, ctx: _MysqlContext) -> ProbeResult:
     try:
         result = _call_with_timeout(fn, call_spec.args, call_spec.kwargs, timeout_sec=PROBE_TIMEOUT_SEC)
         return _to_probe_result(
-            source="wbdata",
+            source=SOURCE_MYSQL,
             function=function,
             result=result,
             args_preview=args_preview,
         )
     except Exception as exc:  # noqa: BLE001
         return _classify_exception(
-            source="wbdata",
+            source=SOURCE_MYSQL,
             function=function,
             exc=exc,
             args_preview=args_preview,
@@ -707,7 +717,7 @@ def _load_mongo_context() -> _MongoContext:
     try:
         _ensure_probe_env_defaults()
         _ensure_repo_import_paths()
-        from quant_eam.qa_fetch.providers.wequant_local.mongo import get_db
+        from quant_eam.qa_fetch.providers.mongo_fetch.mongo import get_db
 
         db = get_db()
         names = set(db.list_collection_names())
@@ -721,7 +731,7 @@ def _load_mysql_context() -> _MysqlContext:
         _ensure_probe_env_defaults()
         _ensure_repo_import_paths()
         from sqlalchemy import text
-        from quant_eam.qa_fetch.providers.wbdata_local.utils import DATABASE_TEST2
+        from quant_eam.qa_fetch.providers.mysql_fetch.utils import DATABASE_TEST2
 
         with DATABASE_TEST2.connect() as conn:
             rows = conn.execute(

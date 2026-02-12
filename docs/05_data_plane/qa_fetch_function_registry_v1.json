@@ -1,22 +1,27 @@
 {
-  "function_count": 77,
+  "function_count": 71,
   "functions": [
     {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_bondInformation",
-      "dataset_id": "bond_reference",
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_bond_amount",
+      "dataset_id": "cfets_bond_amount",
       "default_kwargs": {
-        "symbol": "240011.IB"
+        "end": "2026-02-11",
+        "start": "2026-01-01"
       },
       "domain": "bond",
-      "function": "fetch_bondInformation",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
+      "function": "fetch_bond_amount_cfets",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wbdata",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_cfets_bond_amount",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_bond_date_list",
@@ -24,14 +29,18 @@
       "default_kwargs": {},
       "domain": "bond",
       "function": "fetch_bond_date_list",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wbdata",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_bond_date_list",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_bond_day",
@@ -43,14 +52,42 @@
       },
       "domain": "bond",
       "function": "fetch_bond_day",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wbdata",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_bond_day",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_settlement_bond_day",
+      "dataset_id": "bond_day_cfets",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01",
+        "symbol": "240011.IB"
+      },
+      "domain": "bond",
+      "function": "fetch_bond_day_cfets",
+      "notes": "user rename override -> `fetch_bond_day_cfets`; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_settlement_bond_day",
+      "description_zh": "\u503a\u5238\u6210\u4ea4\u65e5\u7ebfOHLCV\uff08CFETS\u573a\u6240\uff09",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_bond_industry_settlement",
@@ -58,14 +95,41 @@
       "default_kwargs": {},
       "domain": "bond",
       "function": "fetch_bond_industry_settlement",
-      "notes": "user rename override -> `fetch_bond_industry_cfets`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
+      "notes": "user rename override -> `fetch_bond_industry_cfets`; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wbdata",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_bond_industry_settlement",
+      "description_zh": "\u503a\u5238\u5206\u673a\u6784\u4e70\u5165",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_bondInformation",
+      "dataset_id": "bond_reference",
+      "default_kwargs": {
+        "symbol": "240011.IB"
+      },
+      "domain": "bond",
+      "function": "fetch_bond_information",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_bondInformation",
+      "description_zh": "\u503a\u5238\u57fa\u7840\u4fe1\u606f",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_bond_min",
@@ -77,32 +141,132 @@
       },
       "domain": "bond",
       "function": "fetch_bond_min",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wbdata",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_bond_min",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
     },
     {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_bond_amount",
-      "dataset_id": "cfets_bond_amount",
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_clean_quote",
+      "dataset_id": "bond_quote",
       "default_kwargs": {
-        "end": "2026-02-11",
-        "start": "2026-01-01"
+        "end": "2030-01-01",
+        "start": "2010-01-01",
+        "symbol": "240011.IB"
       },
       "domain": "bond",
-      "function": "fetch_cfets_bond_amount",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
+      "function": "fetch_bond_quote",
+      "notes": "user rename override -> `fetch_bond_quote`; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wbdata",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_clean_quote",
+      "description_zh": "\u503a\u5238\u9010\u7b14\u62a5\u4ef7",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_realtime_bid",
+      "dataset_id": "bond_quote_realtime",
+      "default_kwargs": {},
+      "domain": "bond",
+      "function": "fetch_bond_quote_realtime",
+      "notes": "user rename override -> `fetch_realtime_bond_quote`; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_realtime_bid",
+      "description_zh": "\u503a\u5238\u5b9e\u65f6\u62a5\u4ef7\u4fe1\u606f",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_clean_transaction",
+      "dataset_id": "bond_transaction",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01",
+        "symbol": "240011.IB"
+      },
+      "domain": "generic",
+      "function": "fetch_bond_transaction",
+      "notes": "user rename override -> `fetch_bond_transaction`; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_clean_transaction",
+      "description_zh": "\u503a\u5238\u9010\u7b14\u6210\u4ea4",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_realtime_transaction",
+      "dataset_id": "bond_transaction_realtime",
+      "default_kwargs": {
+        "symbol": "240011.IB"
+      },
+      "domain": "generic",
+      "function": "fetch_bond_transaction_realtime",
+      "notes": "user rename override -> `fetch_realtime_bond_transaction`; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_realtime_transaction",
+      "description_zh": "\u503a\u5238\u5b9e\u65f6\u6210\u4ea4\u4fe1\u606f",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_zz_bond_valuation",
+      "dataset_id": "bond_valuation_zz",
+      "default_kwargs": {
+        "end": "2026-02-11",
+        "start": "2026-01-01",
+        "symbol": "240011.IB"
+      },
+      "domain": "bond",
+      "function": "fetch_bond_valuation_zz",
+      "notes": "user rename override -> `fetch_bond_valuation`; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_zz_bond_valuation",
+      "description_zh": "\u503a\u5238\u4f30\u503c\u6570\u636e\uff08\u4e2d\u503a\u573a\u6240\uff09",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_credit_item",
@@ -112,15 +276,19 @@
         "start": "2010-01-01"
       },
       "domain": "bond",
-      "function": "fetch_cfets_credit_item",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
+      "function": "fetch_credit_item_cfets",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wbdata",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_cfets_credit_item",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_credit_side",
@@ -130,15 +298,38 @@
         "start": "2010-01-01"
       },
       "domain": "bond",
-      "function": "fetch_cfets_credit_side",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
+      "function": "fetch_credit_side_cfets",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wbdata",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_cfets_credit_side",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_ctp_future_list",
+      "dataset_id": "ctp_future_list",
+      "default_kwargs": {},
+      "domain": "future",
+      "function": "fetch_ctp_future_list",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_ctp_future_list",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_dfz_bond_day",
@@ -149,323 +340,19 @@
         "symbol": "240011.IB"
       },
       "domain": "bond",
-      "function": "fetch_cfets_dfz_bond_day",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
+      "function": "fetch_dfz_bond_day_cfets",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wbdata",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_repo_buyback_item",
-      "dataset_id": "cfets_repo_buyback_item",
-      "default_kwargs": {
-        "end": "2030-01-01",
-        "start": "2010-01-01"
-      },
-      "domain": "bond",
-      "function": "fetch_cfets_repo_buyback_item",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_repo_buyout_item",
-      "dataset_id": "cfets_repo_buyout_item",
-      "default_kwargs": {
-        "end": "2030-01-01",
-        "start": "2010-01-01"
-      },
-      "domain": "bond",
-      "function": "fetch_cfets_repo_buyout_item",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_repo_item",
-      "dataset_id": "cfets_repo_item",
-      "default_kwargs": {
-        "end": "2030-01-01",
-        "start": "2010-01-01"
-      },
-      "domain": "bond",
-      "function": "fetch_cfets_repo_item",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_repo_side",
-      "dataset_id": "cfets_repo_side",
-      "default_kwargs": {
-        "end": "2030-01-01",
-        "start": "2010-01-01"
-      },
-      "domain": "bond",
-      "function": "fetch_cfets_repo_side",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_clean_quote",
-      "dataset_id": "clean_quote",
-      "default_kwargs": {
-        "end": "2030-01-01",
-        "start": "2010-01-01",
-        "symbol": "240011.IB"
-      },
-      "domain": "bond",
-      "function": "fetch_clean_quote",
-      "notes": "user rename override -> `fetch_bond_quote`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_clean_transaction",
-      "dataset_id": "clean_transaction",
-      "default_kwargs": {
-        "end": "2030-01-01",
-        "start": "2010-01-01",
-        "symbol": "240011.IB"
-      },
-      "domain": "generic",
-      "function": "fetch_clean_transaction",
-      "notes": "user rename override -> `fetch_bond_transaction`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_realtime_bid",
-      "dataset_id": "realtime_bid",
-      "default_kwargs": {},
-      "domain": "bond",
-      "function": "fetch_realtime_bid",
-      "notes": "user rename override -> `fetch_realtime_bond_quote`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_realtime_min",
-      "dataset_id": "realtime_min",
-      "default_kwargs": {
-        "symbol": "240011.IB"
-      },
-      "domain": "generic",
-      "function": "fetch_realtime_min",
-      "notes": "user rename override -> `fetch_realtime_bond_min`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_realtime_transaction",
-      "dataset_id": "realtime_transaction",
-      "default_kwargs": {
-        "symbol": "240011.IB"
-      },
-      "domain": "generic",
-      "function": "fetch_realtime_transaction",
-      "notes": "user rename override -> `fetch_realtime_bond_transaction`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_settlement_bond_day",
-      "dataset_id": "settlement_bond_day",
-      "default_kwargs": {
-        "end": "2030-01-01",
-        "start": "2010-01-01",
-        "symbol": "240011.IB"
-      },
-      "domain": "bond",
-      "function": "fetch_settlement_bond_day",
-      "notes": "user rename override -> `fetch_bond_day_cfets`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_wind_indicators",
-      "dataset_id": "wind_indicators",
-      "default_kwargs": {
-        "end": "2030-01-01",
-        "indicators": "all",
-        "start": "2010-01-01"
-      },
-      "domain": "bond",
-      "function": "fetch_wind_indicators",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_yc_valuation",
-      "dataset_id": "yc_valuation",
-      "default_kwargs": {
-        "end": "2026-02-11",
-        "start": "2026-01-01",
-        "symbol": "国开"
-      },
-      "domain": "bond",
-      "function": "fetch_yc_valuation",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_zz_bond_valuation",
-      "dataset_id": "zz_bond_valuation",
-      "default_kwargs": {
-        "end": "2026-02-11",
-        "start": "2026-01-01",
-        "symbol": "240011.IB"
-      },
-      "domain": "bond",
-      "function": "fetch_zz_bond_valuation",
-      "notes": "user rename override -> `fetch_bond_valuation`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_zz_index",
-      "dataset_id": "zz_index",
-      "default_kwargs": {
-        "end": "2030-01-01",
-        "start": "2010-01-01",
-        "symbol": "all"
-      },
-      "domain": "index",
-      "function": "fetch_zz_index",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_zz_valuation",
-      "dataset_id": "zz_valuation",
-      "default_kwargs": {
-        "end": "2030-01-01",
-        "start": "2010-01-01",
-        "symbol": "国开"
-      },
-      "domain": "bond",
-      "function": "fetch_zz_valuation",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
-      "provider": "wbdata_local",
-      "smoke_timeout_sec": 30,
-      "source": "wbdata",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_ctp_future_list",
-      "dataset_id": "ctp_future_list",
-      "default_kwargs": {},
-      "domain": "future",
-      "function": "fetch_ctp_future_list",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
-      "smoke_timeout_sec": 30,
-      "source": "wequant",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_ctp_tick",
-      "dataset_id": "ctp_tick",
-      "default_kwargs": {
-        "code": "000001",
-        "end": "2024-01-31",
-        "frequence": "day",
-        "start": "2024-01-01"
-      },
-      "domain": "generic",
-      "function": "fetch_ctp_tick",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
-      "smoke_timeout_sec": 30,
-      "source": "wequant",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_cfets_dfz_bond_day",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_dk_data",
@@ -477,16 +364,20 @@
       },
       "domain": "dk",
       "function": "fetch_dk_data",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_dk_data",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_etf_dk",
@@ -498,16 +389,20 @@
       },
       "domain": "dk",
       "function": "fetch_etf_dk",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_etf_dk",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_etf_list",
@@ -515,14 +410,18 @@
       "default_kwargs": {},
       "domain": "etf",
       "function": "fetch_etf_list",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_etf_list",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_etf_name",
@@ -532,14 +431,18 @@
       },
       "domain": "etf",
       "function": "fetch_etf_name",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_etf_name",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_financial_report",
@@ -550,34 +453,18 @@
       },
       "domain": "bond",
       "function": "fetch_financial_report",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_financial_report_adv",
-      "dataset_id": "financial_report_adv",
-      "default_kwargs": {
-        "code": "000001",
-        "start": "2024-01-01"
-      },
-      "domain": "bond",
-      "function": "fetch_financial_report_adv",
-      "notes": "adv removed by naming rule -> `fetch_financial_report`; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
-      "provider": "wequant_local",
-      "smoke_timeout_sec": 30,
-      "source": "wequant",
-      "status": "active",
-      "supports_adjust": [
-        "raw",
-        "qfq",
-        "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_financial_report",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_future_day",
@@ -589,14 +476,19 @@
       },
       "domain": "future",
       "function": "fetch_future_day",
-      "notes": "wequant priority for fetch_* (collision with wbdata); source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "mongo priority for fetch_* (collision with mysql); source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_future_day",
+      "description_zh": "\u671f\u8d27\u65e5\u7ebf\u6210\u4ea4OHLCV",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_future_dk",
@@ -608,16 +500,20 @@
       },
       "domain": "dk",
       "function": "fetch_future_dk",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_future_dk",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_future_list",
@@ -625,14 +521,19 @@
       "default_kwargs": {},
       "domain": "future",
       "function": "fetch_future_list",
-      "notes": "wequant priority for fetch_* (collision with wbdata); source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "mongo priority for fetch_* (collision with mysql); source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_future_list",
+      "description_zh": "\u671f\u8d27\u54c1\u79cd\u5217\u8868",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_future_min",
@@ -644,14 +545,19 @@
       },
       "domain": "future",
       "function": "fetch_future_min",
-      "notes": "wequant priority for fetch_* (collision with wbdata); source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "mongo priority for fetch_* (collision with mysql); source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_future_min",
+      "description_zh": "\u671f\u8d27\u5206\u949f\u6210\u4ea4OHLCV",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_future_tick",
@@ -659,14 +565,43 @@
       "default_kwargs": {},
       "domain": "future",
       "function": "fetch_future_tick",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_future_tick",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_ctp_tick",
+      "dataset_id": "future_transaction_ctp",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2024-01-31",
+        "frequence": "day",
+        "start": "2024-01-01"
+      },
+      "domain": "generic",
+      "function": "fetch_future_transaction_ctp",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_ctp_tick",
+      "description_zh": "\u671f\u8d27\u9010\u7b14\u6210\u4ea4\uff08CTP\u573a\u6240\uff09",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_get_hkstock_list",
@@ -674,14 +609,18 @@
       "default_kwargs": {},
       "domain": "stock",
       "function": "fetch_get_hkstock_list",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_get_hkstock_list",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_hkstock_day",
@@ -693,16 +632,20 @@
       },
       "domain": "stock",
       "function": "fetch_hkstock_day",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_hkstock_day",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_hkstock_dk",
@@ -714,16 +657,20 @@
       },
       "domain": "dk",
       "function": "fetch_hkstock_dk",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_hkstock_dk",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_day",
@@ -735,16 +682,20 @@
       },
       "domain": "index",
       "function": "fetch_index_day",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_index_day",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_day_adv",
@@ -755,16 +706,20 @@
       },
       "domain": "index",
       "function": "fetch_index_day_adv",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query_advance.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_index_day_adv",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_dk",
@@ -776,16 +731,20 @@
       },
       "domain": "dk",
       "function": "fetch_index_dk",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_index_dk",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_list",
@@ -793,14 +752,18 @@
       "default_kwargs": {},
       "domain": "index",
       "function": "fetch_index_list",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_index_list",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_min",
@@ -812,16 +775,20 @@
       },
       "domain": "index",
       "function": "fetch_index_min",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_index_min",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_name",
@@ -831,14 +798,18 @@
       },
       "domain": "index",
       "function": "fetch_index_name",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_index_name",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_transaction",
@@ -850,16 +821,20 @@
       },
       "domain": "index",
       "function": "fetch_index_transaction",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_index_transaction",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_transaction_adv",
@@ -870,33 +845,20 @@
       },
       "domain": "index",
       "function": "fetch_index_transaction_adv",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query_advance.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_lhb",
-      "dataset_id": "generic_reference",
-      "default_kwargs": {
-        "date": "2024-01-01"
-      },
-      "domain": "generic",
-      "function": "fetch_lhb",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
-      "smoke_timeout_sec": 30,
-      "source": "wequant",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_index_transaction_adv",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_lof_dk",
@@ -908,48 +870,20 @@
       },
       "domain": "dk",
       "function": "fetch_lof_dk",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_quotation",
-      "dataset_id": "generic_reference",
-      "default_kwargs": {
-        "code": "000001"
-      },
-      "domain": "generic",
-      "function": "fetch_quotation",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
-      "smoke_timeout_sec": 30,
-      "source": "wequant",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_quotations",
-      "dataset_id": "generic_reference",
-      "default_kwargs": {},
-      "domain": "generic",
-      "function": "fetch_quotations",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
-      "smoke_timeout_sec": 30,
-      "source": "wequant",
-      "status": "active",
-      "supports_adjust": [
-        "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_lof_dk",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_reits_dk",
@@ -961,16 +895,108 @@
       },
       "domain": "dk",
       "function": "fetch_reits_dk",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_reits_dk",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_repo_buyback_item",
+      "dataset_id": "cfets_repo_buyback_item",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_repo_buyback_item_cfets",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_cfets_repo_buyback_item",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_repo_buyout_item",
+      "dataset_id": "cfets_repo_buyout_item",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_repo_buyout_item_cfets",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_cfets_repo_buyout_item",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_repo_item",
+      "dataset_id": "cfets_repo_item",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_repo_item_cfets",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_cfets_repo_item",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_repo_side",
+      "dataset_id": "cfets_repo_side",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_repo_side_cfets",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_cfets_repo_side",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_adj",
@@ -982,14 +1008,18 @@
       },
       "domain": "stock",
       "function": "fetch_stock_adj",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_adj",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_block",
@@ -997,14 +1027,18 @@
       "default_kwargs": {},
       "domain": "stock",
       "function": "fetch_stock_block",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_block",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_block_history",
@@ -1017,14 +1051,18 @@
       },
       "domain": "stock",
       "function": "fetch_stock_block_history",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_block_history",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_block_slice_history",
@@ -1032,14 +1070,18 @@
       "default_kwargs": {},
       "domain": "stock",
       "function": "fetch_stock_block_slice_history",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_block_slice_history",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_day",
@@ -1051,16 +1093,20 @@
       },
       "domain": "stock",
       "function": "fetch_stock_day",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_day",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_day_adv",
@@ -1070,16 +1116,20 @@
       },
       "domain": "stock",
       "function": "fetch_stock_day_adv",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query_advance.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_day_adv",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_divyield",
@@ -1090,14 +1140,18 @@
       },
       "domain": "stock",
       "function": "fetch_stock_divyield",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_divyield",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_dk",
@@ -1109,16 +1163,20 @@
       },
       "domain": "dk",
       "function": "fetch_stock_dk",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_dk",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_dk_adv",
@@ -1128,16 +1186,20 @@
       },
       "domain": "dk",
       "function": "fetch_stock_dk_adv",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query_advance.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_dk_adv",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_financial_calendar",
@@ -1148,14 +1210,18 @@
       },
       "domain": "stock",
       "function": "fetch_stock_financial_calendar",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_financial_calendar",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_full",
@@ -1163,14 +1229,18 @@
       "default_kwargs": {},
       "domain": "stock",
       "function": "fetch_stock_full",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_full",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_info",
@@ -1180,14 +1250,18 @@
       },
       "domain": "stock",
       "function": "fetch_stock_info",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_info",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_list",
@@ -1195,14 +1269,18 @@
       "default_kwargs": {},
       "domain": "stock",
       "function": "fetch_stock_list",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_list",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_min",
@@ -1214,16 +1292,20 @@
       },
       "domain": "stock",
       "function": "fetch_stock_min",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_min",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_min_adv",
@@ -1235,16 +1317,20 @@
       },
       "domain": "stock",
       "function": "fetch_stock_min_adv",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query_advance.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_min_adv",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_name",
@@ -1254,31 +1340,18 @@
       },
       "domain": "stock",
       "function": "fetch_stock_name",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
-    },
-    {
-      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_realtime_adv",
-      "dataset_id": "stock_realtime_adv",
-      "default_kwargs": {},
-      "domain": "stock",
-      "function": "fetch_stock_realtime_adv",
-      "notes": "adv removed by naming rule -> `fetch_stock_realtime`; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
-      "provider": "wequant_local",
-      "smoke_timeout_sec": 30,
-      "source": "wequant",
-      "status": "active",
-      "supports_adjust": [
-        "raw",
-        "qfq",
-        "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_name",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_realtime_min",
@@ -1288,14 +1361,18 @@
       },
       "domain": "stock",
       "function": "fetch_stock_realtime_min",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_realtime_min",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_terminated",
@@ -1303,14 +1380,18 @@
       "default_kwargs": {},
       "domain": "stock",
       "function": "fetch_stock_terminated",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_terminated",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_to_market_date",
@@ -1320,14 +1401,18 @@
       },
       "domain": "stock",
       "function": "fetch_stock_to_market_date",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_to_market_date",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_transaction",
@@ -1339,16 +1424,20 @@
       },
       "domain": "stock",
       "function": "fetch_stock_transaction",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_transaction",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_transaction_adv",
@@ -1359,16 +1448,20 @@
       },
       "domain": "stock",
       "function": "fetch_stock_transaction_adv",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query_advance.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw",
         "qfq",
         "hfq"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_transaction_adv",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_xdxr",
@@ -1378,14 +1471,18 @@
       },
       "domain": "stock",
       "function": "fetch_stock_xdxr",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_stock_xdxr",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
     },
     {
       "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_trade_date",
@@ -1393,16 +1490,113 @@
       "default_kwargs": {},
       "domain": "generic",
       "function": "fetch_trade_date",
-      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
-      "provider": "wequant_local",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mongo_fetch/wefetch/query.py`",
+      "provider": "fetch",
       "smoke_timeout_sec": 30,
-      "source": "wequant",
+      "source": "fetch",
       "status": "active",
       "supports_adjust": [
         "raw"
-      ]
+      ],
+      "engine": "mongo",
+      "target_name": "fetch_trade_date",
+      "description_zh": "\u4e0a\u4ea4\u6240\u5f00\u5e02\u65e5\u671f",
+      "source_internal": "mongo_fetch",
+      "provider_internal": "mongo_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_wind_indicators",
+      "dataset_id": "wind_indicators",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "indicators": "all",
+        "start": "2010-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_wind_indicators",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_wind_indicators",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_yc_valuation",
+      "dataset_id": "yc_valuation",
+      "default_kwargs": {
+        "end": "2026-02-11",
+        "start": "2026-01-01",
+        "symbol": "\u56fd\u5f00"
+      },
+      "domain": "bond",
+      "function": "fetch_yc_valuation",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_yc_valuation",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_zz_index",
+      "dataset_id": "zz_index",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01",
+        "symbol": "all"
+      },
+      "domain": "index",
+      "function": "fetch_zz_index",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_zz_index",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_zz_valuation",
+      "dataset_id": "zz_valuation",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01",
+        "symbol": "\u56fd\u5f00"
+      },
+      "domain": "bond",
+      "function": "fetch_zz_valuation",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/mysql_fetch/bond_fetch.py`",
+      "provider": "fetch",
+      "smoke_timeout_sec": 30,
+      "source": "fetch",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ],
+      "engine": "mysql",
+      "target_name": "fetch_zz_valuation",
+      "source_internal": "mysql_fetch",
+      "provider_internal": "mysql_fetch"
     }
   ],
-  "generated_at_utc": "2026-02-12T03:40:23.140742+00:00",
+  "generated_at_utc": "2026-02-12T05:54:35.040569+00:00",
   "schema_version": "qa_fetch_function_registry_v1"
 }

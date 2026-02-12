@@ -12,3 +12,5 @@ def test_qa_fetch_registry_json_exists_and_has_resolver_entries() -> None:
     assert isinstance(doc.get("functions"), list)
     assert isinstance(doc.get("resolver_entries"), list)
     assert len(doc["resolver_entries"]) >= 10
+    assert {row.get("source") for row in doc.get("functions", [])} == {"fetch"}
+    assert {row.get("provider_id") for row in doc.get("functions", [])} == {"fetch"}

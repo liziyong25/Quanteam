@@ -10,8 +10,9 @@ from pathlib import Path
 from typing import Any
 
 from .resolver import resolve_fetch
-from .wbdata_bridge import resolve_wbdata_callable
-from .wequant_bridge import resolve_wequant_callable
+from .mongo_bridge import resolve_mongo_fetch_callable
+from .mysql_bridge import resolve_mysql_fetch_callable
+from .source import is_mongo_source, is_mysql_source, normalize_source
 
 
 STATUS_PASS_HAS_DATA = "pass_has_data"
@@ -21,6 +22,7 @@ STATUS_ERROR_RUNTIME = "error_runtime"
 
 DEFAULT_WINDOW_PROFILE_PATH = Path("docs/05_data_plane/qa_fetch_smoke_window_profile_v1.json")
 DEFAULT_EXCEPTION_DECISIONS_PATH = Path("docs/05_data_plane/qa_fetch_exception_decisions_v1.md")
+DEFAULT_FUNCTION_REGISTRY_PATH = Path("docs/05_data_plane/qa_fetch_function_registry_v1.json")
 
 
 @dataclass(frozen=True)
@@ -48,6 +50,10 @@ class FetchExecutionResult:
     status: str
     reason: str
     source: str | None
+    source_internal: str | None
+    engine: str | None
+    provider_id: str | None
+    provider_internal: str | None
     resolved_function: str | None
     public_function: str | None
     elapsed_sec: float
@@ -100,7 +106,7 @@ def execute_fetch_by_intent(
         kwargs["end"] = it.end
 
     return execute_fetch_by_name(
-        function=resolution.target_name,
+        function=resolution.public_name,
         kwargs=kwargs,
         policy=pl,
         source_hint=resolution.source,
@@ -119,13 +125,45 @@ def execute_fetch_by_name(
     public_function: str | None = None,
     window_profile_path: str | Path = DEFAULT_WINDOW_PROFILE_PATH,
     exception_decisions_path: str | Path = DEFAULT_EXCEPTION_DECISIONS_PATH,
+    function_registry_path: str | Path = DEFAULT_FUNCTION_REGISTRY_PATH,
 ) -> FetchExecutionResult:
     pl = _coerce_policy(policy)
     profile = load_smoke_window_profile(window_profile_path)
     decisions = load_exception_decisions(exception_decisions_path)
+    registry = load_function_registry(function_registry_path)
     fn_name = str(function).strip()
     if not fn_name:
         raise ValueError("function must be non-empty")
+
+    registry_row = registry.get(fn_name)
+    if registry_row is None:
+        normalized_hint = normalize_source(source_hint)
+        return FetchExecutionResult(
+            status=STATUS_BLOCKED_SOURCE_MISSING,
+            reason="not_in_baseline",
+            source="fetch",
+            source_internal=normalized_hint,
+            engine=_engine_from_source(normalized_hint),
+            provider_id="fetch",
+            provider_internal=normalized_hint,
+            resolved_function=None,
+            public_function=public_function or fn_name,
+            elapsed_sec=0.0,
+            row_count=0,
+            columns=[],
+            dtypes={},
+            preview=[],
+            final_kwargs=dict(kwargs or {}),
+            mode=pl.mode,
+            data=None,
+        )
+
+    target_name = str(registry_row.get("target_name") or fn_name).strip()
+    resolved_source_hint = (
+        str(registry_row.get("source_internal") or registry_row.get("provider_internal") or "").strip().lower()
+        or str(registry_row.get("source") or source_hint or "").strip().lower()
+        or None
+    )
 
     decision = decisions.get(fn_name, {})
     decision_status = str(decision.get("decision", "")).strip().lower()
@@ -133,8 +171,12 @@ def execute_fetch_by_name(
         return FetchExecutionResult(
             status=STATUS_BLOCKED_SOURCE_MISSING,
             reason=f"disabled_by_exception_policy: decision={decision_status}",
-            source=source_hint,
-            resolved_function=fn_name,
+            source="fetch",
+            source_internal=normalize_source(resolved_source_hint),
+            engine=_engine_from_source(resolved_source_hint),
+            provider_id="fetch",
+            provider_internal=normalize_source(resolved_source_hint),
+            resolved_function=target_name,
             public_function=public_function or fn_name,
             elapsed_sec=0.0,
             row_count=0,
@@ -154,7 +196,7 @@ def execute_fetch_by_name(
             merged_kwargs.setdefault(str(key), value)
 
     timeout_sec = _effective_timeout(pl, prof)
-    fn, resolved_source = _resolve_callable(fn_name, source_hint=source_hint)
+    fn, resolved_source = _resolve_callable(target_name, source_hint=resolved_source_hint)
     final_kwargs = _prepare_kwargs_for_callable(fn, merged_kwargs)
 
     started = time.time()
@@ -175,8 +217,12 @@ def execute_fetch_by_name(
         return FetchExecutionResult(
             status=status,
             reason=reason,
-            source=resolved_source,
-            resolved_function=fn_name,
+            source="fetch",
+            source_internal=resolved_source,
+            engine=_engine_from_source(resolved_source),
+            provider_id="fetch",
+            provider_internal=resolved_source,
+            resolved_function=target_name,
             public_function=public_function or fn_name,
             elapsed_sec=elapsed,
             row_count=row_count,
@@ -195,8 +241,12 @@ def execute_fetch_by_name(
         return FetchExecutionResult(
             status=status,
             reason=reason,
-            source=resolved_source,
-            resolved_function=fn_name,
+            source="fetch",
+            source_internal=resolved_source,
+            engine=_engine_from_source(resolved_source),
+            provider_id="fetch",
+            provider_internal=resolved_source,
+            resolved_function=target_name,
             public_function=public_function or fn_name,
             elapsed_sec=elapsed,
             row_count=0,
@@ -239,6 +289,10 @@ def write_fetch_evidence(
             "status": result.status,
             "reason": result.reason,
             "source": result.source,
+            "source_internal": result.source_internal,
+            "engine": result.engine,
+            "provider_id": result.provider_id,
+            "provider_internal": result.provider_internal,
             "resolved_function": result.resolved_function,
             "public_function": result.public_function,
             "mode": result.mode,
@@ -306,6 +360,31 @@ def load_exception_decisions(path: str | Path = DEFAULT_EXCEPTION_DECISIONS_PATH
     return out
 
 
+def load_function_registry(path: str | Path = DEFAULT_FUNCTION_REGISTRY_PATH) -> dict[str, dict[str, Any]]:
+    p = Path(path)
+    if not p.is_file():
+        return {}
+    try:
+        payload = json.loads(p.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+    rows = payload.get("functions") if isinstance(payload, dict) else None
+    if not isinstance(rows, list):
+        return {}
+    out: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        fn = str(row.get("function", "")).strip()
+        status = str(row.get("status", "")).strip().lower()
+        if not fn.startswith("fetch_"):
+            continue
+        if status not in {"active", "allow", "review", ""}:
+            continue
+        out[fn] = row
+    return out
+
+
 def _coerce_intent(intent: FetchIntent | dict[str, Any]) -> FetchIntent:
     if isinstance(intent, FetchIntent):
         return intent
@@ -355,16 +434,25 @@ def _effective_timeout(policy: FetchExecutionPolicy, profile_item: dict[str, Any
     return None
 
 
+def _engine_from_source(source_internal: str | None) -> str | None:
+    normalized = normalize_source(source_internal)
+    if is_mongo_source(normalized):
+        return "mongo"
+    if is_mysql_source(normalized):
+        return "mysql"
+    return None
+
+
 def _resolve_callable(function: str, *, source_hint: str | None) -> tuple[Any, str]:
-    hint = (source_hint or "").strip().lower()
-    if hint == "wequant":
-        return resolve_wequant_callable(function), "wequant"
-    if hint == "wbdata":
-        return resolve_wbdata_callable(function), "wbdata"
+    hint = normalize_source(source_hint)
+    if is_mongo_source(hint):
+        return resolve_mongo_fetch_callable(function), "mongo_fetch"
+    if is_mysql_source(hint):
+        return resolve_mysql_fetch_callable(function), "mysql_fetch"
     try:
-        return resolve_wequant_callable(function), "wequant"
+        return resolve_mongo_fetch_callable(function), "mongo_fetch"
     except Exception:
-        return resolve_wbdata_callable(function), "wbdata"
+        return resolve_mysql_fetch_callable(function), "mysql_fetch"
 
 
 def _prepare_kwargs_for_callable(fn: Any, kwargs: dict[str, Any]) -> dict[str, Any]:
@@ -457,7 +545,7 @@ def _classify_exception(source: str | None, exc: Exception) -> tuple[str, str]:
     if any(marker in lower for marker in blocked_markers):
         return STATUS_BLOCKED_SOURCE_MISSING, msg
 
-    if source == "wequant":
+    if is_mongo_source(source):
         no_data_markers = [
             "none",
             "empty",
@@ -512,6 +600,8 @@ def _write_preview_csv(path: Path, result: FetchExecutionResult) -> None:
         "reason": result.reason,
         "row_count": result.row_count,
         "source": result.source,
+        "source_internal": result.source_internal,
+        "engine": result.engine,
         "resolved_function": result.resolved_function,
     }
     path.write_text(",".join(row.keys()) + "\n" + ",".join(str(v) for v in row.values()) + "\n", encoding="utf-8")

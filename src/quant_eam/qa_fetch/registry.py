@@ -7,6 +7,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Iterable
 
+from .source import SOURCE_MONGO, SOURCE_MYSQL
+
 
 @dataclass(frozen=True)
 class FetchMapping:
@@ -41,6 +43,8 @@ def _domain_from_name(name: str) -> str:
         return "dk"
     if "crypto" in n:
         return "crypto"
+    if "ctp_" in n:
+        return "future"
     if (
         "bond" in n
         or "valuation" in n
@@ -49,6 +53,9 @@ def _domain_from_name(name: str) -> str:
         or "credit" in n
         or "issue" in n
         or "quote" in n
+        or "clean_transaction" in n
+        or "realtime_transaction" in n
+        or "realtime_min" in n
         or "settlement" in n
         or "realtime_bid" in n
         or "wind_" in n
@@ -135,10 +142,10 @@ def build_fetch_mappings() -> tuple[FetchMapping, ...]:
     for old_name, source_file in wequant_defs:
         old_key = _snake_case(old_name)
         collision = old_key in collisions
-        notes = "wequant priority for fetch_* (collision with wbdata)" if collision else "standard mapping"
+        notes = "mongo_fetch priority for fetch_* (collision with mysql_fetch)" if collision else "standard mapping"
         rows.append(
             FetchMapping(
-                source="wequant",
+                source=SOURCE_MONGO,
                 source_file=source_file,
                 old_name=old_name,
                 proposed_name=old_key,
@@ -154,13 +161,13 @@ def build_fetch_mappings() -> tuple[FetchMapping, ...]:
         old_key = _snake_case(old_name)
         collision = old_key in collisions
         notes = (
-            "collision with wequant; keep wb_fetch_* alias during migration"
+            "collision with mongo_fetch; keep wb_fetch_* alias during migration"
             if collision
             else "standard mapping"
         )
         rows.append(
             FetchMapping(
-                source="wbdata",
+                source=SOURCE_MYSQL,
                 source_file=source_file,
                 old_name=old_name,
                 proposed_name=old_key,
@@ -188,9 +195,12 @@ def mapping_dicts() -> list[dict[str, object]]:
 
 def render_rename_matrix_markdown(rows: Iterable[FetchMapping] | None = None) -> str:
     items = list(rows if rows is not None else build_fetch_mappings())
-    wq_count = sum(1 for r in items if r.source == "wequant")
-    wb_count = sum(1 for r in items if r.source == "wbdata")
-    collisions = sorted({_snake_case(r.old_name) for r in items if r.collision})
+    wq_count = sum(1 for r in items if r.source == SOURCE_MONGO)
+    wb_count = sum(1 for r in items if r.source == SOURCE_MYSQL)
+    wq_keys = {_snake_case(r.old_name) for r in items if r.source == SOURCE_MONGO}
+    wb_keys = {_snake_case(r.old_name) for r in items if r.source == SOURCE_MYSQL}
+    collision_keys = wq_keys.intersection(wb_keys)
+    collisions = sorted(collision_keys)
 
     lines: list[str] = []
     lines.append("# QA Fetch Rename Matrix (Draft v1)")
@@ -198,10 +208,13 @@ def render_rename_matrix_markdown(rows: Iterable[FetchMapping] | None = None) ->
     lines.append("This document is auto-generated for review before bulk rename.")
     lines.append("")
     lines.append("## Summary")
-    lines.append(f"- wequant functions: `{wq_count}`")
-    lines.append(f"- WBData functions: `{wb_count}`")
-    lines.append(f"- collisions: `{len(collisions)}` (`{', '.join(collisions)}`)")
-    lines.append("- collision rule: `wequant` keeps canonical `fetch_*`; WBData keeps `wb_fetch_*` alias")
+    lines.append(f"- mongo_fetch functions: `{wq_count}`")
+    lines.append(f"- mysql_fetch functions: `{wb_count}`")
+    if collisions:
+        lines.append(f"- collisions: `{len(collisions)}` (`{', '.join(collisions)}`)")
+    else:
+        lines.append("- collisions: `0`")
+    lines.append("- collision rule: `mongo_fetch` keeps canonical `fetch_*`; mysql keeps `wb_fetch_*` alias")
     lines.append("")
     lines.append("## Review Status Values")
     lines.append("- `accepted`: use proposed name as-is")
@@ -213,6 +226,7 @@ def render_rename_matrix_markdown(rows: Iterable[FetchMapping] | None = None) ->
     lines.append("| source | old_name | proposed_name | domain | collision | keep_alias | status | notes |")
     lines.append("|---|---|---|---|---|---|---|---|")
     for r in items:
+        row_collision = "yes" if _snake_case(r.old_name) in collision_keys else "no"
         lines.append(
             "| "
             + " | ".join(
@@ -221,7 +235,7 @@ def render_rename_matrix_markdown(rows: Iterable[FetchMapping] | None = None) ->
                     f"`{r.old_name}`",
                     f"`{r.proposed_name}`",
                     r.domain,
-                    "yes" if r.collision else "no",
+                    row_collision,
                     "yes" if r.keep_alias else "no",
                     r.status,
                     f"{r.notes}; source=`{r.source_file}`",

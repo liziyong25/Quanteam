@@ -77,12 +77,20 @@ def _templates() -> Jinja2Templates:
 TEMPLATES = _templates()
 PROMPT_FILE_RE = re.compile(r"^prompt_v([1-9][0-9]*)\.md$")
 PROMPT_VERSION_RE = re.compile(r"^v([1-9][0-9]*)$")
+PLAYBOOK_SECTION0_RE = re.compile(r"^##\s*0(?:\s|[.:：])")
+PLAYBOOK_SECTION1_RE = re.compile(r"^##\s*1(?:\s|[.:：])")
+PLAYBOOK_SECTION2_RE = re.compile(r"^##\s*2(?:\s|[.:：])")
 PLAYBOOK_SECTION3_RE = re.compile(r"^##\s*3(?:\s|[.:：])")
+PLAYBOOK_SECTION4_RE = re.compile(r"^##\s*4(?:\s|[.:：])")
+PLAYBOOK_SECTION5_RE = re.compile(r"^##\s*5(?:\s|[.:：])")
+PLAYBOOK_SUBSECTION01_RE = re.compile(r"^###\s*0\.1(?:\s|[.:：])")
+PLAYBOOK_SUBSECTION02_RE = re.compile(r"^###\s*0\.2(?:\s|[.:：])")
 PLAYBOOK_PHASE_HEADER_RE = re.compile(r"^###\s*Phase[\u2010-\u2015-](\d+)\s*[：:]\s*(.+)$", re.IGNORECASE)
 WHOLE_VIEW_SECTION3_RE = re.compile(r"^##\s*3(?:\s|[.:：])")
 WHOLE_VIEW_PHASE_HEADER_RE = re.compile(r"^###\s*Phase[\u2010-\u2015-](\d+)\s*[：:]\s*(.+)$", re.IGNORECASE)
 WHOLE_VIEW_REVIEW_POINT_RE = re.compile(r"^审阅点\s*#\s*(\d+)(?:（UI）)?\s*[：:]\s*(.+)$")
 WHOLE_VIEW_SECTION4_RE = re.compile(r"^##\s*4(?:\s|[.:：])")
+WHOLE_VIEW_SECTION5_RE = re.compile(r"^##\s*5(?:\s|[.:：])")
 WHOLE_VIEW_OBJECT_HEADER_RE = re.compile(r"^###\s*4\.(\d+)\s*(.+)$")
 WHOLE_VIEW_SECTION6_RE = re.compile(r"^##\s*6(?:\s|[.:：])")
 WHOLE_VIEW_MODULE_HEADER_RE = re.compile(r"^###\s*6\.(\d+)\s*(.+)$")
@@ -90,6 +98,13 @@ WHOLE_VIEW_SECTION7_RE = re.compile(r"^##\s*7(?:\s|[.:：])")
 WHOLE_VIEW_SECTION71_RE = re.compile(r"^###\s*7\.1(?:\s|[.:：])")
 WHOLE_VIEW_SECTION72_RE = re.compile(r"^###\s*7\.2(?:\s|[.:：])")
 WHOLE_VIEW_SECTION8_RE = re.compile(r"^##\s*8(?:\s|[.:：])")
+WHOLE_VIEW_SECTION9_RE = re.compile(r"^##\s*9(?:\s|[.:：])")
+WHOLE_VIEW_SECTION10_RE = re.compile(r"^##\s*10(?:\s|[.:：])")
+WHOLE_VIEW_SECTION11_RE = re.compile(r"^##\s*11(?:\s|[.:：])")
+WHOLE_VIEW_SECTION0_RE = re.compile(r"^##\s*0(?:\s|[.:：])")
+WHOLE_VIEW_SECTION2_RE = re.compile(r"^##\s*2(?:\s|[.:：])")
+WHOLE_VIEW_PLANE_ROW_RE = re.compile(r"^\*\*([^*]+)\*\*\s*[：:]\s*(.+)$")
+WHOLE_VIEW_ROADMAP_MILESTONE_RE = re.compile(r"^v([0-9]+(?:\.[0-9]+)?)\s*[：:]\s*(.+)$", re.IGNORECASE)
 WHOLE_VIEW_SECTION64_RE = re.compile(r"^###\s*6\.4(?:\s|[.:：])")
 WHOLE_VIEW_PHASE_TO_SSOT_CHECKPOINT: dict[int, str] = {
     0: "blueprint",
@@ -1039,6 +1054,146 @@ def _extract_whole_view_required_contracts(path: Path) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda r: int(r.get("index") or 0))
 
 
+def _extract_whole_view_contracts_principles(path: Path) -> dict[str, Any]:
+    default_section = "5. Contracts（Schema）体系：让 LLM/Codex 能产、Kernel 能编译、UI 能渲染"
+    default_contracts_section = "5.1 必须落地的 Contracts（v1）"
+    if not path.is_file():
+        return {
+            "section": default_section,
+            "contracts_section": default_contracts_section,
+            "principle_rows": [],
+            "contract_rows": [],
+            "trace_boundary_note": "",
+        }
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    in_section = False
+    in_contracts = False
+    section = default_section
+    contracts_section = default_contracts_section
+    principle_rows: list[dict[str, Any]] = []
+    contract_rows: list[dict[str, Any]] = []
+    trace_boundary_note = ""
+
+    for idx, raw in enumerate(lines, start=1):
+        line = raw.strip()
+        if line.startswith("## "):
+            if in_section:
+                break
+            if WHOLE_VIEW_SECTION5_RE.match(line) and (
+                ("Contract" in line) or ("Schema" in line) or ("体系" in line)
+            ):
+                in_section = True
+                section = _markdown_clean(line[3:]) or default_section
+            continue
+        if (not in_section) or (not line) or (line == "---"):
+            continue
+
+        if line.startswith("### "):
+            if ("5.1" in line) and ("Contract" in line):
+                in_contracts = True
+                contracts_section = _markdown_clean(line[4:]) or default_contracts_section
+                continue
+            if in_contracts:
+                break
+
+        if line.startswith(">"):
+            quote = _markdown_clean(line.lstrip(">").strip())
+            if not quote:
+                continue
+            if ("原则" in quote) and (not principle_rows):
+                principle_blob = quote
+                for sep in ("：", ":"):
+                    if sep in principle_blob:
+                        principle_blob = principle_blob.split(sep, 1)[1].strip()
+                        break
+                principle_parts = [
+                    _markdown_clean(x).strip("。.;；")
+                    for x in principle_blob.split("+")
+                ]
+                principle_rows = [
+                    {
+                        "index": i + 1,
+                        "principle": part,
+                        "source_line": idx,
+                    }
+                    for i, part in enumerate(principle_parts)
+                    if part
+                ]
+                continue
+            if (
+                ("trace" in quote.lower())
+                and ("计划" in quote)
+                and ("结果" in quote)
+                and (not trace_boundary_note)
+            ):
+                note = quote
+                for sep in ("：", ":"):
+                    if sep not in note:
+                        continue
+                    left, right = note.split(sep, 1)
+                    if "说明" in left:
+                        note = right.strip()
+                    break
+                trace_boundary_note = note
+                continue
+
+        if not in_contracts:
+            continue
+        m = re.match(r"^(\d+)\)\s*([A-Za-z0-9_.-]+\.json)\s*(.*)$", line)
+        if not m:
+            continue
+        detail = _markdown_clean(m.group(3)).strip(" -:;,.()[]{}")
+        detail = detail.strip("（）")
+        contract_rows.append(
+            {
+                "index": int(m.group(1)),
+                "contract_file": m.group(2),
+                "detail": detail,
+                "source_line": idx,
+            }
+        )
+
+    contract_rows.sort(key=lambda r: int(r.get("index") or 0))
+    return {
+        "section": section,
+        "contracts_section": contracts_section,
+        "principle_rows": principle_rows,
+        "contract_rows": contract_rows,
+        "trace_boundary_note": trace_boundary_note,
+    }
+
+
+def _contracts_principles_context() -> dict[str, Any]:
+    whole_view_path = _whole_view_framework_root_doc()
+    whole_view = _extract_whole_view_contracts_principles(whole_view_path)
+    principle_rows = [x for x in (whole_view.get("principle_rows") or []) if isinstance(x, dict)]
+    contract_rows = [x for x in (whole_view.get("contract_rows") or []) if isinstance(x, dict)]
+    trace_boundary_note = str(whole_view.get("trace_boundary_note") or "").strip()
+
+    return {
+        "title": "Whole View Contracts Principles and Trace Boundary Evidence",
+        "source_files": [
+            {
+                "path": _repo_rel(whole_view_path),
+                "exists": whole_view_path.is_file(),
+                "section": str(whole_view.get("section") or "5. Contracts（Schema）体系"),
+            },
+            {
+                "path": _repo_rel(whole_view_path),
+                "exists": whole_view_path.is_file(),
+                "section": str(whole_view.get("contracts_section") or "5.1 必须落地的 Contracts（v1）"),
+            },
+        ],
+        "summary": {
+            "principle_total": len(principle_rows),
+            "required_contract_total": len(contract_rows),
+            "trace_boundary_note_present": bool(trace_boundary_note),
+        },
+        "whole_view": whole_view,
+    }
+
+
 def _sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
@@ -1920,6 +2075,91 @@ def _extract_whole_view_diagnostics_promotion(path: Path) -> dict[str, Any]:
     }
 
 
+def _extract_whole_view_codex_role_boundary(path: Path) -> dict[str, Any]:
+    section_default = "7. Codex CLI 的定位：探索者 + 工具工，不是裁判"
+    temporary_default = "7.1 临时诊断（Ephemeral Diagnostics）"
+    promotion_default = "7.2 晋升机制（Promote → Gate/Library）"
+    if not path.is_file():
+        return {
+            "section": section_default,
+            "role_positioning": "",
+            "temporary_section": temporary_default,
+            "promotion_section": promotion_default,
+            "temporary_rows": [],
+            "promotion_rows": [],
+            "governance_note": "",
+        }
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    in_section = False
+    section = section_default
+    role_positioning = ""
+    temporary_section = temporary_default
+    promotion_section = promotion_default
+    active_bucket = ""
+    temporary_rows: list[dict[str, Any]] = []
+    promotion_rows: list[dict[str, Any]] = []
+    governance_note = ""
+
+    for idx, raw in enumerate(lines, start=1):
+        line = raw.strip()
+        if line.startswith("## "):
+            if in_section:
+                break
+            if WHOLE_VIEW_SECTION7_RE.match(line) and (
+                ("Codex CLI" in line) or ("探索者" in line) or ("裁判" in line)
+            ):
+                in_section = True
+                section = _markdown_clean(line[3:]) or section_default
+            continue
+        if not in_section:
+            continue
+
+        if line.startswith("### "):
+            if WHOLE_VIEW_SECTION71_RE.match(line):
+                active_bucket = "temporary"
+                temporary_section = _markdown_clean(line[4:]) or temporary_default
+                continue
+            if WHOLE_VIEW_SECTION72_RE.match(line):
+                active_bucket = "promotion"
+                promotion_section = _markdown_clean(line[4:]) or promotion_default
+                continue
+
+        if line.startswith("- "):
+            item = _markdown_clean(line[2:])
+            if not item:
+                continue
+
+            row = {"item": item, "source_line": idx}
+            if active_bucket == "temporary":
+                temporary_rows.append(row)
+            elif active_bucket == "promotion":
+                promotion_rows.append(row)
+                if (not governance_note) and (
+                    ("治理流程" in item) or ("gate_suite" in item.lower()) or ("版本化" in item)
+                ):
+                    governance_note = item
+            continue
+
+        if not active_bucket:
+            cleaned = _markdown_clean(line)
+            if cleaned and not role_positioning:
+                role_positioning = cleaned
+
+    if (not governance_note) and promotion_rows:
+        governance_note = str(promotion_rows[-1].get("item") or "")
+
+    return {
+        "section": section,
+        "role_positioning": role_positioning,
+        "temporary_section": temporary_section,
+        "promotion_section": promotion_section,
+        "temporary_rows": temporary_rows,
+        "promotion_rows": promotion_rows,
+        "governance_note": governance_note,
+    }
+
+
 def _extract_playbook_phase12_evidence(path: Path) -> dict[str, Any]:
     section_default = "Phase-12：Diagnostics（Codex 提出验证方法）+ 晋升 Gate"
     if not path.is_file():
@@ -2091,6 +2331,33 @@ def _diagnostics_promotion_context() -> dict[str, Any]:
         },
         "g42_expected_artifacts": g42_expected_artifacts,
         "g42_acceptance_commands": g42_acceptance_commands,
+    }
+
+
+def _codex_role_boundary_context() -> dict[str, Any]:
+    whole_view_path = _whole_view_framework_root_doc()
+    whole_view = _extract_whole_view_codex_role_boundary(whole_view_path)
+    temporary_rows = [x for x in (whole_view.get("temporary_rows") or []) if isinstance(x, dict)]
+    promotion_rows = [x for x in (whole_view.get("promotion_rows") or []) if isinstance(x, dict)]
+    role_positioning = str(whole_view.get("role_positioning") or "")
+    governance_note = str(whole_view.get("governance_note") or "")
+
+    return {
+        "title": "Whole View Codex Role Boundary",
+        "source_files": [
+            {
+                "path": _repo_rel(whole_view_path),
+                "exists": whole_view_path.is_file(),
+                "section": str(whole_view.get("section") or "7. Codex CLI 的定位：探索者 + 工具工，不是裁判"),
+            }
+        ],
+        "summary": {
+            "role_positioning_present": int(bool(role_positioning)),
+            "temporary_row_total": len(temporary_rows),
+            "promotion_row_total": len(promotion_rows),
+            "governance_note_present": int(bool(governance_note)),
+        },
+        "whole_view": whole_view,
     }
 
 
@@ -2411,6 +2678,774 @@ def _ia_coverage_context() -> dict[str, Any]:
         },
         "checklist_rows": checklist_rows,
         "route_evidence_rows": route_evidence_rows,
+    }
+
+
+def _ui_coverage_matrix_context() -> dict[str, Any]:
+    ssot_path = _repo_root() / "docs" / "12_workflows" / "agents_ui_ssot_v1.yaml"
+    ui_routes_path = _repo_root() / "src" / "quant_eam" / "api" / "ui_routes.py"
+    whole_view_path = _find_overview_doc("Whole View Framework.md")
+    whole_view_section, checklist = _extract_whole_view_ia_checklist(whole_view_path)
+    route_method_map = _ui_route_methods_map()
+    ssot_doc = _load_yaml_map(ssot_path)
+
+    goal_rows = ssot_doc.get("goal_checklist") if isinstance(ssot_doc.get("goal_checklist"), list) else []
+    g43: dict[str, Any] = {}
+    for row in goal_rows:
+        if isinstance(row, dict) and str(row.get("id") or "").strip() == "G43":
+            g43 = row
+            break
+
+    dispatch_doc = ssot_doc.get("phase_dispatch_plan_v2") if isinstance(ssot_doc.get("phase_dispatch_plan_v2"), dict) else {}
+    dispatch_rows = dispatch_doc.get("phases") if isinstance(dispatch_doc.get("phases"), list) else []
+    phase63_dispatch: dict[str, Any] = {}
+    for row in dispatch_rows:
+        if not isinstance(row, dict):
+            continue
+        phase_id = str(row.get("phase_id") or "").strip()
+        goal_id = str(row.get("goal_id") or "").strip()
+        if (phase_id == "phase_63") or (goal_id == "G43"):
+            phase63_dispatch = row
+            break
+
+    exception_rows = (
+        ssot_doc.get("autopilot_stop_condition_exceptions_v1")
+        if isinstance(ssot_doc.get("autopilot_stop_condition_exceptions_v1"), list)
+        else []
+    )
+    g43_exception: dict[str, Any] = {}
+    for row in exception_rows:
+        if isinstance(row, dict) and str(row.get("exception_id") or "").strip() == "g43_ui_coverage_matrix_scope":
+            g43_exception = row
+            break
+    preauth = g43_exception.get("preauthorized_scope") if isinstance(g43_exception.get("preauthorized_scope"), dict) else {}
+
+    g43_expected_artifacts = [str(x) for x in (g43.get("expected_artifacts") or []) if isinstance(x, str)]
+    g43_acceptance_commands = [str(x) for x in (g43.get("acceptance_commands") or []) if isinstance(x, str)]
+
+    page_rows: list[dict[str, Any]] = []
+    mapped_route_rows: list[dict[str, Any]] = []
+    mapped_route_seen: set[str] = set()
+    mapped_route_binding_total = 0
+    covered_page_total = 0
+    partial_page_total = 0
+    missing_page_total = 0
+
+    for item in checklist:
+        idx = int(item.get("index") or 0)
+        mapping_paths = IA_CHECKLIST_ROUTE_BINDINGS.get(idx, [])
+        mapped_route_binding_total += len(mapping_paths)
+
+        route_rows: list[dict[str, Any]] = []
+        present_route_total = 0
+        read_only_route_total = 0
+
+        for route_path in mapping_paths:
+            meta = IA_ROUTE_VIEW_CATALOG.get(route_path, {})
+            methods = route_method_map.get(route_path, [])
+            flags = _ui_route_method_flags(methods)
+            route_exists = bool(methods)
+            if route_exists:
+                present_route_total += 1
+            if flags["is_read_only"]:
+                read_only_route_total += 1
+
+            methods_label = ",".join(methods) if methods else "n/a"
+            status = "read-only" if flags["is_read_only"] else ("present" if route_exists else "missing")
+            route_row = {
+                "path": route_path,
+                "view_name": str(meta.get("view_name") or "n/a"),
+                "template": str(meta.get("template") or "n/a"),
+                "methods": methods,
+                "methods_label": methods_label,
+                "route_exists": route_exists,
+                "is_read_only": flags["is_read_only"],
+                "has_write": flags["has_write"],
+                "status": status,
+            }
+            route_rows.append(route_row)
+            if route_path not in mapped_route_seen:
+                mapped_route_seen.add(route_path)
+                mapped_route_rows.append(route_row)
+
+        required_route_total = len(mapping_paths)
+        if required_route_total > 0 and read_only_route_total == required_route_total:
+            coverage_status = "covered"
+            covered_page_total += 1
+        elif present_route_total > 0:
+            coverage_status = "partial"
+            partial_page_total += 1
+        else:
+            coverage_status = "missing"
+            missing_page_total += 1
+
+        page_rows.append(
+            {
+                "index": idx,
+                "item": str(item.get("item") or ""),
+                "mapping_note": IA_CHECKLIST_MAPPING_NOTES.get(idx, ""),
+                "required_route_total": required_route_total,
+                "present_route_total": present_route_total,
+                "read_only_route_total": read_only_route_total,
+                "coverage_status": coverage_status,
+                "route_rows": route_rows,
+            }
+        )
+
+    all_ui_route_rows: list[dict[str, Any]] = []
+    for route_path in sorted(route_method_map):
+        methods = route_method_map.get(route_path, [])
+        flags = _ui_route_method_flags(methods)
+        meta = IA_ROUTE_VIEW_CATALOG.get(route_path, {})
+        all_ui_route_rows.append(
+            {
+                "path": route_path,
+                "view_name": str(meta.get("view_name") or "n/a"),
+                "template": str(meta.get("template") or "n/a"),
+                "methods": methods,
+                "methods_label": ",".join(methods) if methods else "n/a",
+                "route_exists": True,
+                "is_read_only": flags["is_read_only"],
+                "has_write": flags["has_write"],
+                "mapped_to_section8": route_path in mapped_route_seen,
+                "status": "read-only" if flags["is_read_only"] else ("write-enabled" if flags["has_write"] else "present"),
+            }
+        )
+
+    mapped_route_total = len(mapped_route_rows)
+    mapped_present_route_total = len([row for row in mapped_route_rows if bool(row.get("route_exists"))])
+    mapped_read_only_route_total = len([row for row in mapped_route_rows if bool(row.get("is_read_only"))])
+    all_ui_route_total = len(all_ui_route_rows)
+    all_ui_route_read_only_total = len([row for row in all_ui_route_rows if bool(row.get("is_read_only"))])
+    checklist_total = len(page_rows)
+    coverage_ratio = f"{covered_page_total}/{checklist_total}" if checklist_total > 0 else "n/a"
+    required_guards = [str(x) for x in (preauth.get("required_guards") or []) if isinstance(x, str)]
+
+    return {
+        "title": "Whole View UI Eight-Page Coverage Matrix",
+        "source_files": [
+            {
+                "path": _repo_rel(whole_view_path),
+                "exists": whole_view_path.is_file(),
+                "section": whole_view_section,
+            },
+            {
+                "path": _repo_rel(ui_routes_path),
+                "exists": ui_routes_path.is_file(),
+                "section": "IA_CHECKLIST_ROUTE_BINDINGS + IA_ROUTE_VIEW_CATALOG + router(/ui*)",
+            },
+            {
+                "path": _repo_rel(ssot_path),
+                "exists": ssot_path.is_file(),
+                "section": "goal_checklist(G43) + phase_dispatch_plan_v2 + g43_ui_coverage_matrix_scope",
+            },
+        ],
+        "summary": {
+            "checklist_total": checklist_total,
+            "covered_page_total": covered_page_total,
+            "partial_page_total": partial_page_total,
+            "missing_page_total": missing_page_total,
+            "mapped_route_binding_total": mapped_route_binding_total,
+            "mapped_route_total": mapped_route_total,
+            "mapped_present_route_total": mapped_present_route_total,
+            "mapped_read_only_route_total": mapped_read_only_route_total,
+            "all_ui_route_total": all_ui_route_total,
+            "all_ui_route_read_only_total": all_ui_route_read_only_total,
+            "required_guard_total": len(required_guards),
+            "expected_artifact_total": len(g43_expected_artifacts),
+            "acceptance_command_total": len(g43_acceptance_commands),
+            "coverage_ratio": coverage_ratio,
+        },
+        "g43": {
+            "id": str(g43.get("id") or ""),
+            "title": str(g43.get("title") or ""),
+            "status_now": str(g43.get("status_now") or ""),
+            "ui_path": str(g43.get("ui_path") or ""),
+            "depends_on": [str(x) for x in (g43.get("depends_on") or []) if isinstance(x, str)],
+            "expected_state_change": str(g43.get("expected_state_change") or ""),
+        },
+        "dispatch": {
+            "status_now": str(dispatch_doc.get("status_now") or ""),
+            "mode": str(dispatch_doc.get("mode") or ""),
+            "phase_id": str(phase63_dispatch.get("phase_id") or "phase_63"),
+            "goal_id": str(phase63_dispatch.get("goal_id") or "G43"),
+            "title": str(phase63_dispatch.get("title") or ""),
+        },
+        "g43_exception": {
+            "exception_id": str(g43_exception.get("exception_id") or ""),
+            "allowed_route_prefixes": [str(x) for x in (preauth.get("allowed_route_prefixes") or []) if isinstance(x, str)],
+            "allowed_code_paths": [str(x) for x in (preauth.get("allowed_code_paths") or []) if isinstance(x, str)],
+            "still_forbidden": [str(x) for x in (preauth.get("still_forbidden") or []) if isinstance(x, str)],
+            "required_guards": required_guards,
+        },
+        "page_rows": page_rows,
+        "mapped_route_rows": mapped_route_rows,
+        "all_ui_route_rows": all_ui_route_rows,
+        "g43_expected_artifacts": g43_expected_artifacts,
+        "g43_acceptance_commands": g43_acceptance_commands,
+    }
+
+
+def _extract_whole_view_runtime_topology(path: Path) -> dict[str, Any]:
+    default_section = "9. 仓库与运行形态（Linux + Docker + Python）"
+    default_intro = "推荐仓库结构"
+    if not path.is_file():
+        return {
+            "section": default_section,
+            "intro": default_intro,
+            "topology_rows": [],
+            "service_rows": [],
+        }
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    in_section = False
+    section = default_section
+    intro = default_intro
+    topology_rows: list[dict[str, Any]] = []
+    service_markers = (
+        "dockerfile.api",
+        "dockerfile.worker",
+        "docker-compose.yml",
+        "ui/server",
+    )
+
+    for idx, raw in enumerate(lines, start=1):
+        line = raw.strip()
+        if line.startswith("## "):
+            if in_section:
+                break
+            if WHOLE_VIEW_SECTION9_RE.match(line) and (("仓库" in line) or ("运行形态" in line) or ("Docker" in line)):
+                in_section = True
+                section = _markdown_clean(line[3:]) or default_section
+            continue
+        if (not in_section) or (not line) or (line == "---"):
+            continue
+
+        cleaned = _markdown_clean(line)
+        if not cleaned:
+            continue
+        if cleaned.endswith("：") and ("推荐仓库结构" in cleaned):
+            intro = cleaned.rstrip("：").rstrip(":") or default_intro
+            continue
+
+        normalized = cleaned.rstrip("/")
+        entry_kind = "directory" if cleaned.endswith("/") else "file"
+        lower = cleaned.lower()
+        is_service_evidence = any(marker in lower for marker in service_markers)
+
+        topology_rows.append(
+            {
+                "index": len(topology_rows) + 1,
+                "entry": cleaned,
+                "entry_kind": entry_kind,
+                "normalized": normalized,
+                "source_line": idx,
+                "is_service_evidence": is_service_evidence,
+            }
+        )
+
+    service_rows = [row for row in topology_rows if bool(row.get("is_service_evidence"))]
+    return {
+        "section": section,
+        "intro": intro,
+        "topology_rows": topology_rows,
+        "service_rows": service_rows,
+    }
+
+
+def _extract_playbook_section1_runtime_stack(path: Path) -> dict[str, Any]:
+    section_default = "1. 技术栈建议（可替换，但先固定）"
+    foundation_default = "1.1 基础"
+    service_default = "1.2 服务（MVP）"
+    if not path.is_file():
+        return {
+            "section": section_default,
+            "foundation_section": foundation_default,
+            "service_section": service_default,
+            "foundation_rows": [],
+            "service_rows": [],
+        }
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    in_section = False
+    section = section_default
+    foundation_section = foundation_default
+    service_section = service_default
+    active_bucket = ""
+    foundation_rows: list[dict[str, Any]] = []
+    service_rows: list[dict[str, Any]] = []
+
+    for idx, raw in enumerate(lines, start=1):
+        line = raw.strip()
+        if line.startswith("## "):
+            if in_section:
+                break
+            if PLAYBOOK_SECTION1_RE.match(line) and (("技术栈" in line) or ("stack" in line.lower())):
+                in_section = True
+                section = _markdown_clean(line[3:]) or section_default
+            continue
+        if not in_section:
+            continue
+
+        if line.startswith("### "):
+            header = _markdown_clean(line[4:])
+            if line.startswith("### 1.1") or header.startswith("1.1"):
+                active_bucket = "foundation"
+                foundation_section = header or foundation_default
+                continue
+            if line.startswith("### 1.2") or header.startswith("1.2"):
+                active_bucket = "service"
+                service_section = header or service_default
+                continue
+            active_bucket = ""
+            continue
+
+        if not line.startswith("- "):
+            continue
+        item = _markdown_clean(line[2:])
+        if not item:
+            continue
+        row = {"item": item, "source_line": idx}
+        if active_bucket == "foundation":
+            foundation_rows.append(row)
+        elif active_bucket == "service":
+            service_rows.append(row)
+
+    return {
+        "section": section,
+        "foundation_section": foundation_section,
+        "service_section": service_section,
+        "foundation_rows": foundation_rows,
+        "service_rows": service_rows,
+    }
+
+
+def _extract_playbook_runtime_phase_context(path: Path) -> tuple[str, list[dict[str, Any]]]:
+    section, rows = _extract_playbook_phase_flow(path)
+    runtime_keywords = ("docker", "compose", "api", "worker", "ui", "service", "orchestrator")
+    runtime_rows: list[dict[str, Any]] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        haystack_parts = [
+            str(row.get("title") or ""),
+            *[str(x) for x in (row.get("goal_rows") or []) if isinstance(x, str)],
+            *[str(x) for x in (row.get("acceptance_rows") or []) if isinstance(x, str)],
+            *[str(x) for x in (row.get("flow_rows") or []) if isinstance(x, str)],
+        ]
+        haystack = " ".join(haystack_parts).lower()
+        matched_keywords = [kw for kw in runtime_keywords if kw in haystack]
+        if not matched_keywords:
+            continue
+        runtime_rows.append(
+            {
+                "phase_no": int(row.get("phase_no") or 0),
+                "phase_label": str(row.get("phase_label") or ""),
+                "title": str(row.get("title") or ""),
+                "source_line": int(row.get("source_line") or 0),
+                "matched_keywords": matched_keywords,
+                "goal_rows": [str(x) for x in (row.get("goal_rows") or []) if isinstance(x, str)],
+                "acceptance_rows": [str(x) for x in (row.get("acceptance_rows") or []) if isinstance(x, str)],
+                "flow_rows": [str(x) for x in (row.get("flow_rows") or []) if isinstance(x, str)],
+            }
+        )
+    return section, runtime_rows
+
+
+def _runtime_topology_context() -> dict[str, Any]:
+    ssot_path = _repo_root() / "docs" / "12_workflows" / "agents_ui_ssot_v1.yaml"
+    whole_view_path = _find_overview_doc("Whole View Framework.md")
+    playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
+
+    whole_view = _extract_whole_view_runtime_topology(whole_view_path)
+    playbook_section1 = _extract_playbook_section1_runtime_stack(playbook_path)
+    playbook_section3, playbook_phase_rows = _extract_playbook_runtime_phase_context(playbook_path)
+    ssot_doc = _load_yaml_map(ssot_path)
+
+    goal_rows = ssot_doc.get("goal_checklist") if isinstance(ssot_doc.get("goal_checklist"), list) else []
+    g44: dict[str, Any] = {}
+    for row in goal_rows:
+        if isinstance(row, dict) and str(row.get("id") or "").strip() == "G44":
+            g44 = row
+            break
+
+    dispatch_doc = ssot_doc.get("phase_dispatch_plan_v2") if isinstance(ssot_doc.get("phase_dispatch_plan_v2"), dict) else {}
+    dispatch_rows = dispatch_doc.get("phases") if isinstance(dispatch_doc.get("phases"), list) else []
+    phase64_dispatch: dict[str, Any] = {}
+    for row in dispatch_rows:
+        if not isinstance(row, dict):
+            continue
+        phase_id = str(row.get("phase_id") or "").strip()
+        goal_id = str(row.get("goal_id") or "").strip()
+        if (phase_id == "phase_64") or (goal_id == "G44"):
+            phase64_dispatch = row
+            break
+
+    exception_rows = (
+        ssot_doc.get("autopilot_stop_condition_exceptions_v1")
+        if isinstance(ssot_doc.get("autopilot_stop_condition_exceptions_v1"), list)
+        else []
+    )
+    g44_exception: dict[str, Any] = {}
+    for row in exception_rows:
+        if isinstance(row, dict) and str(row.get("exception_id") or "").strip() == "g44_runtime_topology_ui_scope":
+            g44_exception = row
+            break
+    preauth = g44_exception.get("preauthorized_scope") if isinstance(g44_exception.get("preauthorized_scope"), dict) else {}
+    required_guards = [str(x) for x in (preauth.get("required_guards") or []) if isinstance(x, str)]
+
+    ui_requirements = ssot_doc.get("ui_requirements_v1") if isinstance(ssot_doc.get("ui_requirements_v1"), dict) else {}
+    ports_doc = ui_requirements.get("ui_ports") if isinstance(ui_requirements.get("ui_ports"), dict) else {}
+    ui_port_rows = [
+        {"name": str(k), "value": str(v)}
+        for k, v in sorted(ports_doc.items(), key=lambda kv: str(kv[0]))
+        if str(k).strip()
+    ]
+
+    runtime_pref = ssot_doc.get("runtime_preferences_v1") if isinstance(ssot_doc.get("runtime_preferences_v1"), dict) else {}
+    min_set = (
+        runtime_pref.get("acceptance_evidence_min_set")
+        if isinstance(runtime_pref.get("acceptance_evidence_min_set"), dict)
+        else {}
+    )
+    runtime_required_commands = [str(x) for x in (min_set.get("required_commands") or []) if isinstance(x, str)]
+
+    g44_expected_artifacts = [str(x) for x in (g44.get("expected_artifacts") or []) if isinstance(x, str)]
+    g44_acceptance_commands = [str(x) for x in (g44.get("acceptance_commands") or []) if isinstance(x, str)]
+
+    return {
+        "title": "Whole View Runtime Topology and Service Ports",
+        "source_files": [
+            {
+                "path": _repo_rel(whole_view_path),
+                "exists": whole_view_path.is_file(),
+                "section": str(whole_view.get("section") or "9. 仓库与运行形态（Linux + Docker + Python）"),
+            },
+            {
+                "path": _repo_rel(playbook_path),
+                "exists": playbook_path.is_file(),
+                "section": "1. 技术栈建议（可替换，但先固定） + 3. Phase 列表（推荐施工顺序）",
+            },
+            {
+                "path": _repo_rel(ssot_path),
+                "exists": ssot_path.is_file(),
+                "section": "goal_checklist(G44) + phase_dispatch_plan_v2 + g44_runtime_topology_ui_scope + ui_requirements_v1.ui_ports",
+            },
+        ],
+        "summary": {
+            "topology_entry_total": len([x for x in (whole_view.get("topology_rows") or []) if isinstance(x, dict)]),
+            "whole_view_service_entry_total": len([x for x in (whole_view.get("service_rows") or []) if isinstance(x, dict)]),
+            "playbook_foundation_total": len([x for x in (playbook_section1.get("foundation_rows") or []) if isinstance(x, dict)]),
+            "playbook_service_total": len([x for x in (playbook_section1.get("service_rows") or []) if isinstance(x, dict)]),
+            "playbook_runtime_phase_total": len(playbook_phase_rows),
+            "ui_port_total": len(ui_port_rows),
+            "required_guard_total": len(required_guards),
+            "expected_artifact_total": len(g44_expected_artifacts),
+            "acceptance_command_total": len(g44_acceptance_commands),
+            "runtime_required_command_total": len(runtime_required_commands),
+        },
+        "g44": {
+            "id": str(g44.get("id") or ""),
+            "title": str(g44.get("title") or ""),
+            "status_now": str(g44.get("status_now") or ""),
+            "ui_path": str(g44.get("ui_path") or ""),
+            "depends_on": [str(x) for x in (g44.get("depends_on") or []) if isinstance(x, str)],
+            "expected_state_change": str(g44.get("expected_state_change") or ""),
+        },
+        "dispatch": {
+            "status_now": str(dispatch_doc.get("status_now") or ""),
+            "mode": str(dispatch_doc.get("mode") or ""),
+            "phase_id": str(phase64_dispatch.get("phase_id") or "phase_64"),
+            "goal_id": str(phase64_dispatch.get("goal_id") or "G44"),
+            "title": str(phase64_dispatch.get("title") or ""),
+        },
+        "whole_view": whole_view,
+        "playbook_section1": playbook_section1,
+        "playbook_section3": playbook_section3,
+        "playbook_phase_rows": playbook_phase_rows,
+        "g44_exception": {
+            "exception_id": str(g44_exception.get("exception_id") or ""),
+            "allowed_route_prefixes": [str(x) for x in (preauth.get("allowed_route_prefixes") or []) if isinstance(x, str)],
+            "allowed_code_paths": [str(x) for x in (preauth.get("allowed_code_paths") or []) if isinstance(x, str)],
+            "still_forbidden": [str(x) for x in (preauth.get("still_forbidden") or []) if isinstance(x, str)],
+            "required_guards": required_guards,
+        },
+        "ui_port_rows": ui_port_rows,
+        "runtime_required_commands": runtime_required_commands,
+        "g44_expected_artifacts": g44_expected_artifacts,
+        "g44_acceptance_commands": g44_acceptance_commands,
+    }
+
+
+def _extract_whole_view_preflight_checklist(path: Path) -> dict[str, Any]:
+    default_section = "10. “不跑偏”检查清单（每次新增功能前先对齐）"
+    if not path.is_file():
+        return {
+            "section": default_section,
+            "checklist_rows": [],
+        }
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    in_section = False
+    section = default_section
+    checklist_rows: list[dict[str, Any]] = []
+
+    for idx, raw in enumerate(lines, start=1):
+        line = raw.strip()
+        if line.startswith("## "):
+            if in_section:
+                break
+            if WHOLE_VIEW_SECTION10_RE.match(line) and (
+                ("不跑偏" in line)
+                or ("检查清单" in line)
+                or ("anti-drift" in line.lower())
+                or ("preflight" in line.lower())
+            ):
+                in_section = True
+                section = _markdown_clean(line[3:]) or default_section
+            continue
+        if (not in_section) or (not line) or (line == "---"):
+            continue
+        if not line.startswith("- "):
+            continue
+
+        item = _markdown_clean(line[2:])
+        if not item:
+            continue
+        checklist_rows.append(
+            {
+                "index": len(checklist_rows) + 1,
+                "item": item,
+                "source_line": idx,
+            }
+        )
+
+    return {
+        "section": section,
+        "checklist_rows": checklist_rows,
+    }
+
+
+def _preflight_checklist_context() -> dict[str, Any]:
+    whole_view_path = _find_overview_doc("Whole View Framework.md")
+    whole_view = _extract_whole_view_preflight_checklist(whole_view_path)
+    checklist_rows = [x for x in (whole_view.get("checklist_rows") or []) if isinstance(x, dict)]
+
+    return {
+        "title": "Whole View Anti-Drift Preflight Checklist",
+        "source_files": [
+            {
+                "path": _repo_rel(whole_view_path),
+                "exists": whole_view_path.is_file(),
+                "section": str(whole_view.get("section") or "10. “不跑偏”检查清单（每次新增功能前先对齐）"),
+            },
+        ],
+        "summary": {
+            "checklist_total": len(checklist_rows),
+        },
+        "whole_view": whole_view,
+    }
+
+
+def _extract_whole_view_version_roadmap(path: Path) -> dict[str, Any]:
+    default_section = "11. 版本路线（建议）"
+    if not path.is_file():
+        return {
+            "section": default_section,
+            "milestone_rows": [],
+        }
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    in_section = False
+    section = default_section
+    milestone_rows: list[dict[str, Any]] = []
+
+    for idx, raw in enumerate(lines, start=1):
+        line = raw.strip()
+        if line.startswith("## "):
+            if in_section:
+                break
+            if WHOLE_VIEW_SECTION11_RE.match(line) and (("版本路线" in line) or ("roadmap" in line.lower())):
+                in_section = True
+                section = _markdown_clean(line[3:]) or default_section
+            continue
+        if (not in_section) or (not line) or (line == "---"):
+            continue
+        if not line.startswith("- "):
+            continue
+
+        item = _markdown_clean(line[2:])
+        m = WHOLE_VIEW_ROADMAP_MILESTONE_RE.match(item)
+        if not m:
+            continue
+        version_num = str(m.group(1)).strip()
+        milestone_rows.append(
+            {
+                "index": len(milestone_rows) + 1,
+                "version": f"v{version_num}",
+                "milestones": _markdown_clean(m.group(2)),
+                "source_line": idx,
+            }
+        )
+
+    return {
+        "section": section,
+        "milestone_rows": milestone_rows,
+    }
+
+
+def _version_roadmap_context() -> dict[str, Any]:
+    whole_view_path = _find_overview_doc("Whole View Framework.md")
+    whole_view = _extract_whole_view_version_roadmap(whole_view_path)
+    milestone_rows = [x for x in (whole_view.get("milestone_rows") or []) if isinstance(x, dict)]
+
+    versions = [str(x.get("version") or "") for x in milestone_rows if str(x.get("version") or "").strip()]
+    return {
+        "title": "Whole View Version Roadmap Milestones",
+        "source_files": [
+            {
+                "path": _repo_rel(whole_view_path),
+                "exists": whole_view_path.is_file(),
+                "section": str(whole_view.get("section") or "11. 版本路线（建议）"),
+            },
+        ],
+        "summary": {
+            "milestone_total": len(milestone_rows),
+            "versions": ", ".join(versions),
+        },
+        "whole_view": whole_view,
+    }
+
+
+def _extract_whole_view_system_definition(path: Path) -> dict[str, Any]:
+    default_section = "0. 你要构建的系统是什么（Definition）"
+    if not path.is_file():
+        return {
+            "section": default_section,
+            "definition_statement": "",
+            "capability_rows": [],
+        }
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    in_section = False
+    section = default_section
+    definition_statement = ""
+    capability_rows: list[dict[str, Any]] = []
+
+    for idx, raw in enumerate(lines, start=1):
+        line = raw.strip()
+        if line.startswith("## "):
+            if in_section:
+                break
+            if WHOLE_VIEW_SECTION0_RE.match(line) and (("Definition" in line) or ("系统" in line)):
+                in_section = True
+                section = _markdown_clean(line[3:]) or default_section
+            continue
+        if (not in_section) or (not line) or (line == "---"):
+            continue
+
+        if line.startswith("- "):
+            item = _markdown_clean(line[2:])
+            if item:
+                capability_rows.append(
+                    {
+                        "index": len(capability_rows) + 1,
+                        "item": item,
+                        "source_line": idx,
+                    }
+                )
+            continue
+
+        cleaned = _markdown_clean(line)
+        if cleaned and not definition_statement:
+            definition_statement = cleaned
+
+    return {
+        "section": section,
+        "definition_statement": definition_statement,
+        "capability_rows": capability_rows,
+    }
+
+
+def _extract_whole_view_five_planes(path: Path) -> dict[str, Any]:
+    default_section = "2. 总体架构：五个平面（Planes）"
+    if not path.is_file():
+        return {
+            "section": default_section,
+            "plane_rows": [],
+        }
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    in_section = False
+    section = default_section
+    plane_rows: list[dict[str, Any]] = []
+
+    for idx, raw in enumerate(lines, start=1):
+        line = raw.strip()
+        if line.startswith("## "):
+            if in_section:
+                break
+            if WHOLE_VIEW_SECTION2_RE.match(line) and (("平面" in line) or ("Planes" in line)):
+                in_section = True
+                section = _markdown_clean(line[3:]) or default_section
+            continue
+        if (not in_section) or (not line) or (line == "---"):
+            continue
+        if not line.startswith("- "):
+            continue
+
+        item = line[2:].strip()
+        m = WHOLE_VIEW_PLANE_ROW_RE.match(item)
+        if m:
+            plane_name = _markdown_clean(m.group(1))
+            description = _markdown_clean(m.group(2))
+        else:
+            cleaned = _markdown_clean(item)
+            plane_name, description = _split_role_line(cleaned)
+        if not plane_name:
+            continue
+        plane_rows.append(
+            {
+                "index": len(plane_rows) + 1,
+                "plane_name": plane_name,
+                "description": description,
+                "source_line": idx,
+            }
+        )
+
+    return {
+        "section": section,
+        "plane_rows": plane_rows,
+    }
+
+
+def _system_definition_context() -> dict[str, Any]:
+    whole_view_path = _whole_view_framework_root_doc()
+    definition = _extract_whole_view_system_definition(whole_view_path)
+    planes = _extract_whole_view_five_planes(whole_view_path)
+    capability_rows = [x for x in (definition.get("capability_rows") or []) if isinstance(x, dict)]
+    plane_rows = [x for x in (planes.get("plane_rows") or []) if isinstance(x, dict)]
+
+    return {
+        "title": "Whole View System Definition and Planes Evidence",
+        "source_files": [
+            {
+                "path": _repo_rel(whole_view_path),
+                "exists": whole_view_path.is_file(),
+                "section": str(definition.get("section") or "0. 你要构建的系统是什么（Definition）"),
+            },
+            {
+                "path": _repo_rel(whole_view_path),
+                "exists": whole_view_path.is_file(),
+                "section": str(planes.get("section") or "2. 总体架构：五个平面（Planes）"),
+            },
+        ],
+        "summary": {
+            "definition_rule_total": len(capability_rows),
+            "plane_total": len(plane_rows),
+        },
+        "definition": definition,
+        "planes": planes,
     }
 
 
@@ -3010,12 +4045,527 @@ def _playbook_phases_context() -> dict[str, Any]:
     }
 
 
+def _extract_playbook_section0_principles(path: Path) -> dict[str, Any]:
+    default_section = "0. 施工总原则（Codex 任务组织）"
+    default_principle_section = "0.1 单次 Codex 任务必须满足"
+    default_quality_section = "0.2 全局质量门槛（CI 必须强制）"
+    if not path.is_file():
+        return {
+            "section": default_section,
+            "principle_section": default_principle_section,
+            "quality_section": default_quality_section,
+            "principle_rows": [],
+            "quality_rows": [],
+        }
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    in_section = False
+    section = default_section
+    principle_section = default_principle_section
+    quality_section = default_quality_section
+    in_quality_subsection = False
+    principle_rows: list[dict[str, Any]] = []
+    quality_rows: list[dict[str, Any]] = []
+
+    for idx, raw in enumerate(lines, start=1):
+        line = raw.strip()
+        if line.startswith("## "):
+            if in_section:
+                break
+            if PLAYBOOK_SECTION0_RE.match(line):
+                in_section = True
+                section = _markdown_clean(line[3:]) or default_section
+            continue
+        if (not in_section) or (not line) or (line == "---"):
+            continue
+
+        if line.startswith("### "):
+            subsection = _markdown_clean(line[4:])
+            if PLAYBOOK_SUBSECTION01_RE.match(line):
+                in_quality_subsection = False
+                principle_section = subsection or default_principle_section
+            elif PLAYBOOK_SUBSECTION02_RE.match(line):
+                in_quality_subsection = True
+                quality_section = subsection or default_quality_section
+            else:
+                in_quality_subsection = False
+            continue
+
+        if not line.startswith("- "):
+            continue
+
+        item = _markdown_clean(line[2:])
+        if not item:
+            continue
+
+        bucket = quality_rows if in_quality_subsection else principle_rows
+        bucket.append(
+            {
+                "index": len(bucket) + 1,
+                "item": item,
+                "source_line": idx,
+            }
+        )
+
+    return {
+        "section": section,
+        "principle_section": principle_section,
+        "quality_section": quality_section,
+        "principle_rows": principle_rows,
+        "quality_rows": quality_rows,
+    }
+
+
+def _playbook_principles_context() -> dict[str, Any]:
+    playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
+    playbook = _extract_playbook_section0_principles(playbook_path)
+    principle_rows = [x for x in (playbook.get("principle_rows") or []) if isinstance(x, dict)]
+    quality_rows = [x for x in (playbook.get("quality_rows") or []) if isinstance(x, dict)]
+
+    return {
+        "title": "Playbook Construction Principles and Quality Gates",
+        "source_files": [
+            {
+                "path": _repo_rel(playbook_path),
+                "exists": playbook_path.is_file(),
+                "section": str(playbook.get("section") or "0. 施工总原则（Codex 任务组织）"),
+            },
+            {
+                "path": _repo_rel(playbook_path),
+                "exists": playbook_path.is_file(),
+                "section": str(playbook.get("quality_section") or "0.2 全局质量门槛（CI 必须强制）"),
+            },
+        ],
+        "summary": {
+            "principle_total": len(principle_rows),
+            "quality_gate_total": len(quality_rows),
+        },
+        "playbook": playbook,
+    }
+
+
+def _playbook_tech_stack_context() -> dict[str, Any]:
+    playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
+    playbook = _extract_playbook_section1_runtime_stack(playbook_path)
+    foundation_rows = [x for x in (playbook.get("foundation_rows") or []) if isinstance(x, dict)]
+    service_rows = [x for x in (playbook.get("service_rows") or []) if isinstance(x, dict)]
+
+    return {
+        "title": "Playbook Technical Stack Baseline",
+        "source_files": [
+            {
+                "path": _repo_rel(playbook_path),
+                "exists": playbook_path.is_file(),
+                "section": str(playbook.get("section") or "1. 技术栈建议（可替换，但先固定）"),
+            },
+            {
+                "path": _repo_rel(playbook_path),
+                "exists": playbook_path.is_file(),
+                "section": str(playbook.get("foundation_section") or "1.1 基础"),
+            },
+            {
+                "path": _repo_rel(playbook_path),
+                "exists": playbook_path.is_file(),
+                "section": str(playbook.get("service_section") or "1.2 服务（MVP）"),
+            },
+        ],
+        "summary": {
+            "foundation_total": len(foundation_rows),
+            "service_total": len(service_rows),
+        },
+        "playbook": playbook,
+    }
+
+
+def _extract_playbook_section2_phase_template(path: Path) -> dict[str, Any]:
+    section_default = "2. Phase 模板（后续你要我写每个 phase 标准内容，就按这个模板）"
+    template_default = "Phase‑X 标准输出结构"
+    if not path.is_file():
+        return {
+            "section": section_default,
+            "intro": "",
+            "template_section": template_default,
+            "template_rows": [],
+        }
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    in_section = False
+    in_template = False
+    section = section_default
+    intro = ""
+    template_section = template_default
+    template_rows: list[dict[str, Any]] = []
+
+    for idx, raw in enumerate(lines, start=1):
+        line = raw.strip()
+        if line.startswith("## "):
+            if in_section:
+                break
+            if PLAYBOOK_SECTION2_RE.match(line) and (("phase" in line.lower()) and (("模板" in line) or ("template" in line.lower()))):
+                in_section = True
+                section = _markdown_clean(line[3:]) or section_default
+            continue
+        if (not in_section) or (not line) or (line == "---"):
+            continue
+
+        if line.startswith(">"):
+            quote = _markdown_clean(line.lstrip(">").strip())
+            if quote and not intro:
+                intro = quote
+            continue
+
+        if line.startswith("### "):
+            header = _markdown_clean(line[4:])
+            header_l = header.lower()
+            if ("phase" in header_l) and (("标准输出结构" in header) or ("template" in header_l)):
+                in_template = True
+                template_section = header or template_default
+            else:
+                in_template = False
+            continue
+
+        if not in_template:
+            continue
+
+        m = re.match(r"^([1-9][0-9]*)[.)]\s*(.+)$", line)
+        if not m:
+            continue
+        item = _markdown_clean(m.group(2))
+        if not item:
+            continue
+        template_rows.append(
+            {
+                "index": int(m.group(1)),
+                "item": item,
+                "source_line": idx,
+            }
+        )
+
+    return {
+        "section": section,
+        "intro": intro,
+        "template_section": template_section,
+        "template_rows": template_rows,
+    }
+
+
+def _playbook_phase_template_context() -> dict[str, Any]:
+    playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
+    playbook = _extract_playbook_section2_phase_template(playbook_path)
+    template_rows = [x for x in (playbook.get("template_rows") or []) if isinstance(x, dict)]
+
+    return {
+        "title": "Playbook Phase Template Structure",
+        "source_files": [
+            {
+                "path": _repo_rel(playbook_path),
+                "exists": playbook_path.is_file(),
+                "section": str(playbook.get("section") or "2. Phase 模板（后续你要我写每个 phase 标准内容，就按这个模板）"),
+            },
+            {
+                "path": _repo_rel(playbook_path),
+                "exists": playbook_path.is_file(),
+                "section": str(playbook.get("template_section") or "Phase‑X 标准输出结构"),
+            },
+        ],
+        "summary": {
+            "template_item_total": len(template_rows),
+        },
+        "playbook": playbook,
+    }
+
+
+def _extract_playbook_section4_codex_task_card(path: Path) -> dict[str, Any]:
+    section_default = "4. 每个 Phase 给 Codex 的“标准任务卡模板”（你后续可反复复用）"
+    template_default = "Codex Task Card Template"
+    if not path.is_file():
+        return {
+            "section": section_default,
+            "intro": "",
+            "template_section": template_default,
+            "field_rows": [],
+            "must_rows": [],
+            "forbidden_rows": [],
+            "acceptance_rows": [],
+        }
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    in_section = False
+    in_template = False
+    section = section_default
+    intro = ""
+    template_section = template_default
+    field_rows: list[dict[str, Any]] = []
+    must_rows: list[dict[str, Any]] = []
+    forbidden_rows: list[dict[str, Any]] = []
+    acceptance_rows: list[dict[str, Any]] = []
+    list_mode = ""
+
+    for idx, raw in enumerate(lines, start=1):
+        line = raw.strip()
+        if line.startswith("## "):
+            if in_section:
+                break
+            if PLAYBOOK_SECTION4_RE.match(line) and (("任务卡" in line) or ("task card" in line.lower())):
+                in_section = True
+                section = _markdown_clean(line[3:]) or section_default
+            continue
+        if (not in_section) or (not line) or (line == "---"):
+            continue
+
+        if line.startswith(">"):
+            quote = _markdown_clean(line.lstrip(">").strip())
+            if quote and not intro:
+                intro = quote
+            continue
+
+        if line.startswith("### "):
+            header = _markdown_clean(line[4:])
+            header_l = header.lower()
+            if ("codex" in header_l) and (("task card" in header_l) or ("任务卡" in header)):
+                in_template = True
+                template_section = header or template_default
+            else:
+                in_template = False
+            list_mode = ""
+            continue
+
+        if not in_template:
+            continue
+
+        row = re.match(r"^\*\*([^*]+)\*\*[:：]\s*(.*)$", line)
+        if row:
+            label = _markdown_clean(row.group(1))
+            value = _markdown_clean(row.group(2))
+            label_l = label.lower()
+            if ("必须实现" in label) or ("must implement" in label_l):
+                list_mode = "must"
+            elif ("禁止项" in label) or ("forbidden" in label_l):
+                list_mode = "forbidden"
+            elif ("验收命令" in label) or ("acceptance" in label_l):
+                list_mode = "acceptance"
+            else:
+                list_mode = ""
+                field_rows.append(
+                    {
+                        "index": len(field_rows) + 1,
+                        "label": label,
+                        "value": value,
+                        "source_line": idx,
+                    }
+                )
+            continue
+
+        if not line.startswith("- "):
+            continue
+
+        item = _markdown_clean(line[2:])
+        if not item:
+            continue
+        bucket: list[dict[str, Any]]
+        if list_mode == "must":
+            bucket = must_rows
+        elif list_mode == "forbidden":
+            bucket = forbidden_rows
+        elif list_mode == "acceptance":
+            bucket = acceptance_rows
+        else:
+            continue
+        bucket.append(
+            {
+                "index": len(bucket) + 1,
+                "item": item,
+                "source_line": idx,
+            }
+        )
+
+    return {
+        "section": section,
+        "intro": intro,
+        "template_section": template_section,
+        "field_rows": field_rows,
+        "must_rows": must_rows,
+        "forbidden_rows": forbidden_rows,
+        "acceptance_rows": acceptance_rows,
+    }
+
+
+def _playbook_codex_task_card_context() -> dict[str, Any]:
+    playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
+    playbook = _extract_playbook_section4_codex_task_card(playbook_path)
+    field_rows = [x for x in (playbook.get("field_rows") or []) if isinstance(x, dict)]
+    must_rows = [x for x in (playbook.get("must_rows") or []) if isinstance(x, dict)]
+    forbidden_rows = [x for x in (playbook.get("forbidden_rows") or []) if isinstance(x, dict)]
+    acceptance_rows = [x for x in (playbook.get("acceptance_rows") or []) if isinstance(x, dict)]
+
+    return {
+        "title": "Playbook Codex Task Card Template",
+        "source_files": [
+            {
+                "path": _repo_rel(playbook_path),
+                "exists": playbook_path.is_file(),
+                "section": str(playbook.get("section") or "4. 每个 Phase 给 Codex 的“标准任务卡模板”（你后续可反复复用）"),
+            },
+            {
+                "path": _repo_rel(playbook_path),
+                "exists": playbook_path.is_file(),
+                "section": str(playbook.get("template_section") or "Codex Task Card Template"),
+            },
+        ],
+        "summary": {
+            "field_total": len(field_rows),
+            "must_total": len(must_rows),
+            "forbidden_total": len(forbidden_rows),
+            "acceptance_total": len(acceptance_rows),
+        },
+        "playbook": playbook,
+    }
+
+
+def _extract_playbook_section5_sequence(path: Path) -> dict[str, Any]:
+    section_default = "5. 结束语（施工顺序建议）"
+    if not path.is_file():
+        return {
+            "section": section_default,
+            "intro": "",
+            "sequence_rows": [],
+            "sequence_phase_rows": [],
+            "loop_first_note": "",
+            "loop_component_rows": [],
+            "automation_note": "",
+        }
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    in_section = False
+    section = section_default
+    intro = ""
+    sequence_rows: list[dict[str, Any]] = []
+    sequence_phase_rows: list[dict[str, Any]] = []
+    loop_first_note = ""
+    loop_component_rows: list[dict[str, Any]] = []
+    automation_note = ""
+    seen_phase_nos: set[int] = set()
+    seen_components: set[str] = set()
+
+    for idx, raw in enumerate(lines, start=1):
+        line = raw.strip()
+        if line.startswith("## "):
+            if in_section:
+                break
+            if PLAYBOOK_SECTION5_RE.match(line) and (
+                ("施工顺序" in line) or ("结束语" in line) or ("sequence" in line.lower())
+            ):
+                in_section = True
+                section = _markdown_clean(line[3:]) or section_default
+            continue
+        if (not in_section) or (not line) or (line == "---"):
+            continue
+
+        if line.startswith("- "):
+            item = _markdown_clean(line[2:])
+            if not item:
+                continue
+            sequence_rows.append(
+                {
+                    "index": len(sequence_rows) + 1,
+                    "item": item,
+                    "source_line": idx,
+                }
+            )
+            for raw_no in re.findall(r"Phase[\u2010-\u2015-](\d+)", item, flags=re.IGNORECASE):
+                phase_no = int(raw_no)
+                if phase_no in seen_phase_nos:
+                    continue
+                seen_phase_nos.add(phase_no)
+                sequence_phase_rows.append(
+                    {
+                        "phase_no": phase_no,
+                        "phase_label": f"Phase-{phase_no}",
+                        "source_line": idx,
+                    }
+                )
+            continue
+
+        item = _markdown_clean(line)
+        if not item:
+            continue
+        if not intro:
+            intro = item
+        if ("先闭环" in item) and (not loop_first_note):
+            loop_first_note = item
+            m = re.search(r"(?:即[:：])?\s*(.+?)\s*先闭环", item)
+            component_blob = m.group(1).strip() if m else ""
+            for raw_component in re.split(r"[、,/，]", component_blob):
+                component = raw_component.strip().strip("。.;；：:")
+                if (not component) or (component in seen_components):
+                    continue
+                seen_components.add(component)
+                loop_component_rows.append(
+                    {
+                        "index": len(loop_component_rows) + 1,
+                        "component": component,
+                        "source_line": idx,
+                    }
+                )
+        if (("自动化放在闭环之后" in item) or ("不可审计" in item)) and (not automation_note):
+            automation_note = item
+
+    sequence_phase_rows.sort(key=lambda row: int(row.get("phase_no") or 0))
+    for i, row in enumerate(sequence_phase_rows, start=1):
+        row["index"] = i
+
+    return {
+        "section": section,
+        "intro": intro,
+        "sequence_rows": sequence_rows,
+        "sequence_phase_rows": sequence_phase_rows,
+        "loop_first_note": loop_first_note,
+        "loop_component_rows": loop_component_rows,
+        "automation_note": automation_note,
+    }
+
+
+def _playbook_sequence_context() -> dict[str, Any]:
+    playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
+    playbook = _extract_playbook_section5_sequence(playbook_path)
+    sequence_rows = [x for x in (playbook.get("sequence_rows") or []) if isinstance(x, dict)]
+    sequence_phase_rows = [x for x in (playbook.get("sequence_phase_rows") or []) if isinstance(x, dict)]
+    loop_component_rows = [x for x in (playbook.get("loop_component_rows") or []) if isinstance(x, dict)]
+    automation_note = str(playbook.get("automation_note") or "")
+
+    return {
+        "title": "Playbook Construction Sequence Recommendation",
+        "source_files": [
+            {
+                "path": _repo_rel(playbook_path),
+                "exists": playbook_path.is_file(),
+                "section": str(playbook.get("section") or "5. 结束语（施工顺序建议）"),
+            }
+        ],
+        "summary": {
+            "sequence_item_total": len(sequence_rows),
+            "sequence_phase_total": len(sequence_phase_rows),
+            "loop_component_total": len(loop_component_rows),
+            "automation_note_present": int(bool(automation_note)),
+        },
+        "playbook": playbook,
+    }
+
+
 def _find_overview_doc(suffix: str) -> Path:
     root = _repo_root() / "docs" / "00_overview"
     matches = sorted(p for p in root.glob(f"*{suffix}") if p.is_file())
     if matches:
         return matches[0]
     return root / suffix
+
+
+def _whole_view_framework_root_doc() -> Path:
+    root = _repo_root()
+    matches = sorted(p for p in root.glob("*Whole View Framework.md") if p.is_file())
+    if matches:
+        return matches[0]
+    return root / "Quant‑EAM Whole View Framework.md"
 
 
 def _governance_checks_context() -> dict[str, Any]:
@@ -3207,6 +4757,26 @@ def _policies_constraints_context() -> dict[str, Any]:
     }
 
 
+def _hard_constraints_context() -> dict[str, Any]:
+    whole_view_path = _whole_view_framework_root_doc()
+    whole_view_constraints = _extract_whole_view_constraints(whole_view_path)
+
+    return {
+        "title": "Whole View Hard Constraints Governance Evidence",
+        "source_files": [
+            {
+                "path": _repo_rel(whole_view_path),
+                "exists": whole_view_path.is_file(),
+                "section": "1. 系统硬约束（写入 GOVERNANCE.md + CI 强制）",
+            }
+        ],
+        "summary": {
+            "constraint_total": len(whole_view_constraints),
+        },
+        "whole_view_constraints": whole_view_constraints,
+    }
+
+
 @router.api_route("/ui", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_index(request: Request) -> HTMLResponse:
     return TEMPLATES.TemplateResponse(request, "index.html", _ui_index_context())
@@ -3227,14 +4797,49 @@ def ui_policies_constraints(request: Request) -> HTMLResponse:
     return TEMPLATES.TemplateResponse(request, "policies_constraints.html", _policies_constraints_context())
 
 
+@router.api_route("/ui/hard-constraints", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_hard_constraints(request: Request) -> HTMLResponse:
+    return TEMPLATES.TemplateResponse(request, "hard_constraints.html", _hard_constraints_context())
+
+
 @router.api_route("/ui/contracts-coverage", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_contracts_coverage(request: Request) -> HTMLResponse:
     return TEMPLATES.TemplateResponse(request, "contracts_coverage.html", _contracts_coverage_context())
 
 
+@router.api_route("/ui/contracts-principles", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_contracts_principles(request: Request) -> HTMLResponse:
+    return TEMPLATES.TemplateResponse(request, "contracts_principles.html", _contracts_principles_context())
+
+
 @router.api_route("/ui/dossier-evidence", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_dossier_evidence(request: Request) -> HTMLResponse:
     return TEMPLATES.TemplateResponse(request, "dossier_evidence.html", _dossier_evidence_context())
+
+
+@router.api_route("/ui/playbook-principles", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_playbook_principles(request: Request) -> HTMLResponse:
+    return TEMPLATES.TemplateResponse(request, "playbook_principles.html", _playbook_principles_context())
+
+
+@router.api_route("/ui/playbook-tech-stack", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_playbook_tech_stack(request: Request) -> HTMLResponse:
+    return TEMPLATES.TemplateResponse(request, "playbook_tech_stack.html", _playbook_tech_stack_context())
+
+
+@router.api_route("/ui/playbook-phase-template", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_playbook_phase_template(request: Request) -> HTMLResponse:
+    return TEMPLATES.TemplateResponse(request, "playbook_phase_template.html", _playbook_phase_template_context())
+
+
+@router.api_route("/ui/playbook-codex-task-card", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_playbook_codex_task_card(request: Request) -> HTMLResponse:
+    return TEMPLATES.TemplateResponse(request, "playbook_codex_task_card.html", _playbook_codex_task_card_context())
+
+
+@router.api_route("/ui/playbook-sequence", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_playbook_sequence(request: Request) -> HTMLResponse:
+    return TEMPLATES.TemplateResponse(request, "playbook_sequence.html", _playbook_sequence_context())
 
 
 @router.api_route("/ui/playbook-phases", methods=["GET", "HEAD"], response_class=HTMLResponse)
@@ -3270,6 +4875,36 @@ def ui_module_boundaries(request: Request) -> HTMLResponse:
 @router.api_route("/ui/diagnostics-promotion", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_diagnostics_promotion(request: Request) -> HTMLResponse:
     return TEMPLATES.TemplateResponse(request, "diagnostics_promotion.html", _diagnostics_promotion_context())
+
+
+@router.api_route("/ui/codex-role-boundary", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_codex_role_boundary(request: Request) -> HTMLResponse:
+    return TEMPLATES.TemplateResponse(request, "codex_role_boundary.html", _codex_role_boundary_context())
+
+
+@router.api_route("/ui/ui-coverage-matrix", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_ui_coverage_matrix(request: Request) -> HTMLResponse:
+    return TEMPLATES.TemplateResponse(request, "ui_coverage_matrix.html", _ui_coverage_matrix_context())
+
+
+@router.api_route("/ui/runtime-topology", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_runtime_topology(request: Request) -> HTMLResponse:
+    return TEMPLATES.TemplateResponse(request, "runtime_topology.html", _runtime_topology_context())
+
+
+@router.api_route("/ui/preflight-checklist", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_preflight_checklist(request: Request) -> HTMLResponse:
+    return TEMPLATES.TemplateResponse(request, "preflight_checklist.html", _preflight_checklist_context())
+
+
+@router.api_route("/ui/version-roadmap", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_version_roadmap(request: Request) -> HTMLResponse:
+    return TEMPLATES.TemplateResponse(request, "version_roadmap.html", _version_roadmap_context())
+
+
+@router.api_route("/ui/system-definition", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_system_definition(request: Request) -> HTMLResponse:
+    return TEMPLATES.TemplateResponse(request, "system_definition.html", _system_definition_context())
 
 
 def _composer_policy_bundle_default() -> str:

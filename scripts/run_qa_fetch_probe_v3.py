@@ -27,7 +27,7 @@ def main() -> int:
     parser.add_argument(
         "--matrix",
         default=DEFAULT_MATRIX_V3_PATH.as_posix(),
-        help="Path to matrix markdown file (default: docs/05_data_plane/_draft_qa_fetch_rename_matrix_v3.md)",
+        help="Path to baseline markdown file (default: docs/05_data_plane/qa_fetch_function_baseline_v1.md)",
     )
     parser.add_argument(
         "--expected-count",

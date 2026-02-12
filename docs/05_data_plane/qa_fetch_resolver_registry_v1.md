@@ -38,11 +38,18 @@ This document defines the machine-readable selector layer for data fetch functio
 
 ## Artifacts
 
-- Draft matrix: `docs/05_data_plane/_draft_qa_fetch_rename_matrix_v3.md`
+- Function baseline: `docs/05_data_plane/qa_fetch_function_baseline_v1.md`
 - Machine registry JSON: `docs/05_data_plane/qa_fetch_registry_v1.json`
 - Function registry JSON: `docs/05_data_plane/qa_fetch_function_registry_v1.json`
 - Dataset registry JSON: `docs/05_data_plane/qa_dataset_registry_v1.json`
 - Agents data contract: `docs/05_data_plane/agents_plane_data_contract_v1.md`
+- Runtime gating:
+  - `execute_fetch_by_name(...)` resolves only canonical functions listed in function registry.
+  - functions outside the frozen baseline return `blocked_source_missing` with reason `not_in_baseline`.
+- Provider naming:
+  - external contract: `source=fetch`, `provider_id=fetch`
+  - engine routing: `engine=mongo|mysql`
+  - internal tracing: `source_internal` / `provider_internal` (e.g. `mongo_fetch`, `mysql_fetch`)
 - Generator scripts:
   - `python3 scripts/generate_qa_fetch_rename_matrix.py`
   - `python3 scripts/generate_qa_fetch_registry_json.py`

@@ -19,8 +19,9 @@ from .runtime import (
     execute_fetch_by_name,
     write_fetch_evidence,
 )
-from .wbdata_bridge import resolve_wbdata_callable
-from .wequant_bridge import resolve_wequant_callable
+from .mongo_bridge import resolve_mongo_fetch_callable
+from .mysql_bridge import resolve_mysql_fetch_callable
+from .source import SOURCE_MONGO, SOURCE_MYSQL, is_mongo_source, is_mysql_source
 
 try:
     from .probe import (
@@ -35,8 +36,8 @@ try:
     )
 except ModuleNotFoundError as exc:  # pragma: no cover - env dependent
     _PROBE_IMPORT_ERROR = exc
-    DEFAULT_MATRIX_V3_PATH = "docs/05_data_plane/_draft_qa_fetch_rename_matrix_v3.md"
-    DEFAULT_EXPECTED_COUNT = 77
+    DEFAULT_MATRIX_V3_PATH = "docs/05_data_plane/qa_fetch_function_baseline_v1.md"
+    DEFAULT_EXPECTED_COUNT = 71
     DEFAULT_OUTPUT_DIR = "docs/05_data_plane/qa_fetch_probe_v3"
     ProbeResult = Any  # type: ignore[misc,assignment]
 
@@ -51,16 +52,16 @@ except ModuleNotFoundError as exc:  # pragma: no cover - env dependent
     write_probe_artifacts = _raise_probe_import_error
 
 
-_SOURCE_PRIORITY = {"wbdata": 0, "wequant": 1}
+_SOURCE_PRIORITY = {SOURCE_MYSQL: 0, SOURCE_MONGO: 1}
 _MAPPINGS = [row for row in apply_user_policy(tuple(build_fetch_mappings())) if row.status != "drop"]
 _EXPORT_META: dict[str, dict[str, Any]] = {}
 
 
 def _dispatch(source: str, target_name: str, *args: Any, **kwargs: Any) -> Any:
-    if source == "wequant":
-        fn = resolve_wequant_callable(target_name)
-    elif source == "wbdata":
-        fn = resolve_wbdata_callable(target_name)
+    if is_mongo_source(source):
+        fn = resolve_mongo_fetch_callable(target_name)
+    elif is_mysql_source(source):
+        fn = resolve_mysql_fetch_callable(target_name)
     else:
         raise ValueError(f"unsupported source: {source!r}")
     return fn(*args, **kwargs)
@@ -88,7 +89,7 @@ def _bind(public_name: str, *, source: str, target_name: str, mapping: FetchMapp
 
 
 def _build_exports() -> None:
-    # 1) Canonical names from v3 policy baseline. wequant takes precedence on collisions.
+    # 1) Canonical names from v3 policy baseline. mongo source takes precedence on collisions.
     chosen_by_proposed: dict[str, FetchMapping] = {}
     for item in sorted(_MAPPINGS, key=lambda x: (_SOURCE_PRIORITY[x.source], x.proposed_name, x.old_name)):
         chosen_by_proposed[item.proposed_name] = item
@@ -98,20 +99,20 @@ def _build_exports() -> None:
     # 2) Compatibility aliases for old names.
     for item in _MAPPINGS:
         old_name = item.old_name
-        # Keep direct old name aliases. On collisions, wequant wins.
-        if not (item.source == "wbdata" and item.collision):
+        # Keep direct old name aliases. On collisions, mongo source wins.
+        if not (is_mysql_source(item.source) and item.collision):
             if old_name not in globals():
                 _bind(old_name, source=item.source, target_name=old_name, mapping=item)
-            elif item.source == "wequant" and _EXPORT_META.get(old_name, {}).get("source") != "wequant":
+            elif is_mongo_source(item.source) and not is_mongo_source(_EXPORT_META.get(old_name, {}).get("source")):
                 _bind(old_name, source=item.source, target_name=old_name, mapping=item, force=True)
 
-        # WBData prefixed aliases are always exported to avoid collision ambiguity.
-        if item.source == "wbdata":
+        # Prefixed mysql aliases are exported to avoid collision ambiguity.
+        if is_mysql_source(item.source):
             wb_alias = f"wb_{_snake_case_internal(old_name)}"
             _bind(wb_alias, source=item.source, target_name=old_name, mapping=item)
 
-        # Legacy QUANTAXIS-style aliases for wequant.
-        if item.source == "wequant" and old_name.startswith("fetch_"):
+        # Legacy QUANTAXIS-style aliases for mongo source.
+        if is_mongo_source(item.source) and old_name.startswith("fetch_"):
             qa_alias = f"QA_{old_name}"
             if qa_alias not in globals():
                 _bind(qa_alias, source=item.source, target_name=old_name, mapping=item)

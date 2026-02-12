@@ -12,11 +12,18 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-
 STATUS_PASS_HAS_DATA = "pass_has_data"
 STATUS_PASS_EMPTY = "pass_empty"
 STATUS_BLOCKED_SOURCE_MISSING = "blocked_source_missing"
 STATUS_ERROR_RUNTIME = "error_runtime"
+SOURCE_MONGO = "mongo_fetch"
+SOURCE_MYSQL = "mysql_fetch"
+_SOURCE_ALIASES = {
+    SOURCE_MONGO: SOURCE_MONGO,
+    SOURCE_MYSQL: SOURCE_MYSQL,
+    "wequant": SOURCE_MONGO,
+    "wbdata": SOURCE_MYSQL,
+}
 
 
 @dataclass
@@ -47,6 +54,23 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
+def normalize_source(value: Any) -> str | None:
+    if value is None:
+        return None
+    token = str(value).strip().lower()
+    if not token:
+        return None
+    return _SOURCE_ALIASES.get(token)
+
+
+def is_mongo_source(value: Any) -> bool:
+    return normalize_source(value) == SOURCE_MONGO
+
+
+def is_mysql_source(value: Any) -> bool:
+    return normalize_source(value) == SOURCE_MYSQL
+
+
 def _ensure_import_paths() -> None:
     root = _repo_root()
     for path in (root, root / "src"):
@@ -69,9 +93,16 @@ def _parse_matrix_source_map(matrix_path: Path) -> dict[str, str]:
         parts = [item.strip() for item in line.strip("|").split("|")]
         if len(parts) < 2:
             continue
-        source = parts[0]
+        source_token = parts[0]
+        source = normalize_source(source_token)
+        if source is None and source_token.strip().lower() == "fetch" and len(parts) >= 8:
+            raw_notes = parts[7]
+            if "/mongo_fetch/" in raw_notes:
+                source = SOURCE_MONGO
+            elif "/mysql_fetch/" in raw_notes:
+                source = SOURCE_MYSQL
         fn = parts[1].strip("`")
-        if source in {"wequant", "wbdata"} and fn.startswith("fetch_"):
+        if source in {SOURCE_MONGO, SOURCE_MYSQL} and fn.startswith("fetch_"):
             out[fn] = source
     return out
 
@@ -317,10 +348,10 @@ def _classify_exception(source: str, exc: Exception) -> tuple[str, str]:
         "can't connect to mysql",
         "connection refused",
     ]
-    if source == "wbdata" and any(marker in lower for marker in wb_missing_markers):
+    if is_mysql_source(source) and any(marker in lower for marker in wb_missing_markers):
         return STATUS_BLOCKED_SOURCE_MISSING, msg
 
-    # User rule: wequant no-data should pass for now.
+    # User rule: mongo no-data should pass for now.
     wq_no_data_markers = [
         "none",
         "collection",
@@ -330,7 +361,7 @@ def _classify_exception(source: str, exc: Exception) -> tuple[str, str]:
         "empty",
         "no data",
     ]
-    if source == "wequant" and any(marker in lower for marker in wq_no_data_markers):
+    if is_mongo_source(source) and any(marker in lower for marker in wq_no_data_markers):
         return STATUS_PASS_EMPTY, f"no_data: {msg}"
 
     return STATUS_ERROR_RUNTIME, msg
@@ -450,8 +481,8 @@ def main() -> int:
     )
     parser.add_argument(
         "--matrix",
-        default="docs/05_data_plane/_draft_qa_fetch_rename_matrix_v3.md",
-        help="Path to v3 rename matrix for source mapping",
+        default="docs/05_data_plane/qa_fetch_function_baseline_v1.md",
+        help="Path to fetch function baseline for source mapping",
     )
     parser.add_argument(
         "--out-dir",
@@ -472,8 +503,8 @@ def main() -> int:
     args = parser.parse_args()
 
     _ensure_import_paths()
-    from quant_eam.qa_fetch.wbdata_bridge import resolve_wbdata_callable
-    from quant_eam.qa_fetch.wequant_bridge import resolve_wequant_callable
+    from quant_eam.qa_fetch.mongo_bridge import resolve_mongo_fetch_callable
+    from quant_eam.qa_fetch.mysql_bridge import resolve_mysql_fetch_callable
 
     notebook_path = Path(args.notebook)
     matrix_path = Path(args.matrix)
@@ -500,20 +531,20 @@ def main() -> int:
     for idx, case in enumerate(cases, start=1):
         source = source_map.get(case.function)
         if source is None:
-            # Best-effort fallback: try wequant first, then wbdata.
-            source = "wequant"
+            # Best-effort fallback: try mongo provider first, then mysql.
+            source = SOURCE_MONGO
         args_preview = {"args": _json_safe(case.args), "kwargs": _json_safe(case.kwargs)}
 
         try:
-            if source == "wequant":
-                fn = resolve_wequant_callable(case.function)
+            if is_mongo_source(source):
+                fn = resolve_mongo_fetch_callable(case.function)
             else:
-                fn = resolve_wbdata_callable(case.function)
+                fn = resolve_mysql_fetch_callable(case.function)
         except Exception:
-            if source == "wequant":
-                source = "wbdata"
+            if is_mongo_source(source):
+                source = SOURCE_MYSQL
                 try:
-                    fn = resolve_wbdata_callable(case.function)
+                    fn = resolve_mysql_fetch_callable(case.function)
                 except Exception as exc:
                     msg = f"resolve failed: {type(exc).__name__}: {exc}"
                     results.append(
@@ -534,9 +565,9 @@ def main() -> int:
                     print(f"[{idx}/{len(cases)}] {source}.{case.function} -> {STATUS_ERROR_RUNTIME}")
                     continue
             else:
-                source = "wequant"
+                source = SOURCE_MONGO
                 try:
-                    fn = resolve_wequant_callable(case.function)
+                    fn = resolve_mongo_fetch_callable(case.function)
                 except Exception as exc:
                     msg = f"resolve failed: {type(exc).__name__}: {exc}"
                     results.append(

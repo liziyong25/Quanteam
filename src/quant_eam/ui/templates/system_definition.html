@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Whole View System Definition and Five Planes Read-Only Evidence</h1>
+    <p class="page-subtitle">
+      Read-only governance evidence sourced from Whole View sections <code>0</code>/<code>2</code>
+      in root file <code>Quant‑EAM Whole View Framework.md</code>.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">section 0/2 evidence only</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Sections</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Evidence Summary</h2>
+      <div class="kv">
+        <div class="k">ui_route</div>
+        <div class="v"><code>/ui/system-definition</code></div>
+        <div class="k">definition_rules</div>
+        <div class="v"><span data-testid="system-definition-rule-total">{{ summary.definition_rule_total }}</span></div>
+        <div class="k">planes</div>
+        <div class="v"><span data-testid="system-definition-plane-total">{{ summary.plane_total }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Whole View Section 0 System Definition</h2>
+    <div class="section"><span class="pill">{{ definition.section }}</span></div>
+    {% if definition.definition_statement %}
+      <p data-testid="system-definition-statement">{{ definition.definition_statement }}</p>
+    {% else %}
+      <div class="plot-fallback">No definition statement extracted from Whole View section 0.</div>
+    {% endif %}
+
+    {% if definition.capability_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>rule</th><th>source_line</th></tr></thead>
+          <tbody>
+          {% for row in definition.capability_rows %}
+            <tr data-testid="system-definition-rule-row-{{ loop.index }}">
+              <td>{{ row.index }}</td>
+              <td>{{ row.item }}</td>
+              <td>{{ row.source_line }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No capability rows extracted from Whole View section 0.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Whole View Section 2 Five Planes Architecture</h2>
+    <div class="section"><span class="pill">{{ planes.section }}</span></div>
+    {% if planes.plane_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>plane</th><th>responsibility</th><th>source_line</th></tr></thead>
+          <tbody>
+          {% for row in planes.plane_rows %}
+            <tr data-testid="system-definition-plane-row-{{ loop.index }}">
+              <td>{{ row.index }}</td>
+              <td><span class="pill">{{ row.plane_name }}</span></td>
+              <td>{{ row.description }}</td>
+              <td>{{ row.source_line }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No plane rows extracted from Whole View section 2.</div>
+    {% endif %}
+  </div>
+{% endblock %}

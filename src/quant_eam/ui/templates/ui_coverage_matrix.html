@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Whole View UI Eight-Page Coverage Matrix</h1>
+    <p class="page-subtitle">
+      Read-only governance evidence sourced from Whole View section <code>8</code>,
+      current UI routes/views metadata, and SSOT references for <code>G43</code>.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">no holdout expansion</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Sections</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>G43 Goal Snapshot</h2>
+      <div class="kv">
+        <div class="k">goal_id</div>
+        <div class="v"><span class="pill">{{ g43.id if g43.id else "G43" }}</span></div>
+        <div class="k">title</div>
+        <div class="v">{{ g43.title if g43.title else "n/a" }}</div>
+        <div class="k">status_now</div>
+        <div class="v"><span class="pill">{{ g43.status_now if g43.status_now else "unknown" }}</span></div>
+        <div class="k">ui_path</div>
+        <div class="v"><code>{{ g43.ui_path if g43.ui_path else "/ui/ui-coverage-matrix" }}</code></div>
+        <div class="k">depends_on</div>
+        <div class="v">{{ g43.depends_on|join(", ") if g43.depends_on else "n/a" }}</div>
+        <div class="k">expected_state_change</div>
+        <div class="v">{{ g43.expected_state_change if g43.expected_state_change else "n/a" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Coverage Summary</h2>
+      <div class="kv">
+        <div class="k">checklist_total</div>
+        <div class="v"><span data-testid="ui-coverage-checklist-total">{{ summary.checklist_total }}</span></div>
+        <div class="k">covered_page_total</div>
+        <div class="v"><span data-testid="ui-coverage-covered-total">{{ summary.covered_page_total }}</span></div>
+        <div class="k">partial_page_total</div>
+        <div class="v"><span data-testid="ui-coverage-partial-total">{{ summary.partial_page_total }}</span></div>
+        <div class="k">missing_page_total</div>
+        <div class="v"><span data-testid="ui-coverage-missing-total">{{ summary.missing_page_total }}</span></div>
+        <div class="k">mapped_route_binding_total</div>
+        <div class="v"><span data-testid="ui-coverage-binding-total">{{ summary.mapped_route_binding_total }}</span></div>
+        <div class="k">mapped_route_total</div>
+        <div class="v"><span data-testid="ui-coverage-mapped-route-total">{{ summary.mapped_route_total }}</span></div>
+        <div class="k">mapped_route_present_total</div>
+        <div class="v"><span data-testid="ui-coverage-mapped-route-present-total">{{ summary.mapped_present_route_total }}</span></div>
+        <div class="k">mapped_route_read_only_total</div>
+        <div class="v"><span data-testid="ui-coverage-mapped-route-readonly-total">{{ summary.mapped_read_only_route_total }}</span></div>
+        <div class="k">all_ui_route_total</div>
+        <div class="v"><span data-testid="ui-coverage-all-route-total">{{ summary.all_ui_route_total }}</span></div>
+        <div class="k">all_ui_route_read_only_total</div>
+        <div class="v"><span data-testid="ui-coverage-all-route-readonly-total">{{ summary.all_ui_route_read_only_total }}</span></div>
+        <div class="k">required_guard_total</div>
+        <div class="v"><span data-testid="ui-coverage-required-guard-total">{{ summary.required_guard_total }}</span></div>
+        <div class="k">expected_artifact_total</div>
+        <div class="v"><span data-testid="ui-coverage-expected-artifact-total">{{ summary.expected_artifact_total }}</span></div>
+        <div class="k">acceptance_command_total</div>
+        <div class="v"><span data-testid="ui-coverage-acceptance-command-total">{{ summary.acceptance_command_total }}</span></div>
+        <div class="k">coverage_ratio</div>
+        <div class="v"><span class="pill">{{ summary.coverage_ratio }}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>SSOT Dispatch + Exception Meta</h2>
+      <div class="kv">
+        <div class="k">dispatch_table</div>
+        <div class="v"><code>phase_dispatch_plan_v2</code></div>
+        <div class="k">dispatch.status_now</div>
+        <div class="v"><span class="pill">{{ dispatch.status_now if dispatch.status_now else "n/a" }}</span></div>
+        <div class="k">dispatch.mode</div>
+        <div class="v"><span class="pill">{{ dispatch.mode if dispatch.mode else "n/a" }}</span></div>
+        <div class="k">phase_id</div>
+        <div class="v"><code>{{ dispatch.phase_id }}</code></div>
+        <div class="k">goal_id</div>
+        <div class="v"><code>{{ dispatch.goal_id }}</code></div>
+        <div class="k">dispatch_title</div>
+        <div class="v">{{ dispatch.title if dispatch.title else "n/a" }}</div>
+        <div class="k">exception_id</div>
+        <div class="v"><code>{{ g43_exception.exception_id if g43_exception.exception_id else "g43_ui_coverage_matrix_scope" }}</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Whole View Section 8 Checklist Coverage Matrix</h2>
+    {% if page_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>whole_view_page</th><th>mapping_note</th><th>mapped_routes</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in page_rows %}
+            <tr data-testid="ui-coverage-row-{{ loop.index }}">
+              <td>{{ row.index }}</td>
+              <td>{{ row.item }}</td>
+              <td>{{ row.mapping_note if row.mapping_note else "n/a" }}</td>
+              <td>
+                {% if row.route_rows %}
+                  {% for route in row.route_rows %}
+                    <div>
+                      <code>{{ route.path }}</code> -> <code>{{ route.template }}</code>
+                      <span class="pill">{{ route.methods_label }}</span>
+                      {% if route.is_read_only %}
+                        <span class="pill good">read-only</span>
+                      {% elif route.route_exists %}
+                        <span class="pill">present</span>
+                      {% else %}
+                        <span class="pill bad">missing</span>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <span class="muted">n/a</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.coverage_status == "covered" %}
+                  <span class="pill good">covered</span>
+                {% elif row.coverage_status == "partial" %}
+                  <span class="pill">partial</span>
+                {% else %}
+                  <span class="pill bad">missing</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No section-8 checklist rows were extracted from Whole View.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Current UI Route Inventory</h2>
+    {% if all_ui_route_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>route</th><th>view_name</th><th>template</th><th>methods</th><th>section8_mapping</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in all_ui_route_rows %}
+            <tr data-testid="ui-coverage-route-row-{{ loop.index }}">
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.view_name }}</td>
+              <td><code>{{ row.template }}</code></td>
+              <td><span class="pill">{{ row.methods_label }}</span></td>
+              <td>
+                {% if row.mapped_to_section8 %}
+                  <span class="pill good">mapped</span>
+                {% else %}
+                  <span class="pill">unmapped</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.is_read_only %}
+                  <span class="pill good">read-only</span>
+                {% elif row.has_write %}
+                  <span class="pill bad">write-enabled</span>
+                {% else %}
+                  <span class="pill">present</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No UI routes were discovered from router metadata.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>SSOT G43 Governance Evidence</h2>
+
+    <div class="section">
+      <h2>g43_ui_coverage_matrix_scope.required_guards</h2>
+      {% if g43_exception.required_guards %}
+        {% for row in g43_exception.required_guards %}
+          <div data-testid="ui-coverage-required-guard-{{ loop.index }}">{{ row }}</div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No required guards found under g43_ui_coverage_matrix_scope.</div>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <h2>g43_ui_coverage_matrix_scope.allowed_route_prefixes</h2>
+      {% if g43_exception.allowed_route_prefixes %}
+        {% for row in g43_exception.allowed_route_prefixes %}
+          <div><code>{{ row }}</code></div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No allowed route prefixes found.</div>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <h2>g43_ui_coverage_matrix_scope.still_forbidden</h2>
+      {% if g43_exception.still_forbidden %}
+        {% for row in g43_exception.still_forbidden %}
+          <div><code>{{ row }}</code></div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No still_forbidden rules found.</div>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <h2>goal_checklist(G43).expected_artifacts</h2>
+      {% if g43_expected_artifacts %}
+        {% for row in g43_expected_artifacts %}
+          <div data-testid="ui-coverage-expected-artifact-{{ loop.index }}"><code>{{ row }}</code></div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No expected artifacts found for G43.</div>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <h2>goal_checklist(G43).acceptance_commands</h2>
+      {% if g43_acceptance_commands %}
+        {% for row in g43_acceptance_commands %}
+          <div data-testid="ui-coverage-acceptance-command-{{ loop.index }}"><code>{{ row }}</code></div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No acceptance commands found for G43.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

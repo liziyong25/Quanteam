@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Playbook Codex Task Card Template Read-Only Evidence</h1>
+    <p class="page-subtitle">
+      Read-only governance evidence sourced from Playbook section <code>4</code>
+      in <code>Quant‑EAM Implementation Phases Playbook.md</code>.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">section 4 evidence only</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Sections</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Evidence Summary</h2>
+      <div class="kv">
+        <div class="k">ui_route</div>
+        <div class="v"><code>/ui/playbook-codex-task-card</code></div>
+        <div class="k">template_fields</div>
+        <div class="v"><span data-testid="playbook-codex-field-total">{{ summary.field_total }}</span></div>
+        <div class="k">must_implement_items</div>
+        <div class="v"><span data-testid="playbook-codex-must-total">{{ summary.must_total }}</span></div>
+        <div class="k">forbidden_items</div>
+        <div class="v"><span data-testid="playbook-codex-forbidden-total">{{ summary.forbidden_total }}</span></div>
+        <div class="k">acceptance_commands</div>
+        <div class="v"><span data-testid="playbook-codex-acceptance-total">{{ summary.acceptance_total }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Playbook Section 4 Codex Task Card Template</h2>
+    <div class="section"><span class="pill">{{ playbook.section }}</span></div>
+    {% if playbook.intro %}
+      <div class="muted">{{ playbook.intro }}</div>
+    {% endif %}
+    <div class="section"><span class="pill">{{ playbook.template_section }}</span></div>
+
+    <div class="section">
+      <h2>Template Fields</h2>
+      {% if playbook.field_rows %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>#</th><th>field</th><th>value</th><th>source_line</th></tr></thead>
+            <tbody>
+            {% for row in playbook.field_rows %}
+              <tr data-testid="playbook-codex-field-row-{{ loop.index }}">
+                <td>{{ row.index }}</td>
+                <td>{{ row.label }}</td>
+                <td>{{ row.value }}</td>
+                <td>{{ row.source_line }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="plot-fallback">No task-card field rows extracted from Playbook section 4.</div>
+      {% endif %}
+    </div>
+
+    <div class="grid">
+      <div class="section">
+        <h2>Must Implement</h2>
+        {% if playbook.must_rows %}
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>#</th><th>item</th><th>source_line</th></tr></thead>
+              <tbody>
+              {% for row in playbook.must_rows %}
+                <tr data-testid="playbook-codex-must-row-{{ loop.index }}">
+                  <td>{{ row.index }}</td>
+                  <td>{{ row.item }}</td>
+                  <td>{{ row.source_line }}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="plot-fallback">No must-implement rows extracted from Playbook section 4.</div>
+        {% endif %}
+      </div>
+
+      <div class="section">
+        <h2>Forbidden Items</h2>
+        {% if playbook.forbidden_rows %}
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>#</th><th>item</th><th>source_line</th></tr></thead>
+              <tbody>
+              {% for row in playbook.forbidden_rows %}
+                <tr data-testid="playbook-codex-forbidden-row-{{ loop.index }}">
+                  <td>{{ row.index }}</td>
+                  <td>{{ row.item }}</td>
+                  <td>{{ row.source_line }}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="plot-fallback">No forbidden rows extracted from Playbook section 4.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Acceptance Commands</h2>
+      {% if playbook.acceptance_rows %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>#</th><th>command/evidence</th><th>source_line</th></tr></thead>
+            <tbody>
+            {% for row in playbook.acceptance_rows %}
+              <tr data-testid="playbook-codex-acceptance-row-{{ loop.index }}">
+                <td>{{ row.index }}</td>
+                <td>{{ row.item }}</td>
+                <td>{{ row.source_line }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="plot-fallback">No acceptance-command rows extracted from Playbook section 4.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

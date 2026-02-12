@@ -8,11 +8,12 @@ from typing import Any
 
 from .policy import apply_user_policy, snake_case
 from .registry import FetchMapping, build_fetch_mappings
-from .wbdata_bridge import resolve_wbdata_callable
-from .wequant_bridge import resolve_wequant_callable
+from .mongo_bridge import resolve_mongo_fetch_callable
+from .mysql_bridge import resolve_mysql_fetch_callable
+from .source import SOURCE_MONGO, SOURCE_MYSQL, is_mongo_source, is_mysql_source, normalize_source
 
 
-SOURCE_PRIORITY = {"wbdata": 0, "wequant": 1}
+SOURCE_PRIORITY = {SOURCE_MYSQL: 0, SOURCE_MONGO: 1}
 SUPPORTED_ASSETS = {"bond", "stock", "hkstock", "future", "etf", "index"}
 SUPPORTED_FREQ = {"day", "min", "transaction", "dk"}
 SUPPORTED_ADJUST = {"raw", "qfq", "hfq"}
@@ -51,9 +52,11 @@ class _IndexEntry:
 
 
 def _source_better(new_source: str, current_source: str | None) -> bool:
+    new_key = normalize_source(new_source) or str(new_source)
+    cur_key = normalize_source(current_source) if current_source is not None else None
     if current_source is None:
         return True
-    return SOURCE_PRIORITY.get(new_source, -1) > SOURCE_PRIORITY.get(current_source, -1)
+    return SOURCE_PRIORITY.get(new_key, -1) > SOURCE_PRIORITY.get(cur_key, -1)
 
 
 def _parse_market_signature(name: str) -> tuple[str, str, str | None, bool] | None:
@@ -106,10 +109,11 @@ def _market_index() -> dict[tuple[str, str, str], _IndexEntry]:
 
 
 def _resolve_callable(source: str, target_name: str):
-    if source == "wequant":
-        return resolve_wequant_callable(target_name)
-    if source == "wbdata":
-        return resolve_wbdata_callable(target_name)
+    normalized = normalize_source(source)
+    if is_mongo_source(normalized):
+        return resolve_mongo_fetch_callable(target_name)
+    if is_mysql_source(normalized):
+        return resolve_mysql_fetch_callable(target_name)
     raise ValueError(f"unsupported source={source!r}")
 
 
@@ -245,6 +249,18 @@ def qa_fetch_registry_payload(*, include_drop: bool = False) -> dict[str, Any]:
             asset, freq, venue, _is_adv = sig
             is_market_data = True
         item = asdict(row)
+        item["source_internal"] = row.source
+        item["source"] = "fetch"
+        if is_mongo_source(row.source):
+            item["engine"] = "mongo"
+            item["provider_internal"] = "mongo_fetch"
+        elif is_mysql_source(row.source):
+            item["engine"] = "mysql"
+            item["provider_internal"] = "mysql_fetch"
+        else:
+            item["engine"] = None
+            item["provider_internal"] = None
+        item["provider_id"] = "fetch"
         item["is_market_data"] = is_market_data
         item["asset"] = asset
         item["freq"] = freq
@@ -262,7 +278,11 @@ def qa_fetch_registry_payload(*, include_drop: bool = False) -> dict[str, Any]:
                 "freq": entry.freq,
                 "venue": entry.venue,
                 "raw": {
-                    "source": entry.raw_source,
+                    "source": "fetch",
+                    "source_internal": entry.raw_source,
+                    "engine": "mongo" if is_mongo_source(entry.raw_source) else "mysql",
+                    "provider_id": "fetch",
+                    "provider_internal": "mongo_fetch" if is_mongo_source(entry.raw_source) else "mysql_fetch",
                     "target_name": entry.raw_target_name,
                     "public_name": entry.raw_public_name,
                 },
@@ -272,7 +292,11 @@ def qa_fetch_registry_payload(*, include_drop: bool = False) -> dict[str, Any]:
                     "supports_hfq": bool(entry.adv_target_name),
                     "adv": (
                         {
-                            "source": entry.adv_source,
+                            "source": "fetch",
+                            "source_internal": entry.adv_source,
+                            "engine": "mongo" if is_mongo_source(entry.adv_source) else "mysql",
+                            "provider_id": "fetch",
+                            "provider_internal": "mongo_fetch" if is_mongo_source(entry.adv_source) else "mysql_fetch",
                             "target_name": entry.adv_target_name,
                             "public_name": entry.adv_public_name,
                         }

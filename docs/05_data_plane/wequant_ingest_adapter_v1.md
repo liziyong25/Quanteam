@@ -1,5 +1,8 @@
 # WeQuant Ingest Adapter v1 (DataLake Snapshot)
 
+Legacy note: this document is kept for historical adapter reference only.
+Agents Plane primary contracts are `source=fetch` + `engine=mongo|mysql`.
+
 This document defines the **DataLake ingest adapter** for WeQuant-style OHLCV inputs.
 
 ## Scope / Non-Goals

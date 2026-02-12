@@ -14,6 +14,7 @@ Canonical entry file is `docs/README.md`. Do not add a second docs entry (e.g. a
 - Data plane (snapshots + as_of time-travel): `05_data_plane/data_plane_mvp.md`
 - WeQuant adapter ingest (DataLake snapshot writer): `05_data_plane/wequant_adapter_ingest.md`
 - Agents Plane data contract (query_dataset + qa_fetch runtime): `05_data_plane/agents_plane_data_contract_v1.md`
+- QA fetch function baseline (77): `05_data_plane/qa_fetch_function_baseline_v1.md`
 - Resolver + machine registry for fetch selection: `05_data_plane/qa_fetch_resolver_registry_v1.md`
 - Resolver smoke evidence: `05_data_plane/qa_fetch_smoke_evidence_v1.md`
 - Backtest plane (runner + dossier): `06_backtest_plane/backtest_index.md`

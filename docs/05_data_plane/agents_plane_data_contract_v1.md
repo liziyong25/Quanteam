@@ -4,6 +4,11 @@
 
 Define a stable data contract for `6.4 Agents Plane` so agents consume data by dataset/query semantics first, not by hardcoded legacy module paths.
 
+Selection order for agent runtime:
+
+1. Prefer `query_dataset(...)` on `DataCatalog`.
+2. Fallback to `qa_fetch.runtime` only when dataset mapping is missing or function-level behavior is explicitly required.
+
 ## Primary Query API
 
 - Module: `src/quant_eam/datacatalog/catalog.py`
@@ -17,14 +22,19 @@ Define a stable data contract for `6.4 Agents Plane` so agents consume data by d
 - APIs:
   - `execute_fetch_by_intent(...)`
   - `execute_fetch_by_name(...)`
+- Baseline gating:
+  - canonical function must exist in `qa_fetch_function_registry_v1.json`
+  - outside-baseline call returns `blocked_source_missing` with reason `not_in_baseline`
 - Parameter precedence:
   - `LLM kwargs` > `window profile` > `function defaults`
 
 ## Registries
 
 - Function registry: `docs/05_data_plane/qa_fetch_function_registry_v1.json`
-  - 77 active functions (v3 matrix baseline)
-  - source/provider/module metadata
+  - 71 active functions (frozen baseline)
+  - function key is canonical `fetch_*`; runtime dispatches through `target_name`
+  - external routing semantics: `source=fetch`, `provider=fetch`
+  - internal routing metadata: `engine`, `source_internal`, `provider_internal`
   - default smoke timeout and default kwargs
 - Dataset registry: `docs/05_data_plane/qa_dataset_registry_v1.json`
   - dataset-level keys/time column/as_of rule/adjust support
@@ -37,12 +47,14 @@ Define a stable data contract for `6.4 Agents Plane` so agents consume data by d
 - Reference-like datasets:
   - `snapshot_effective_time` strategy
 - Query result always returns `as_of_applied` metadata.
+- Agent prompts must carry explicit `as_of` for reproducibility.
 
 ## Adjust Rules
 
 - External contract: `adjust=raw|qfq|hfq`
 - Default: `raw`
 - Runtime resolver maps `qfq/hfq` to corresponding `*_adv` fetch functions when available.
+- If `adjust` is omitted, runtime must use `raw`.
 
 ## Standard Result Shape
 
@@ -72,3 +84,8 @@ Per job:
 
 These files are the canonical fetch evidence for replay/review.
 
+Evidence metadata conventions:
+
+- `source`: always `fetch` (external contract)
+- `engine`: `mongo|mysql`
+- `source_internal` / `provider_internal`: optional internal tracing fields for replay and debugging

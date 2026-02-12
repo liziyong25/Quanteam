@@ -1,6 +1,24 @@
 [
   {
     "source": "wbdata",
+    "function": "fetch_bond_amount_cfets",
+    "status": "error_runtime",
+    "reason": "timeout_skip_30s: function call exceeded 30 seconds",
+    "type": "unknown",
+    "len": 0,
+    "columns": [],
+    "dtypes": {},
+    "head_preview": null,
+    "args_preview": {
+      "args": [
+        "2010-01-01",
+        "2030-01-01"
+      ],
+      "kwargs": {}
+    }
+  },
+  {
+    "source": "wbdata",
     "function": "fetch_bond_date_list",
     "status": "blocked_source_missing",
     "reason": "missing mysql tables: wind_cbondcalendar",
@@ -210,6 +228,157 @@
         "valuation_missing": 0,
         "valuation_override": 0,
         "override_fields": ""
+      }
+    ],
+    "args_preview": {
+      "args": [
+        "240011.IB",
+        "2010-01-01",
+        "2030-01-01"
+      ],
+      "kwargs": {}
+    }
+  },
+  {
+    "source": "wbdata",
+    "function": "fetch_bond_day_cfets",
+    "status": "pass_has_data",
+    "reason": "ok",
+    "type": "DataFrame",
+    "len": 37,
+    "columns": [
+      "open_price",
+      "high_price",
+      "low_price",
+      "close_price",
+      "open_yield",
+      "high_yield",
+      "low_yield",
+      "close_yield",
+      "vol",
+      "tkn_vol",
+      "gvn_vol",
+      "trade_vol",
+      "quote_vol",
+      "symbol",
+      "trade_date",
+      "pre_date",
+      "is_vaild"
+    ],
+    "dtypes": {
+      "open_price": "float64",
+      "high_price": "float64",
+      "low_price": "float64",
+      "close_price": "float64",
+      "open_yield": "float64",
+      "high_yield": "float64",
+      "low_yield": "float64",
+      "close_yield": "float64",
+      "vol": "int64",
+      "tkn_vol": "int64",
+      "gvn_vol": "int64",
+      "trade_vol": "int64",
+      "quote_vol": "int64",
+      "symbol": "object",
+      "trade_date": "datetime64[ns]",
+      "pre_date": "datetime64[ns]",
+      "is_vaild": "int64"
+    },
+    "head_preview": [
+      {
+        "open_price": 105.5763,
+        "high_price": 105.6206,
+        "low_price": 105.3334,
+        "close_price": 105.4613,
+        "open_yield": 1.62,
+        "high_yield": 1.647,
+        "low_yield": 1.615,
+        "close_yield": 1.6325,
+        "vol": 1,
+        "tkn_vol": 0,
+        "gvn_vol": 0,
+        "trade_vol": 0,
+        "quote_vol": 0,
+        "symbol": "240011.IB",
+        "trade_date": "2025-02-14T00:00:00",
+        "pre_date": "2025-02-14T00:00:00",
+        "is_vaild": 1
+      },
+      {
+        "open_price": 104.8579,
+        "high_price": 105.1868,
+        "low_price": 104.2459,
+        "close_price": 104.3329,
+        "open_yield": 1.705,
+        "high_yield": 1.77,
+        "low_yield": 1.683,
+        "close_yield": 1.76,
+        "vol": 1,
+        "tkn_vol": 0,
+        "gvn_vol": 0,
+        "trade_vol": 0,
+        "quote_vol": 0,
+        "symbol": "240011.IB",
+        "trade_date": "2025-02-24T00:00:00",
+        "pre_date": "2025-02-24T00:00:00",
+        "is_vaild": 1
+      },
+      {
+        "open_price": 103.816,
+        "high_price": 104.2261,
+        "low_price": 103.362,
+        "close_price": 103.6623,
+        "open_yield": 1.8175,
+        "high_yield": 1.87,
+        "low_yield": 1.77,
+        "close_yield": 1.835,
+        "vol": 1,
+        "tkn_vol": 6574856,
+        "gvn_vol": 6574856,
+        "trade_vol": 6574856,
+        "quote_vol": 6574856,
+        "symbol": "240011.IB",
+        "trade_date": "2025-03-14T00:00:00",
+        "pre_date": "2025-03-14T00:00:00",
+        "is_vaild": 1
+      },
+      {
+        "open_price": 103.3825,
+        "high_price": 103.7473,
+        "low_price": 103.1006,
+        "close_price": 103.3945,
+        "open_yield": 1.87,
+        "high_yield": 1.9,
+        "low_yield": 1.8325,
+        "close_yield": 1.866,
+        "vol": 1,
+        "tkn_vol": 0,
+        "gvn_vol": 0,
+        "trade_vol": 0,
+        "quote_vol": 0,
+        "symbol": "240011.IB",
+        "trade_date": "2025-03-18T00:00:00",
+        "pre_date": "2025-03-18T00:00:00",
+        "is_vaild": 1
+      },
+      {
+        "open_price": 103.7872,
+        "high_price": 103.9162,
+        "low_price": 103.2515,
+        "close_price": 103.6768,
+        "open_yield": 1.82,
+        "high_yield": 1.8825,
+        "low_yield": 1.805,
+        "close_yield": 1.8325,
+        "vol": 1,
+        "tkn_vol": 5151331,
+        "gvn_vol": 5151331,
+        "trade_vol": 5151331,
+        "quote_vol": 5151331,
+        "symbol": "240011.IB",
+        "trade_date": "2025-03-21T00:00:00",
+        "pre_date": "2025-03-21T00:00:00",
+        "is_vaild": 1
       }
     ],
     "args_preview": {
@@ -444,7 +613,7 @@
   },
   {
     "source": "wbdata",
-    "function": "fetch_bondInformation",
+    "function": "fetch_bond_information",
     "status": "pass_has_data",
     "reason": "ok",
     "type": "DataFrame",
@@ -535,7 +704,7 @@
         "common_class": "国债",
         "bond_id": "240011",
         "exchange": "IB",
-        "age_limit": 8.284931506849315,
+        "age_limit": 8.282191780821918,
         "age": 10.0,
         "total_size": 1360.0,
         "issuer_type": "始发"
@@ -567,635 +736,7 @@
   },
   {
     "source": "wbdata",
-    "function": "fetch_cfets_bond_amount",
-    "status": "error_runtime",
-    "reason": "timeout_skip_30s: function call exceeded 30 seconds",
-    "type": "unknown",
-    "len": 0,
-    "columns": [],
-    "dtypes": {},
-    "head_preview": null,
-    "args_preview": {
-      "args": [
-        "2010-01-01",
-        "2030-01-01"
-      ],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wbdata",
-    "function": "fetch_cfets_credit_item",
-    "status": "pass_has_data",
-    "reason": "ok",
-    "type": "DataFrame",
-    "len": 137856,
-    "columns": [
-      "id",
-      "industry",
-      "symbol",
-      "borrow_rate",
-      "deextrema_borrow_rate",
-      "borrow_amount",
-      "lend_rate",
-      "deextrema_lend_rate",
-      "lend_amount",
-      "net_financing_in_amount",
-      "borrow_remaining",
-      "lend_remaining",
-      "trade_date",
-      "new_industry",
-      "new_age"
-    ],
-    "dtypes": {
-      "id": "int64",
-      "industry": "object",
-      "symbol": "object",
-      "borrow_rate": "float64",
-      "deextrema_borrow_rate": "float64",
-      "borrow_amount": "float64",
-      "lend_rate": "float64",
-      "deextrema_lend_rate": "float64",
-      "lend_amount": "float64",
-      "net_financing_in_amount": "float64",
-      "borrow_remaining": "float64",
-      "lend_remaining": "float64",
-      "trade_date": "datetime64[ns]",
-      "new_industry": "object",
-      "new_age": "object"
-    },
-    "head_preview": [
-      {
-        "id": 229,
-        "industry": "股份制商业银行",
-        "symbol": "IBO001",
-        "borrow_rate": 2.174,
-        "deextrema_borrow_rate": 2.174,
-        "borrow_amount": 148500.0,
-        "lend_rate": 2.2094,
-        "deextrema_lend_rate": 2.2094,
-        "lend_amount": 205500.0,
-        "net_financing_in_amount": -93155.0,
-        "borrow_remaining": 148500.0,
-        "lend_remaining": 205500.0,
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "大型银行",
-        "new_age": "1d"
-      },
-      {
-        "id": 230,
-        "industry": "股份制商业银行",
-        "symbol": "IBO007",
-        "borrow_rate": 2.216,
-        "deextrema_borrow_rate": 2.216,
-        "borrow_amount": 50.0,
-        "lend_rate": 2.3391,
-        "deextrema_lend_rate": 2.3391,
-        "lend_amount": 17399.3,
-        "net_financing_in_amount": -12796.9,
-        "borrow_remaining": 14250.0,
-        "lend_remaining": 42602.9,
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "大型银行",
-        "new_age": "7d"
-      },
-      {
-        "id": 231,
-        "industry": "股份制商业银行",
-        "symbol": "IBO014",
-        "borrow_rate": NaN,
-        "deextrema_borrow_rate": NaN,
-        "borrow_amount": NaN,
-        "lend_rate": NaN,
-        "deextrema_lend_rate": NaN,
-        "lend_amount": NaN,
-        "net_financing_in_amount": NaN,
-        "borrow_remaining": NaN,
-        "lend_remaining": NaN,
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "大型银行",
-        "new_age": "14d"
-      },
-      {
-        "id": 232,
-        "industry": "股份制商业银行",
-        "symbol": "IBO021",
-        "borrow_rate": NaN,
-        "deextrema_borrow_rate": NaN,
-        "borrow_amount": NaN,
-        "lend_rate": NaN,
-        "deextrema_lend_rate": NaN,
-        "lend_amount": NaN,
-        "net_financing_in_amount": NaN,
-        "borrow_remaining": NaN,
-        "lend_remaining": NaN,
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "大型银行",
-        "new_age": ">14d"
-      },
-      {
-        "id": 233,
-        "industry": "股份制商业银行",
-        "symbol": "IBO1M",
-        "borrow_rate": NaN,
-        "deextrema_borrow_rate": NaN,
-        "borrow_amount": NaN,
-        "lend_rate": NaN,
-        "deextrema_lend_rate": NaN,
-        "lend_amount": NaN,
-        "net_financing_in_amount": NaN,
-        "borrow_remaining": 180.0,
-        "lend_remaining": NaN,
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "大型银行",
-        "new_age": ">14d"
-      }
-    ],
-    "args_preview": {
-      "args": [
-        "2010-01-01",
-        "2030-01-01"
-      ],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wbdata",
-    "function": "fetch_cfets_credit_side",
-    "status": "pass_has_data",
-    "reason": "ok",
-    "type": "DataFrame",
-    "len": 48820,
-    "columns": [
-      "id",
-      "borrow_industry",
-      "lend_industry",
-      "lend_rate",
-      "trade_date",
-      "new_industry"
-    ],
-    "dtypes": {
-      "id": "int64",
-      "borrow_industry": "object",
-      "lend_industry": "object",
-      "lend_rate": "float64",
-      "trade_date": "datetime64[ns]",
-      "new_industry": "object"
-    },
-    "head_preview": [
-      {
-        "id": 81,
-        "borrow_industry": "股份制商业银行",
-        "lend_industry": "股份制商业银行",
-        "lend_rate": 2.1711,
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": null
-      },
-      {
-        "id": 82,
-        "borrow_industry": "股份制商业银行",
-        "lend_industry": "大型商业/政策性银行",
-        "lend_rate": 2.1792,
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": null
-      },
-      {
-        "id": 83,
-        "borrow_industry": "股份制商业银行",
-        "lend_industry": "城市商业银行",
-        "lend_rate": 2.16,
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": null
-      },
-      {
-        "id": 84,
-        "borrow_industry": "股份制商业银行",
-        "lend_industry": "外资银行",
-        "lend_rate": 2.1545,
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": null
-      },
-      {
-        "id": 85,
-        "borrow_industry": "股份制商业银行",
-        "lend_industry": "其他",
-        "lend_rate": 2.1847,
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": null
-      }
-    ],
-    "args_preview": {
-      "args": [
-        "2010-01-01",
-        "2030-01-01"
-      ],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wbdata",
-    "function": "fetch_cfets_dfz_bond_day",
-    "status": "pass_empty",
-    "reason": "ok",
-    "type": "DataFrame",
-    "len": 0,
-    "columns": [
-      "open_price",
-      "high_price",
-      "low_price",
-      "close_price",
-      "open_yield",
-      "high_yield",
-      "low_yield",
-      "close_yield",
-      "vol",
-      "tkn_vol",
-      "gvn_vol",
-      "trade_vol",
-      "quote_vol",
-      "symbol",
-      "trade_date",
-      "pre_date",
-      "is_vaild"
-    ],
-    "dtypes": {
-      "open_price": "object",
-      "high_price": "object",
-      "low_price": "object",
-      "close_price": "object",
-      "open_yield": "object",
-      "high_yield": "object",
-      "low_yield": "object",
-      "close_yield": "object",
-      "vol": "object",
-      "tkn_vol": "object",
-      "gvn_vol": "object",
-      "trade_vol": "object",
-      "quote_vol": "object",
-      "symbol": "object",
-      "trade_date": "object",
-      "pre_date": "object",
-      "is_vaild": "object"
-    },
-    "head_preview": [],
-    "args_preview": {
-      "args": [
-        "240011.IB",
-        "2010-01-01",
-        "2030-01-01"
-      ],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wbdata",
-    "function": "fetch_cfets_repo_buyback_item",
-    "status": "pass_has_data",
-    "reason": "ok",
-    "type": "DataFrame",
-    "len": 189476,
-    "columns": [
-      "industry",
-      "symbol",
-      "repurchase_rate",
-      "deextrema_repurchase_rate",
-      "repurchase_amount",
-      "rev_repurchase_rate",
-      "deextrema_rev_repurchase_rate",
-      "rev_repurchase_amount",
-      "net_financing_in_amount",
-      "repurchase_remaining",
-      "rev_repurchase_remaining",
-      "repo_type",
-      "trade_date",
-      "new_industry"
-    ],
-    "dtypes": {
-      "industry": "object",
-      "symbol": "object",
-      "repurchase_rate": "float64",
-      "deextrema_repurchase_rate": "float64",
-      "repurchase_amount": "float64",
-      "rev_repurchase_rate": "float64",
-      "deextrema_rev_repurchase_rate": "float64",
-      "rev_repurchase_amount": "float64",
-      "net_financing_in_amount": "float64",
-      "repurchase_remaining": "float64",
-      "rev_repurchase_remaining": "float64",
-      "repo_type": "object",
-      "trade_date": "datetime64[ns]",
-      "new_industry": "object"
-    },
-    "head_preview": [
-      {
-        "industry": "城市商业银行",
-        "symbol": "R001",
-        "repurchase_rate": 2.1386,
-        "deextrema_repurchase_rate": 2.1386,
-        "repurchase_amount": 750233.37,
-        "rev_repurchase_rate": 2.1991,
-        "deextrema_rev_repurchase_rate": 2.1995,
-        "rev_repurchase_amount": 736866.87,
-        "net_financing_in_amount": -132264.97,
-        "repurchase_remaining": 750233.37,
-        "rev_repurchase_remaining": 736866.87,
-        "repo_type": "buyback",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "中小型银行"
-      },
-      {
-        "industry": "城市商业银行",
-        "symbol": "R007",
-        "repurchase_rate": 2.2046,
-        "deextrema_repurchase_rate": 2.2046,
-        "repurchase_amount": 51572.7,
-        "rev_repurchase_rate": 2.2943,
-        "deextrema_rev_repurchase_rate": 2.2622,
-        "rev_repurchase_amount": 9627.52,
-        "net_financing_in_amount": 25410.05,
-        "repurchase_remaining": 224400.4,
-        "rev_repurchase_remaining": 108641.49,
-        "repo_type": "buyback",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "中小型银行"
-      },
-      {
-        "industry": "城市商业银行",
-        "symbol": "R014",
-        "repurchase_rate": 2.1442,
-        "deextrema_repurchase_rate": 2.1442,
-        "repurchase_amount": 3590.51,
-        "rev_repurchase_rate": 2.1075,
-        "deextrema_rev_repurchase_rate": 2.1075,
-        "rev_repurchase_amount": 1212.13,
-        "net_financing_in_amount": 2280.43,
-        "repurchase_remaining": 60755.94,
-        "rev_repurchase_remaining": 25323.83,
-        "repo_type": "buyback",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "中小型银行"
-      },
-      {
-        "industry": "城市商业银行",
-        "symbol": "R021",
-        "repurchase_rate": 2.4086,
-        "deextrema_repurchase_rate": 2.4086,
-        "repurchase_amount": 2459.74,
-        "rev_repurchase_rate": 2.0447,
-        "deextrema_rev_repurchase_rate": 2.0447,
-        "rev_repurchase_amount": 644.0,
-        "net_financing_in_amount": -1134.55,
-        "repurchase_remaining": 29053.61,
-        "rev_repurchase_remaining": 2393.92,
-        "repo_type": "buyback",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "中小型银行"
-      },
-      {
-        "industry": "城市商业银行",
-        "symbol": "R1M",
-        "repurchase_rate": 2.5317,
-        "deextrema_repurchase_rate": 2.5317,
-        "repurchase_amount": 1216.4,
-        "rev_repurchase_rate": 2.2741,
-        "deextrema_rev_repurchase_rate": 2.2741,
-        "rev_repurchase_amount": 124.01,
-        "net_financing_in_amount": -1896.6,
-        "repurchase_remaining": 8149.29,
-        "rev_repurchase_remaining": 6473.18,
-        "repo_type": "buyback",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "中小型银行"
-      }
-    ],
-    "args_preview": {
-      "args": [
-        "2010-01-01",
-        "2030-01-01"
-      ],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wbdata",
-    "function": "fetch_cfets_repo_buyout_item",
-    "status": "pass_has_data",
-    "reason": "ok",
-    "type": "DataFrame",
-    "len": 154812,
-    "columns": [
-      "industry",
-      "symbol",
-      "repurchase_rate",
-      "deextrema_repurchase_rate",
-      "repurchase_amount",
-      "rev_repurchase_rate",
-      "deextrema_rev_repurchase_rate",
-      "rev_repurchase_amount",
-      "net_financing_in_amount",
-      "repurchase_remaining",
-      "rev_repurchase_remaining",
-      "repo_type",
-      "trade_date",
-      "new_industry",
-      "new_age"
-    ],
-    "dtypes": {
-      "industry": "object",
-      "symbol": "object",
-      "repurchase_rate": "float64",
-      "deextrema_repurchase_rate": "float64",
-      "repurchase_amount": "float64",
-      "rev_repurchase_rate": "float64",
-      "deextrema_rev_repurchase_rate": "float64",
-      "rev_repurchase_amount": "float64",
-      "net_financing_in_amount": "float64",
-      "repurchase_remaining": "float64",
-      "rev_repurchase_remaining": "float64",
-      "repo_type": "object",
-      "trade_date": "datetime64[ns]",
-      "new_industry": "object",
-      "new_age": "object"
-    },
-    "head_preview": [
-      {
-        "industry": "大行及政策行",
-        "symbol": "OR001",
-        "repurchase_rate": NaN,
-        "deextrema_repurchase_rate": NaN,
-        "repurchase_amount": NaN,
-        "rev_repurchase_rate": NaN,
-        "deextrema_rev_repurchase_rate": NaN,
-        "rev_repurchase_amount": NaN,
-        "net_financing_in_amount": -1045.86,
-        "repurchase_remaining": NaN,
-        "rev_repurchase_remaining": NaN,
-        "repo_type": "buyout",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "大型银行",
-        "new_age": "1d"
-      },
-      {
-        "industry": "大行及政策行",
-        "symbol": "OR007",
-        "repurchase_rate": 2.2021,
-        "deextrema_repurchase_rate": 2.2021,
-        "repurchase_amount": 142.5,
-        "rev_repurchase_rate": 2.6505,
-        "deextrema_rev_repurchase_rate": 2.6505,
-        "rev_repurchase_amount": 142.5,
-        "net_financing_in_amount": 0.0,
-        "repurchase_remaining": 1700.5,
-        "rev_repurchase_remaining": 1928.5,
-        "repo_type": "buyout",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "大型银行",
-        "new_age": "7d"
-      },
-      {
-        "industry": "大行及政策行",
-        "symbol": "OR014",
-        "repurchase_rate": NaN,
-        "deextrema_repurchase_rate": NaN,
-        "repurchase_amount": NaN,
-        "rev_repurchase_rate": NaN,
-        "deextrema_rev_repurchase_rate": NaN,
-        "rev_repurchase_amount": NaN,
-        "net_financing_in_amount": NaN,
-        "repurchase_remaining": NaN,
-        "rev_repurchase_remaining": NaN,
-        "repo_type": "buyout",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "大型银行",
-        "new_age": "14d"
-      },
-      {
-        "industry": "大行及政策行",
-        "symbol": "OR021",
-        "repurchase_rate": NaN,
-        "deextrema_repurchase_rate": NaN,
-        "repurchase_amount": NaN,
-        "rev_repurchase_rate": NaN,
-        "deextrema_rev_repurchase_rate": NaN,
-        "rev_repurchase_amount": NaN,
-        "net_financing_in_amount": NaN,
-        "repurchase_remaining": NaN,
-        "rev_repurchase_remaining": NaN,
-        "repo_type": "buyout",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "大型银行",
-        "new_age": ">14d"
-      },
-      {
-        "industry": "大行及政策行",
-        "symbol": "OR1M",
-        "repurchase_rate": NaN,
-        "deextrema_repurchase_rate": NaN,
-        "repurchase_amount": NaN,
-        "rev_repurchase_rate": NaN,
-        "deextrema_rev_repurchase_rate": NaN,
-        "rev_repurchase_amount": NaN,
-        "net_financing_in_amount": NaN,
-        "repurchase_remaining": NaN,
-        "rev_repurchase_remaining": NaN,
-        "repo_type": "buyout",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": "大型银行",
-        "new_age": ">14d"
-      }
-    ],
-    "args_preview": {
-      "args": [
-        "2010-01-01",
-        "2030-01-01"
-      ],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wbdata",
-    "function": "fetch_cfets_repo_item",
-    "status": "blocked_source_missing",
-    "reason": "missing mysql tables: cfets_repo_item",
-    "type": "unknown",
-    "len": 0,
-    "columns": [],
-    "dtypes": {},
-    "head_preview": null,
-    "args_preview": {
-      "args": [],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wbdata",
-    "function": "fetch_cfets_repo_side",
-    "status": "pass_has_data",
-    "reason": "ok",
-    "type": "DataFrame",
-    "len": 36636,
-    "columns": [
-      "repurchase_rate",
-      "rev_repurchase_industry",
-      "repurchase_industry",
-      "trade_date",
-      "new_industry"
-    ],
-    "dtypes": {
-      "repurchase_rate": "float64",
-      "rev_repurchase_industry": "object",
-      "repurchase_industry": "object",
-      "trade_date": "datetime64[ns]",
-      "new_industry": "object"
-    },
-    "head_preview": [
-      {
-        "repurchase_rate": 2.1541,
-        "rev_repurchase_industry": "城市商业银行",
-        "repurchase_industry": "大型商业/政策性银行",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": null
-      },
-      {
-        "repurchase_rate": 2.1335,
-        "rev_repurchase_industry": "城市商业银行",
-        "repurchase_industry": "城市商业银行",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": null
-      },
-      {
-        "repurchase_rate": 2.1189,
-        "rev_repurchase_industry": "城市商业银行",
-        "repurchase_industry": "股份制商业银行",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": null
-      },
-      {
-        "repurchase_rate": 2.1607,
-        "rev_repurchase_industry": "城市商业银行",
-        "repurchase_industry": "农村金融机构",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": null
-      },
-      {
-        "repurchase_rate": 2.1693,
-        "rev_repurchase_industry": "城市商业银行",
-        "repurchase_industry": "其他",
-        "trade_date": "2021-03-01T00:00:00",
-        "new_industry": null
-      }
-    ],
-    "args_preview": {
-      "args": [
-        "2010-01-01",
-        "2030-01-01"
-      ],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wbdata",
-    "function": "fetch_clean_quote",
+    "function": "fetch_bond_quote",
     "status": "blocked_source_missing",
     "reason": "missing mysql tables: clean_bond_quote",
     "type": "unknown",
@@ -1210,7 +751,121 @@
   },
   {
     "source": "wbdata",
-    "function": "fetch_clean_transaction",
+    "function": "fetch_bond_quote_realtime",
+    "status": "pass_has_data",
+    "reason": "ok",
+    "type": "DataFrame",
+    "len": 12,
+    "columns": [
+      "age_limit",
+      "symbol",
+      "short_name",
+      "bid_vol",
+      "bid_yield",
+      "ofr_yield",
+      "ofr_vol",
+      "cfets_valuation",
+      "agent",
+      "trade_date",
+      "coupon_rate",
+      "credit"
+    ],
+    "dtypes": {
+      "age_limit": "object",
+      "symbol": "object",
+      "short_name": "object",
+      "bid_vol": "float64",
+      "bid_yield": "float64",
+      "ofr_yield": "float64",
+      "ofr_vol": "float64",
+      "cfets_valuation": "object",
+      "agent": "object",
+      "trade_date": "object",
+      "coupon_rate": "int64",
+      "credit": "object"
+    },
+    "head_preview": [
+      {
+        "age_limit": "8.28Y",
+        "symbol": "240011.IB",
+        "short_name": "24附息国债11",
+        "bid_vol": 0.0,
+        "bid_yield": 0.0,
+        "ofr_yield": 1.71,
+        "ofr_vol": 5000.0,
+        "cfets_valuation": "1.7160",
+        "agent": "--",
+        "trade_date": "2026-02-12 08:43:39",
+        "coupon_rate": 2,
+        "credit": "--"
+      },
+      {
+        "age_limit": "8.28Y",
+        "symbol": "240011.IB",
+        "short_name": "24附息国债11",
+        "bid_vol": 0.0,
+        "bid_yield": 0.0,
+        "ofr_yield": 1.705,
+        "ofr_vol": 3000.0,
+        "cfets_valuation": "1.7160",
+        "agent": "国际",
+        "trade_date": "2026-02-12 08:51:27",
+        "coupon_rate": 2,
+        "credit": "--"
+      },
+      {
+        "age_limit": "8.28Y",
+        "symbol": "240011.IB",
+        "short_name": "24附息国债11",
+        "bid_vol": 0.0,
+        "bid_yield": 1.7275,
+        "ofr_yield": 1.705,
+        "ofr_vol": 0.0,
+        "cfets_valuation": "1.7160",
+        "agent": "国际",
+        "trade_date": "2026-02-12 08:52:14",
+        "coupon_rate": 2,
+        "credit": "--"
+      },
+      {
+        "age_limit": "8.28Y",
+        "symbol": "240011.IB",
+        "short_name": "24附息国债11",
+        "bid_vol": 11000.0,
+        "bid_yield": 0.0,
+        "ofr_yield": 0.0,
+        "ofr_vol": 0.0,
+        "cfets_valuation": "1.7160",
+        "agent": "上田",
+        "trade_date": "2026-02-12 08:52:14",
+        "coupon_rate": 2,
+        "credit": "--"
+      },
+      {
+        "age_limit": "8.28Y",
+        "symbol": "240011.IB",
+        "short_name": "24附息国债11 ",
+        "bid_vol": 0.0,
+        "bid_yield": 1.7275,
+        "ofr_yield": 1.7025,
+        "ofr_vol": 0.0,
+        "cfets_valuation": "1.7160",
+        "agent": "国际",
+        "trade_date": "2026-02-12 08:57:13",
+        "coupon_rate": 2,
+        "credit": "--"
+      }
+    ],
+    "args_preview": {
+      "args": [
+        "240011.IB"
+      ],
+      "kwargs": {}
+    }
+  },
+  {
+    "source": "wbdata",
+    "function": "fetch_bond_transaction",
     "status": "pass_has_data",
     "reason": "ok",
     "type": "DataFrame",
@@ -1361,140 +1016,11 @@
   },
   {
     "source": "wbdata",
-    "function": "fetch_realtime_bid",
-    "status": "pass_has_data",
+    "function": "fetch_bond_transaction_realtime",
+    "status": "pass_empty",
     "reason": "ok",
     "type": "DataFrame",
-    "len": 432,
-    "columns": [
-      "age_limit",
-      "symbol",
-      "short_name",
-      "bid_vol",
-      "bid_yield",
-      "ofr_yield",
-      "ofr_vol",
-      "cfets_valuation",
-      "agent",
-      "trade_date",
-      "coupon_rate",
-      "credit"
-    ],
-    "dtypes": {
-      "age_limit": "object",
-      "symbol": "object",
-      "short_name": "object",
-      "bid_vol": "float64",
-      "bid_yield": "float64",
-      "ofr_yield": "float64",
-      "ofr_vol": "float64",
-      "cfets_valuation": "object",
-      "agent": "object",
-      "trade_date": "object",
-      "coupon_rate": "int64",
-      "credit": "object"
-    },
-    "head_preview": [
-      {
-        "age_limit": "8.28Y",
-        "symbol": "240011.IB",
-        "short_name": "24附息国债11",
-        "bid_vol": 1000.0,
-        "bid_yield": 1.74,
-        "ofr_yield": 0.0,
-        "ofr_vol": 0.0,
-        "cfets_valuation": "1.7225",
-        "agent": "--",
-        "trade_date": "2026-02-11 08:40:50",
-        "coupon_rate": 2,
-        "credit": "--"
-      },
-      {
-        "age_limit": "8.28Y",
-        "symbol": "240011.IB",
-        "short_name": "24附息国债11",
-        "bid_vol": 0.0,
-        "bid_yield": 1.74,
-        "ofr_yield": 1.715,
-        "ofr_vol": 0.0,
-        "cfets_valuation": "1.7225",
-        "agent": "国利",
-        "trade_date": "2026-02-11 08:51:33",
-        "coupon_rate": 2,
-        "credit": "--"
-      },
-      {
-        "age_limit": "8.28Y",
-        "symbol": "240011.IB",
-        "short_name": "24附息国债11",
-        "bid_vol": 5000.0,
-        "bid_yield": 1.725,
-        "ofr_yield": 0.0,
-        "ofr_vol": 0.0,
-        "cfets_valuation": "1.7225",
-        "agent": "国际",
-        "trade_date": "2026-02-11 08:52:45",
-        "coupon_rate": 2,
-        "credit": "--"
-      },
-      {
-        "age_limit": "8.28Y",
-        "symbol": "240011.IB",
-        "short_name": "24附息国债11",
-        "bid_vol": 10000.0,
-        "bid_yield": 0.0,
-        "ofr_yield": 0.0,
-        "ofr_vol": 0.0,
-        "cfets_valuation": "1.7225",
-        "agent": "上田",
-        "trade_date": "2026-02-11 08:54:15",
-        "coupon_rate": 2,
-        "credit": "--"
-      },
-      {
-        "age_limit": "8.28Y",
-        "symbol": "240011.IB",
-        "short_name": "24附息国债11",
-        "bid_vol": 0.0,
-        "bid_yield": 0.0,
-        "ofr_yield": 1.7125,
-        "ofr_vol": 3000.0,
-        "cfets_valuation": "1.7225",
-        "agent": "中诚",
-        "trade_date": "2026-02-11 08:55:44",
-        "coupon_rate": 2,
-        "credit": "--"
-      }
-    ],
-    "args_preview": {
-      "args": [
-        "240011.IB"
-      ],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wbdata",
-    "function": "fetch_realtime_min",
-    "status": "blocked_source_missing",
-    "reason": "missing mysql tables: realtime_min1",
-    "type": "unknown",
     "len": 0,
-    "columns": [],
-    "dtypes": {},
-    "head_preview": null,
-    "args_preview": {
-      "args": [],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wbdata",
-    "function": "fetch_realtime_transaction",
-    "status": "pass_has_data",
-    "reason": "ok",
-    "type": "DataFrame",
-    "len": 44,
     "columns": [
       "symbol",
       "side",
@@ -1512,82 +1038,16 @@
       "symbol": "object",
       "side": "object",
       "settl_date": "object",
-      "strike_price": "float64",
-      "yield": "float64",
-      "transact_time": "datetime64[ns]",
+      "strike_price": "object",
+      "yield": "object",
+      "transact_time": "object",
       "security_type": "object",
       "trade_date": "object",
-      "create_time": "datetime64[ns]",
-      "seq_no": "int64",
-      "is_vaild": "int64"
+      "create_time": "object",
+      "seq_no": "object",
+      "is_vaild": "object"
     },
-    "head_preview": [
-      {
-        "symbol": "240011.IB",
-        "side": "Y",
-        "settl_date": null,
-        "strike_price": 104.26801582218114,
-        "yield": 1.715,
-        "transact_time": "2026-02-11T10:02:32",
-        "security_type": "国利",
-        "trade_date": "2026-02-11",
-        "create_time": "2026-02-11T10:02:32",
-        "seq_no": 0,
-        "is_vaild": 1
-      },
-      {
-        "symbol": "240011.IB",
-        "side": "Y",
-        "settl_date": null,
-        "strike_price": 104.26801582218114,
-        "yield": 1.715,
-        "transact_time": "2026-02-11T10:02:32",
-        "security_type": "国际",
-        "trade_date": "2026-02-11",
-        "create_time": "2026-02-11T10:02:32",
-        "seq_no": 0,
-        "is_vaild": 1
-      },
-      {
-        "symbol": "240011.IB",
-        "side": "Y",
-        "settl_date": null,
-        "strike_price": 104.26801582218114,
-        "yield": 1.715,
-        "transact_time": "2026-02-11T10:03:21",
-        "security_type": "中诚",
-        "trade_date": "2026-02-11",
-        "create_time": "2026-02-11T10:03:21",
-        "seq_no": 0,
-        "is_vaild": 1
-      },
-      {
-        "symbol": "240011.IB",
-        "side": "Y",
-        "settl_date": null,
-        "strike_price": 104.26801582218114,
-        "yield": 1.715,
-        "transact_time": "2026-02-11T10:03:21",
-        "security_type": "国际",
-        "trade_date": "2026-02-11",
-        "create_time": "2026-02-11T10:03:21",
-        "seq_no": 0,
-        "is_vaild": 1
-      },
-      {
-        "symbol": "240011.IB",
-        "side": "Y",
-        "settl_date": null,
-        "strike_price": 104.26801582218114,
-        "yield": 1.715,
-        "transact_time": "2026-02-11T10:04:22",
-        "security_type": "中诚",
-        "trade_date": "2026-02-11",
-        "create_time": "2026-02-11T10:04:22",
-        "seq_no": 0,
-        "is_vaild": 1
-      }
-    ],
+    "head_preview": [],
     "args_preview": {
       "args": [
         "240011.IB"
@@ -1597,11 +1057,239 @@
   },
   {
     "source": "wbdata",
-    "function": "fetch_settlement_bond_day",
+    "function": "fetch_bond_valuation_zz",
+    "status": "error_runtime",
+    "reason": "timeout_skip_30s: OperationalError: (pymysql.err.OperationalError) (2013, 'Lost connection to MySQL server during query (function call exceeded 30 seconds)')\n[SQL: SELECT * FROM zz_bond_valuation_ib WHERE symbol in ('240011.IB') and trade_date>='2010-01-01' and trade_date<='2030-01-01']\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
+    "type": "unknown",
+    "len": 0,
+    "columns": [],
+    "dtypes": {},
+    "head_preview": null,
+    "args_preview": {
+      "args": [
+        "240011.IB",
+        "2010-01-01",
+        "2030-01-01"
+      ],
+      "kwargs": {}
+    }
+  },
+  {
+    "source": "wbdata",
+    "function": "fetch_credit_item_cfets",
     "status": "pass_has_data",
     "reason": "ok",
     "type": "DataFrame",
-    "len": 37,
+    "len": 137856,
+    "columns": [
+      "id",
+      "industry",
+      "symbol",
+      "borrow_rate",
+      "deextrema_borrow_rate",
+      "borrow_amount",
+      "lend_rate",
+      "deextrema_lend_rate",
+      "lend_amount",
+      "net_financing_in_amount",
+      "borrow_remaining",
+      "lend_remaining",
+      "trade_date",
+      "new_industry",
+      "new_age"
+    ],
+    "dtypes": {
+      "id": "int64",
+      "industry": "object",
+      "symbol": "object",
+      "borrow_rate": "float64",
+      "deextrema_borrow_rate": "float64",
+      "borrow_amount": "float64",
+      "lend_rate": "float64",
+      "deextrema_lend_rate": "float64",
+      "lend_amount": "float64",
+      "net_financing_in_amount": "float64",
+      "borrow_remaining": "float64",
+      "lend_remaining": "float64",
+      "trade_date": "datetime64[ns]",
+      "new_industry": "object",
+      "new_age": "object"
+    },
+    "head_preview": [
+      {
+        "id": 229,
+        "industry": "股份制商业银行",
+        "symbol": "IBO001",
+        "borrow_rate": 2.174,
+        "deextrema_borrow_rate": 2.174,
+        "borrow_amount": 148500.0,
+        "lend_rate": 2.2094,
+        "deextrema_lend_rate": 2.2094,
+        "lend_amount": 205500.0,
+        "net_financing_in_amount": -93155.0,
+        "borrow_remaining": 148500.0,
+        "lend_remaining": 205500.0,
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "大型银行",
+        "new_age": "1d"
+      },
+      {
+        "id": 230,
+        "industry": "股份制商业银行",
+        "symbol": "IBO007",
+        "borrow_rate": 2.216,
+        "deextrema_borrow_rate": 2.216,
+        "borrow_amount": 50.0,
+        "lend_rate": 2.3391,
+        "deextrema_lend_rate": 2.3391,
+        "lend_amount": 17399.3,
+        "net_financing_in_amount": -12796.9,
+        "borrow_remaining": 14250.0,
+        "lend_remaining": 42602.9,
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "大型银行",
+        "new_age": "7d"
+      },
+      {
+        "id": 231,
+        "industry": "股份制商业银行",
+        "symbol": "IBO014",
+        "borrow_rate": NaN,
+        "deextrema_borrow_rate": NaN,
+        "borrow_amount": NaN,
+        "lend_rate": NaN,
+        "deextrema_lend_rate": NaN,
+        "lend_amount": NaN,
+        "net_financing_in_amount": NaN,
+        "borrow_remaining": NaN,
+        "lend_remaining": NaN,
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "大型银行",
+        "new_age": "14d"
+      },
+      {
+        "id": 232,
+        "industry": "股份制商业银行",
+        "symbol": "IBO021",
+        "borrow_rate": NaN,
+        "deextrema_borrow_rate": NaN,
+        "borrow_amount": NaN,
+        "lend_rate": NaN,
+        "deextrema_lend_rate": NaN,
+        "lend_amount": NaN,
+        "net_financing_in_amount": NaN,
+        "borrow_remaining": NaN,
+        "lend_remaining": NaN,
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "大型银行",
+        "new_age": ">14d"
+      },
+      {
+        "id": 233,
+        "industry": "股份制商业银行",
+        "symbol": "IBO1M",
+        "borrow_rate": NaN,
+        "deextrema_borrow_rate": NaN,
+        "borrow_amount": NaN,
+        "lend_rate": NaN,
+        "deextrema_lend_rate": NaN,
+        "lend_amount": NaN,
+        "net_financing_in_amount": NaN,
+        "borrow_remaining": 180.0,
+        "lend_remaining": NaN,
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "大型银行",
+        "new_age": ">14d"
+      }
+    ],
+    "args_preview": {
+      "args": [
+        "2010-01-01",
+        "2030-01-01"
+      ],
+      "kwargs": {}
+    }
+  },
+  {
+    "source": "wbdata",
+    "function": "fetch_credit_side_cfets",
+    "status": "pass_has_data",
+    "reason": "ok",
+    "type": "DataFrame",
+    "len": 48820,
+    "columns": [
+      "id",
+      "borrow_industry",
+      "lend_industry",
+      "lend_rate",
+      "trade_date",
+      "new_industry"
+    ],
+    "dtypes": {
+      "id": "int64",
+      "borrow_industry": "object",
+      "lend_industry": "object",
+      "lend_rate": "float64",
+      "trade_date": "datetime64[ns]",
+      "new_industry": "object"
+    },
+    "head_preview": [
+      {
+        "id": 81,
+        "borrow_industry": "股份制商业银行",
+        "lend_industry": "股份制商业银行",
+        "lend_rate": 2.1711,
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": null
+      },
+      {
+        "id": 82,
+        "borrow_industry": "股份制商业银行",
+        "lend_industry": "大型商业/政策性银行",
+        "lend_rate": 2.1792,
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": null
+      },
+      {
+        "id": 83,
+        "borrow_industry": "股份制商业银行",
+        "lend_industry": "城市商业银行",
+        "lend_rate": 2.16,
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": null
+      },
+      {
+        "id": 84,
+        "borrow_industry": "股份制商业银行",
+        "lend_industry": "外资银行",
+        "lend_rate": 2.1545,
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": null
+      },
+      {
+        "id": 85,
+        "borrow_industry": "股份制商业银行",
+        "lend_industry": "其他",
+        "lend_rate": 2.1847,
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": null
+      }
+    ],
+    "args_preview": {
+      "args": [
+        "2010-01-01",
+        "2030-01-01"
+      ],
+      "kwargs": {}
+    }
+  },
+  {
+    "source": "wbdata",
+    "function": "fetch_dfz_bond_day_cfets",
+    "status": "pass_empty",
+    "reason": "ok",
+    "type": "DataFrame",
+    "len": 0,
     "columns": [
       "open_price",
       "high_price",
@@ -1622,124 +1310,374 @@
       "is_vaild"
     ],
     "dtypes": {
-      "open_price": "float64",
-      "high_price": "float64",
-      "low_price": "float64",
-      "close_price": "float64",
-      "open_yield": "float64",
-      "high_yield": "float64",
-      "low_yield": "float64",
-      "close_yield": "float64",
-      "vol": "int64",
-      "tkn_vol": "int64",
-      "gvn_vol": "int64",
-      "trade_vol": "int64",
-      "quote_vol": "int64",
+      "open_price": "object",
+      "high_price": "object",
+      "low_price": "object",
+      "close_price": "object",
+      "open_yield": "object",
+      "high_yield": "object",
+      "low_yield": "object",
+      "close_yield": "object",
+      "vol": "object",
+      "tkn_vol": "object",
+      "gvn_vol": "object",
+      "trade_vol": "object",
+      "quote_vol": "object",
       "symbol": "object",
+      "trade_date": "object",
+      "pre_date": "object",
+      "is_vaild": "object"
+    },
+    "head_preview": [],
+    "args_preview": {
+      "args": [
+        "240011.IB",
+        "2010-01-01",
+        "2030-01-01"
+      ],
+      "kwargs": {}
+    }
+  },
+  {
+    "source": "wbdata",
+    "function": "fetch_repo_buyback_item_cfets",
+    "status": "pass_has_data",
+    "reason": "ok",
+    "type": "DataFrame",
+    "len": 189476,
+    "columns": [
+      "industry",
+      "symbol",
+      "repurchase_rate",
+      "deextrema_repurchase_rate",
+      "repurchase_amount",
+      "rev_repurchase_rate",
+      "deextrema_rev_repurchase_rate",
+      "rev_repurchase_amount",
+      "net_financing_in_amount",
+      "repurchase_remaining",
+      "rev_repurchase_remaining",
+      "repo_type",
+      "trade_date",
+      "new_industry"
+    ],
+    "dtypes": {
+      "industry": "object",
+      "symbol": "object",
+      "repurchase_rate": "float64",
+      "deextrema_repurchase_rate": "float64",
+      "repurchase_amount": "float64",
+      "rev_repurchase_rate": "float64",
+      "deextrema_rev_repurchase_rate": "float64",
+      "rev_repurchase_amount": "float64",
+      "net_financing_in_amount": "float64",
+      "repurchase_remaining": "float64",
+      "rev_repurchase_remaining": "float64",
+      "repo_type": "object",
       "trade_date": "datetime64[ns]",
-      "pre_date": "datetime64[ns]",
-      "is_vaild": "int64"
+      "new_industry": "object"
     },
     "head_preview": [
       {
-        "open_price": 105.5763,
-        "high_price": 105.6206,
-        "low_price": 105.3334,
-        "close_price": 105.4613,
-        "open_yield": 1.62,
-        "high_yield": 1.647,
-        "low_yield": 1.615,
-        "close_yield": 1.6325,
-        "vol": 1,
-        "tkn_vol": 0,
-        "gvn_vol": 0,
-        "trade_vol": 0,
-        "quote_vol": 0,
-        "symbol": "240011.IB",
-        "trade_date": "2025-02-14T00:00:00",
-        "pre_date": "2025-02-14T00:00:00",
-        "is_vaild": 1
+        "industry": "城市商业银行",
+        "symbol": "R001",
+        "repurchase_rate": 2.1386,
+        "deextrema_repurchase_rate": 2.1386,
+        "repurchase_amount": 750233.37,
+        "rev_repurchase_rate": 2.1991,
+        "deextrema_rev_repurchase_rate": 2.1995,
+        "rev_repurchase_amount": 736866.87,
+        "net_financing_in_amount": -132264.97,
+        "repurchase_remaining": 750233.37,
+        "rev_repurchase_remaining": 736866.87,
+        "repo_type": "buyback",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "中小型银行"
       },
       {
-        "open_price": 104.8579,
-        "high_price": 105.1868,
-        "low_price": 104.2459,
-        "close_price": 104.3329,
-        "open_yield": 1.705,
-        "high_yield": 1.77,
-        "low_yield": 1.683,
-        "close_yield": 1.76,
-        "vol": 1,
-        "tkn_vol": 0,
-        "gvn_vol": 0,
-        "trade_vol": 0,
-        "quote_vol": 0,
-        "symbol": "240011.IB",
-        "trade_date": "2025-02-24T00:00:00",
-        "pre_date": "2025-02-24T00:00:00",
-        "is_vaild": 1
+        "industry": "城市商业银行",
+        "symbol": "R007",
+        "repurchase_rate": 2.2046,
+        "deextrema_repurchase_rate": 2.2046,
+        "repurchase_amount": 51572.7,
+        "rev_repurchase_rate": 2.2943,
+        "deextrema_rev_repurchase_rate": 2.2622,
+        "rev_repurchase_amount": 9627.52,
+        "net_financing_in_amount": 25410.05,
+        "repurchase_remaining": 224400.4,
+        "rev_repurchase_remaining": 108641.49,
+        "repo_type": "buyback",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "中小型银行"
       },
       {
-        "open_price": 103.816,
-        "high_price": 104.2261,
-        "low_price": 103.362,
-        "close_price": 103.6623,
-        "open_yield": 1.8175,
-        "high_yield": 1.87,
-        "low_yield": 1.77,
-        "close_yield": 1.835,
-        "vol": 1,
-        "tkn_vol": 6574856,
-        "gvn_vol": 6574856,
-        "trade_vol": 6574856,
-        "quote_vol": 6574856,
-        "symbol": "240011.IB",
-        "trade_date": "2025-03-14T00:00:00",
-        "pre_date": "2025-03-14T00:00:00",
-        "is_vaild": 1
+        "industry": "城市商业银行",
+        "symbol": "R014",
+        "repurchase_rate": 2.1442,
+        "deextrema_repurchase_rate": 2.1442,
+        "repurchase_amount": 3590.51,
+        "rev_repurchase_rate": 2.1075,
+        "deextrema_rev_repurchase_rate": 2.1075,
+        "rev_repurchase_amount": 1212.13,
+        "net_financing_in_amount": 2280.43,
+        "repurchase_remaining": 60755.94,
+        "rev_repurchase_remaining": 25323.83,
+        "repo_type": "buyback",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "中小型银行"
       },
       {
-        "open_price": 103.3825,
-        "high_price": 103.7473,
-        "low_price": 103.1006,
-        "close_price": 103.3945,
-        "open_yield": 1.87,
-        "high_yield": 1.9,
-        "low_yield": 1.8325,
-        "close_yield": 1.866,
-        "vol": 1,
-        "tkn_vol": 0,
-        "gvn_vol": 0,
-        "trade_vol": 0,
-        "quote_vol": 0,
-        "symbol": "240011.IB",
-        "trade_date": "2025-03-18T00:00:00",
-        "pre_date": "2025-03-18T00:00:00",
-        "is_vaild": 1
+        "industry": "城市商业银行",
+        "symbol": "R021",
+        "repurchase_rate": 2.4086,
+        "deextrema_repurchase_rate": 2.4086,
+        "repurchase_amount": 2459.74,
+        "rev_repurchase_rate": 2.0447,
+        "deextrema_rev_repurchase_rate": 2.0447,
+        "rev_repurchase_amount": 644.0,
+        "net_financing_in_amount": -1134.55,
+        "repurchase_remaining": 29053.61,
+        "rev_repurchase_remaining": 2393.92,
+        "repo_type": "buyback",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "中小型银行"
       },
       {
-        "open_price": 103.7872,
-        "high_price": 103.9162,
-        "low_price": 103.2515,
-        "close_price": 103.6768,
-        "open_yield": 1.82,
-        "high_yield": 1.8825,
-        "low_yield": 1.805,
-        "close_yield": 1.8325,
-        "vol": 1,
-        "tkn_vol": 5151331,
-        "gvn_vol": 5151331,
-        "trade_vol": 5151331,
-        "quote_vol": 5151331,
-        "symbol": "240011.IB",
-        "trade_date": "2025-03-21T00:00:00",
-        "pre_date": "2025-03-21T00:00:00",
-        "is_vaild": 1
+        "industry": "城市商业银行",
+        "symbol": "R1M",
+        "repurchase_rate": 2.5317,
+        "deextrema_repurchase_rate": 2.5317,
+        "repurchase_amount": 1216.4,
+        "rev_repurchase_rate": 2.2741,
+        "deextrema_rev_repurchase_rate": 2.2741,
+        "rev_repurchase_amount": 124.01,
+        "net_financing_in_amount": -1896.6,
+        "repurchase_remaining": 8149.29,
+        "rev_repurchase_remaining": 6473.18,
+        "repo_type": "buyback",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "中小型银行"
       }
     ],
     "args_preview": {
       "args": [
-        "240011.IB",
+        "2010-01-01",
+        "2030-01-01"
+      ],
+      "kwargs": {}
+    }
+  },
+  {
+    "source": "wbdata",
+    "function": "fetch_repo_buyout_item_cfets",
+    "status": "pass_has_data",
+    "reason": "ok",
+    "type": "DataFrame",
+    "len": 154812,
+    "columns": [
+      "industry",
+      "symbol",
+      "repurchase_rate",
+      "deextrema_repurchase_rate",
+      "repurchase_amount",
+      "rev_repurchase_rate",
+      "deextrema_rev_repurchase_rate",
+      "rev_repurchase_amount",
+      "net_financing_in_amount",
+      "repurchase_remaining",
+      "rev_repurchase_remaining",
+      "repo_type",
+      "trade_date",
+      "new_industry",
+      "new_age"
+    ],
+    "dtypes": {
+      "industry": "object",
+      "symbol": "object",
+      "repurchase_rate": "float64",
+      "deextrema_repurchase_rate": "float64",
+      "repurchase_amount": "float64",
+      "rev_repurchase_rate": "float64",
+      "deextrema_rev_repurchase_rate": "float64",
+      "rev_repurchase_amount": "float64",
+      "net_financing_in_amount": "float64",
+      "repurchase_remaining": "float64",
+      "rev_repurchase_remaining": "float64",
+      "repo_type": "object",
+      "trade_date": "datetime64[ns]",
+      "new_industry": "object",
+      "new_age": "object"
+    },
+    "head_preview": [
+      {
+        "industry": "大行及政策行",
+        "symbol": "OR001",
+        "repurchase_rate": NaN,
+        "deextrema_repurchase_rate": NaN,
+        "repurchase_amount": NaN,
+        "rev_repurchase_rate": NaN,
+        "deextrema_rev_repurchase_rate": NaN,
+        "rev_repurchase_amount": NaN,
+        "net_financing_in_amount": -1045.86,
+        "repurchase_remaining": NaN,
+        "rev_repurchase_remaining": NaN,
+        "repo_type": "buyout",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "大型银行",
+        "new_age": "1d"
+      },
+      {
+        "industry": "大行及政策行",
+        "symbol": "OR007",
+        "repurchase_rate": 2.2021,
+        "deextrema_repurchase_rate": 2.2021,
+        "repurchase_amount": 142.5,
+        "rev_repurchase_rate": 2.6505,
+        "deextrema_rev_repurchase_rate": 2.6505,
+        "rev_repurchase_amount": 142.5,
+        "net_financing_in_amount": 0.0,
+        "repurchase_remaining": 1700.5,
+        "rev_repurchase_remaining": 1928.5,
+        "repo_type": "buyout",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "大型银行",
+        "new_age": "7d"
+      },
+      {
+        "industry": "大行及政策行",
+        "symbol": "OR014",
+        "repurchase_rate": NaN,
+        "deextrema_repurchase_rate": NaN,
+        "repurchase_amount": NaN,
+        "rev_repurchase_rate": NaN,
+        "deextrema_rev_repurchase_rate": NaN,
+        "rev_repurchase_amount": NaN,
+        "net_financing_in_amount": NaN,
+        "repurchase_remaining": NaN,
+        "rev_repurchase_remaining": NaN,
+        "repo_type": "buyout",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "大型银行",
+        "new_age": "14d"
+      },
+      {
+        "industry": "大行及政策行",
+        "symbol": "OR021",
+        "repurchase_rate": NaN,
+        "deextrema_repurchase_rate": NaN,
+        "repurchase_amount": NaN,
+        "rev_repurchase_rate": NaN,
+        "deextrema_rev_repurchase_rate": NaN,
+        "rev_repurchase_amount": NaN,
+        "net_financing_in_amount": NaN,
+        "repurchase_remaining": NaN,
+        "rev_repurchase_remaining": NaN,
+        "repo_type": "buyout",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "大型银行",
+        "new_age": ">14d"
+      },
+      {
+        "industry": "大行及政策行",
+        "symbol": "OR1M",
+        "repurchase_rate": NaN,
+        "deextrema_repurchase_rate": NaN,
+        "repurchase_amount": NaN,
+        "rev_repurchase_rate": NaN,
+        "deextrema_rev_repurchase_rate": NaN,
+        "rev_repurchase_amount": NaN,
+        "net_financing_in_amount": NaN,
+        "repurchase_remaining": NaN,
+        "rev_repurchase_remaining": NaN,
+        "repo_type": "buyout",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": "大型银行",
+        "new_age": ">14d"
+      }
+    ],
+    "args_preview": {
+      "args": [
+        "2010-01-01",
+        "2030-01-01"
+      ],
+      "kwargs": {}
+    }
+  },
+  {
+    "source": "wbdata",
+    "function": "fetch_repo_item_cfets",
+    "status": "blocked_source_missing",
+    "reason": "missing mysql tables: cfets_repo_item",
+    "type": "unknown",
+    "len": 0,
+    "columns": [],
+    "dtypes": {},
+    "head_preview": null,
+    "args_preview": {
+      "args": [],
+      "kwargs": {}
+    }
+  },
+  {
+    "source": "wbdata",
+    "function": "fetch_repo_side_cfets",
+    "status": "pass_has_data",
+    "reason": "ok",
+    "type": "DataFrame",
+    "len": 36636,
+    "columns": [
+      "repurchase_rate",
+      "rev_repurchase_industry",
+      "repurchase_industry",
+      "trade_date",
+      "new_industry"
+    ],
+    "dtypes": {
+      "repurchase_rate": "float64",
+      "rev_repurchase_industry": "object",
+      "repurchase_industry": "object",
+      "trade_date": "datetime64[ns]",
+      "new_industry": "object"
+    },
+    "head_preview": [
+      {
+        "repurchase_rate": 2.1541,
+        "rev_repurchase_industry": "城市商业银行",
+        "repurchase_industry": "大型商业/政策性银行",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": null
+      },
+      {
+        "repurchase_rate": 2.1335,
+        "rev_repurchase_industry": "城市商业银行",
+        "repurchase_industry": "城市商业银行",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": null
+      },
+      {
+        "repurchase_rate": 2.1189,
+        "rev_repurchase_industry": "城市商业银行",
+        "repurchase_industry": "股份制商业银行",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": null
+      },
+      {
+        "repurchase_rate": 2.1607,
+        "rev_repurchase_industry": "城市商业银行",
+        "repurchase_industry": "农村金融机构",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": null
+      },
+      {
+        "repurchase_rate": 2.1693,
+        "rev_repurchase_industry": "城市商业银行",
+        "repurchase_industry": "其他",
+        "trade_date": "2021-03-01T00:00:00",
+        "new_industry": null
+      }
+    ],
+    "args_preview": {
+      "args": [
         "2010-01-01",
         "2030-01-01"
       ],
@@ -1803,25 +1741,6 @@
       "valuation": "object"
     },
     "head_preview": [],
-    "args_preview": {
-      "args": [
-        "240011.IB",
-        "2010-01-01",
-        "2030-01-01"
-      ],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wbdata",
-    "function": "fetch_zz_bond_valuation",
-    "status": "error_runtime",
-    "reason": "timeout_skip_30s: OperationalError: (pymysql.err.OperationalError) (2013, 'Lost connection to MySQL server during query (function call exceeded 30 seconds)')\n[SQL: SELECT * FROM zz_bond_valuation_ib WHERE symbol in ('240011.IB') and trade_date>='2010-01-01' and trade_date<='2030-01-01']\n(Background on this error at: https://sqlalche.me/e/20/e3q8)",
-    "type": "unknown",
-    "len": 0,
-    "columns": [],
-    "dtypes": {},
-    "head_preview": null,
     "args_preview": {
       "args": [
         "240011.IB",
@@ -2005,21 +1924,6 @@
   },
   {
     "source": "wequant",
-    "function": "fetch_ctp_tick",
-    "status": "pass_empty",
-    "reason": "no_data: missing mongo collections: ctp_tick",
-    "type": "unknown",
-    "len": 0,
-    "columns": [],
-    "dtypes": {},
-    "head_preview": [],
-    "args_preview": {
-      "args": [],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wequant",
     "function": "fetch_dk_data",
     "status": "pass_empty",
     "reason": "no_data: missing mongo collections: dk_data",
@@ -2153,21 +2057,6 @@
   {
     "source": "wequant",
     "function": "fetch_financial_report",
-    "status": "pass_empty",
-    "reason": "no_data: missing mongo collections: financial",
-    "type": "unknown",
-    "len": 0,
-    "columns": [],
-    "dtypes": {},
-    "head_preview": [],
-    "args_preview": {
-      "args": [],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wequant",
-    "function": "fetch_financial_report_adv",
     "status": "pass_empty",
     "reason": "no_data: missing mongo collections: financial",
     "type": "unknown",
@@ -2413,6 +2302,21 @@
     "columns": [],
     "dtypes": {},
     "head_preview": null,
+    "args_preview": {
+      "args": [],
+      "kwargs": {}
+    }
+  },
+  {
+    "source": "wequant",
+    "function": "fetch_future_transaction_ctp",
+    "status": "pass_empty",
+    "reason": "no_data: missing mongo collections: ctp_tick",
+    "type": "unknown",
+    "len": 0,
+    "columns": [],
+    "dtypes": {},
+    "head_preview": [],
     "args_preview": {
       "args": [],
       "kwargs": {}
@@ -2784,21 +2688,6 @@
   },
   {
     "source": "wequant",
-    "function": "fetch_lhb",
-    "status": "pass_empty",
-    "reason": "no_data: missing mongo collections: lhb",
-    "type": "unknown",
-    "len": 0,
-    "columns": [],
-    "dtypes": {},
-    "head_preview": [],
-    "args_preview": {
-      "args": [],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wequant",
     "function": "fetch_lof_dk",
     "status": "pass_empty",
     "reason": "ok",
@@ -2818,36 +2707,6 @@
         "format": "pd",
         "collections": "<collection:lof_dk>"
       }
-    }
-  },
-  {
-    "source": "wequant",
-    "function": "fetch_quotation",
-    "status": "pass_empty",
-    "reason": "no_data: cannot parse date from realtime_future_list",
-    "type": "unknown",
-    "len": 0,
-    "columns": [],
-    "dtypes": {},
-    "head_preview": [],
-    "args_preview": {
-      "args": [],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wequant",
-    "function": "fetch_quotations",
-    "status": "pass_empty",
-    "reason": "no_data: cannot parse date from realtime_future_list",
-    "type": "unknown",
-    "len": 0,
-    "columns": [],
-    "dtypes": {},
-    "head_preview": [],
-    "args_preview": {
-      "args": [],
-      "kwargs": {}
     }
   },
   {
@@ -3409,41 +3268,41 @@
       {
         "market": 0,
         "code": "000001",
-        "liutongguben": 19405547500.0,
+        "liutongguben": 19405601250.0,
         "province": 18,
         "industry": 1,
-        "updated_date": 20240420,
+        "updated_date": 20251028,
         "ipo_date": 19910403,
         "zongguben": 19405918750.0,
         "guojiagu": 19660000.0,
-        "faqirenfarengu": 146020000000.0,
-        "farengu": 450980000000.0,
+        "faqirenfarengu": 397290000000.0,
+        "farengu": 1115820000000.0,
         "bgu": 0.0,
         "hgu": 0.0,
-        "zhigonggu": 6600.0002622604,
-        "zongzichan": 57293977600000.0,
+        "zhigonggu": 18700.0000476837,
+        "zongzichan": 57667640320000.0,
         "liudongzichan": 0.0,
-        "gudingzichan": 94380000000.0,
-        "wuxingzichan": 64380000000.0,
-        "gudongrenshu": 567902.0,
+        "gudingzichan": 79280000000.0,
+        "wuxingzichan": 56840000000.0,
+        "gudongrenshu": 453515.0,
         "liudongfuzhai": 0.0,
         "changqifuzhai": 0.0,
-        "zibengongjijin": 807610000000.0,
-        "jingzichan": 4855760000000.0,
-        "zhuyingshouru": 387700000000.0,
-        "zhuyinglirun": 202160000000.0,
+        "zibengongjijin": 806370000000.0,
+        "jingzichan": 5179299840000.0,
+        "zhuyingshouru": 1006680000000.0,
+        "zhuyinglirun": 545710000000.0,
         "yingshouzhangkuan": 0.0,
-        "yingyelirun": 185540000000.0,
-        "touzishouyu": 47020000000.0,
-        "jingyingxianjinliu": -213820000000.0,
-        "zongxianjinliu": 97300000000.0,
+        "yingyelirun": 460970000000.0,
+        "touzishouyu": 162750000000.0,
+        "jingyingxianjinliu": 717830000000.0,
+        "zongxianjinliu": -220430000000.0,
         "cunhuo": 0.0,
-        "lirunzonghe": 185250000000.0,
-        "shuihoulirun": 149320000000.0,
-        "jinglirun": 149320000000.0,
-        "weifenpeilirun": 2340270080000.0,
-        "meigujingzichan": 21.4200000763,
-        "baoliu2": 3.0
+        "lirunzonghe": 459200000000.0,
+        "shuihoulirun": 383390000000.0,
+        "jinglirun": 383390000000.0,
+        "weifenpeilirun": 2680470080000.0,
+        "meigujingzichan": 23.0799999237,
+        "baoliu2": 9.0
       }
     ],
     "args_preview": {
@@ -3589,21 +3448,6 @@
       "args": [
         "000001"
       ],
-      "kwargs": {}
-    }
-  },
-  {
-    "source": "wequant",
-    "function": "fetch_stock_realtime_adv",
-    "status": "pass_empty",
-    "reason": "no_data: cannot parse date from realtime_future_list",
-    "type": "unknown",
-    "len": 0,
-    "columns": [],
-    "dtypes": {},
-    "head_preview": [],
-    "args_preview": {
-      "args": [],
       "kwargs": {}
     }
   },

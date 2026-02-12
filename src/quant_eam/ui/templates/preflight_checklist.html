@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Whole View Anti-Drift Preflight Checklist Read-Only Evidence</h1>
+    <p class="page-subtitle">
+      Read-only governance evidence sourced from Whole View section <code>10</code>
+      before new feature rollout.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">no holdout expansion</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Section</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Checklist Summary</h2>
+      <div class="kv">
+        <div class="k">ui_route</div>
+        <div class="v"><code>/ui/preflight-checklist</code></div>
+        <div class="k">checklist_total</div>
+        <div class="v"><span data-testid="preflight-checklist-total">{{ summary.checklist_total }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Whole View Section 10 Anti-Drift Checklist</h2>
+    <div class="section"><span class="pill">{{ whole_view.section }}</span></div>
+    {% if whole_view.checklist_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>item</th><th>source_line</th></tr></thead>
+          <tbody>
+          {% for row in whole_view.checklist_rows %}
+            <tr data-testid="preflight-checklist-row-{{ loop.index }}">
+              <td>{{ row.index }}</td>
+              <td>{{ row.item }}</td>
+              <td>{{ row.source_line }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No checklist rows extracted from Whole View section 10.</div>
+    {% endif %}
+  </div>
+{% endblock %}

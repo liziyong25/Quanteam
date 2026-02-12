@@ -142,12 +142,70 @@ def test_readonly_api_and_ui_pages_200(tmp_path: Path, monkeypatch) -> None:
     assert "contracts/blueprint_schema_v1.json" in r.text
     assert "<form" not in r.text.lower()
 
+    r = client.get("/ui/contracts-principles")
+    assert r.status_code == 200
+    assert "Whole View Contracts-System Principles and Trace Plan/Result Boundary Evidence" in r.text
+    assert "5. Contracts（Schema）体系：让 LLM/Codex 能产、Kernel 能编译、UI 能渲染" in r.text
+    assert "trace 计划/结果分离" in r.text
+    assert "/ui/contracts-principles" in r.text
+    assert "<form" not in r.text.lower()
+
     r = client.get("/ui/dossier-evidence")
     assert r.status_code == 200
     assert "Dossier Evidence Spec Coverage" in r.text
     assert "4.4 Dossier" in r.text
     assert "dossiers/&lt;run_id&gt;/" in r.text
     assert run_id in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/playbook-principles")
+    assert r.status_code == 200
+    assert "Playbook Construction Principles and Quality Gates Read-Only Evidence" in r.text
+    assert "Playbook Section 0 Construction Principles" in r.text
+    assert "Playbook Section 0.2 Global Quality Gates" in r.text
+    assert "Quant‑EAM Implementation Phases Playbook.md" in r.text
+    assert "/ui/playbook-principles" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/playbook-tech-stack")
+    assert r.status_code == 200
+    assert "Playbook Technical Stack Baseline Read-Only Evidence" in r.text
+    assert "Playbook Section 1 Technical Stack Baseline" in r.text
+    assert "Playbook Section 1.1 Foundation Stack" in r.text
+    assert "Playbook Section 1.2 Service Stack" in r.text
+    assert "Quant‑EAM Implementation Phases Playbook.md" in r.text
+    assert "/ui/playbook-tech-stack" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/playbook-phase-template")
+    assert r.status_code == 200
+    assert "Playbook Phase Template Structure Read-Only Evidence" in r.text
+    assert "Playbook Section 2 Phase Template Structure" in r.text
+    assert "Phase‑X 标准输出结构" in r.text
+    assert "Quant‑EAM Implementation Phases Playbook.md" in r.text
+    assert "/ui/playbook-phase-template" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/playbook-codex-task-card")
+    assert r.status_code == 200
+    assert "Playbook Codex Task Card Template Read-Only Evidence" in r.text
+    assert "Playbook Section 4 Codex Task Card Template" in r.text
+    assert "Codex Task Card Template" in r.text
+    assert "Quant‑EAM Implementation Phases Playbook.md" in r.text
+    assert "/ui/playbook-codex-task-card" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/playbook-sequence")
+    assert r.status_code == 200
+    assert "Playbook Construction Sequence Recommendation Read-Only Evidence" in r.text
+    assert "Playbook Section 5 Construction Sequence Recommendation" in r.text
+    assert "Loop-First Rationale" in r.text
+    assert "Agents Automation Positioning" in r.text
+    assert "Contracts/Policies/DataCatalog/Runner/Dossier/Gates/UI" in r.text
+    assert "Phase-0" in r.text
+    assert "Phase-6" in r.text
+    assert "Quant‑EAM Implementation Phases Playbook.md" in r.text
+    assert "/ui/playbook-sequence" in r.text
     assert "<form" not in r.text.lower()
 
     r = client.get("/ui/playbook-phases")
@@ -211,6 +269,70 @@ def test_readonly_api_and_ui_pages_200(tmp_path: Path, monkeypatch) -> None:
     assert "phase_dispatch_plan_v2" in r.text
     assert "g42_diagnostics_promotion_ui_scope" in r.text
     assert "G42" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/codex-role-boundary")
+    assert r.status_code == 200
+    assert "Whole View Codex Role Boundary Read-Only Evidence" in r.text
+    assert "7. Codex CLI 的定位：探索者 + 工具工，不是裁判" in r.text
+    assert "/ui/codex-role-boundary" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/ui-coverage-matrix")
+    assert r.status_code == 200
+    assert "Whole View UI Eight-Page Coverage Matrix" in r.text
+    assert "8. UI 信息架构（不看源码的审阅体验）" in r.text
+    assert "Whole View Section 8 Checklist Coverage Matrix" in r.text
+    assert "Current UI Route Inventory" in r.text
+    assert "phase_dispatch_plan_v2" in r.text
+    assert "g43_ui_coverage_matrix_scope" in r.text
+    assert "G43" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/runtime-topology")
+    assert r.status_code == 200
+    assert "Whole View Runtime Topology and Service Ports Read-Only Evidence" in r.text
+    assert "9. 仓库与运行形态（Linux + Docker + Python）" in r.text
+    assert "Playbook Section 1 Service Context" in r.text
+    assert "Playbook Phase Flow/Context (Section 3)" in r.text
+    assert "phase_dispatch_plan_v2" in r.text
+    assert "g44_runtime_topology_ui_scope" in r.text
+    assert "G44" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/preflight-checklist")
+    assert r.status_code == 200
+    assert "Whole View Anti-Drift Preflight Checklist Read-Only Evidence" in r.text
+    assert "Whole View Section 10 Anti-Drift Checklist" in r.text
+    assert "10. “不跑偏”检查清单（每次新增功能前先对齐）" in r.text
+    assert "/ui/preflight-checklist" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/version-roadmap")
+    assert r.status_code == 200
+    assert "Whole View Version Roadmap Milestones Read-Only Evidence" in r.text
+    assert "Whole View Section 11 Version Roadmap Milestones" in r.text
+    assert "v0.4" in r.text
+    assert "v0.5" in r.text
+    assert "v0.6" in r.text
+    assert "/ui/version-roadmap" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/system-definition")
+    assert r.status_code == 200
+    assert "Whole View System Definition and Five Planes Read-Only Evidence" in r.text
+    assert "Whole View Section 0 System Definition" in r.text
+    assert "Whole View Section 2 Five Planes Architecture" in r.text
+    assert "Quant‑EAM Whole View Framework.md" in r.text
+    assert "/ui/system-definition" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/hard-constraints")
+    assert r.status_code == 200
+    assert "Whole View Hard Constraints Governance Evidence" in r.text
+    assert "Whole View Section 1 Hard Constraints" in r.text
+    assert "Quant‑EAM Whole View Framework.md" in r.text
+    assert "/ui/hard-constraints" in r.text
     assert "<form" not in r.text.lower()
 
 

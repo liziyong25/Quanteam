@@ -1,7 +1,7 @@
 {
   "schema_version": "qa_fetch_smoke_window_profile_v1",
-  "generated_at_utc": "2026-02-12T02:45:27.130685+00:00",
-  "matrix_ref": "docs/05_data_plane/_draft_qa_fetch_rename_matrix_v3.md",
+  "generated_at_utc": "2026-02-12T05:54:35.058214+00:00",
+  "matrix_ref": "docs/05_data_plane/qa_fetch_function_baseline_v1.md",
   "notebook_ref": "notebooks/qa_fetch_manual_params_v3.ipynb",
   "default_smoke_timeout_sec": 30,
   "rules": {
@@ -11,78 +11,8 @@
   },
   "functions": [
     {
-      "function": "fetch_bond_date_list",
-      "source": "wbdata",
-      "smoke_kwargs": {},
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_bond_day",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "symbol": "240011.IB",
-        "start": "2010-01-01",
-        "end": "2030-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_bond_industry_settlement",
-      "source": "wbdata",
-      "smoke_kwargs": {},
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_bondInformation",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "symbol": "240011.IB"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_bond_min",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "symbol": "240011.IB",
-        "start": "2010-01-01",
-        "end": "2030-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_cfets_bond_amount",
-      "source": "wbdata",
+      "function": "fetch_bond_amount_cfets",
+      "source": "fetch",
       "smoke_kwargs": {
         "start": "2026-01-01",
         "end": "2026-02-11"
@@ -93,149 +23,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "window_tuned_for_30s_smoke"
+      "notes": "window_tuned_for_30s_smoke",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
     },
     {
-      "function": "fetch_cfets_credit_item",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "start": "2010-01-01",
-        "end": "2030-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_cfets_credit_side",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "start": "2010-01-01",
-        "end": "2030-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_cfets_dfz_bond_day",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "symbol": "240011.IB",
-        "start": "2010-01-01",
-        "end": "2030-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_cfets_repo_buyback_item",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "start": "2010-01-01",
-        "end": "2030-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_cfets_repo_buyout_item",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "start": "2010-01-01",
-        "end": "2030-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_cfets_repo_item",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "start": "2010-01-01",
-        "end": "2030-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_cfets_repo_side",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "start": "2010-01-01",
-        "end": "2030-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_clean_quote",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "symbol": "240011.IB",
-        "start": "2010-01-01",
-        "end": "2030-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_clean_transaction",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "symbol": "240011.IB",
-        "start": "2010-01-01",
-        "end": "2030-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_realtime_bid",
-      "source": "wbdata",
+      "function": "fetch_bond_date_list",
+      "source": "fetch",
       "smoke_kwargs": {},
       "smoke_timeout_sec": 30,
       "research_default": {
@@ -243,39 +37,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
     },
     {
-      "function": "fetch_realtime_min",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "symbol": "240011.IB"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_realtime_transaction",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "symbol": "240011.IB"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_settlement_bond_day",
-      "source": "wbdata",
+      "function": "fetch_bond_day",
+      "source": "fetch",
       "smoke_kwargs": {
         "symbol": "240011.IB",
         "start": "2010-01-01",
@@ -287,11 +55,283 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_bond_day_cfets",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "symbol": "240011.IB",
+        "start": "2010-01-01",
+        "end": "2030-01-01"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_bond_industry_settlement",
+      "source": "fetch",
+      "smoke_kwargs": {},
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_bond_information",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "symbol": "240011.IB"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_bond_min",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "symbol": "240011.IB",
+        "start": "2010-01-01",
+        "end": "2030-01-01"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_bond_quote",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "symbol": "240011.IB",
+        "start": "2010-01-01",
+        "end": "2030-01-01"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_bond_quote_realtime",
+      "source": "fetch",
+      "smoke_kwargs": {},
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_bond_transaction",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "symbol": "240011.IB",
+        "start": "2010-01-01",
+        "end": "2030-01-01"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_bond_transaction_realtime",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "symbol": "240011.IB"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_bond_valuation_zz",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "symbol": "240011.IB",
+        "start": "2026-01-01",
+        "end": "2026-02-11"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "window_tuned_for_30s_smoke",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_credit_item_cfets",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "start": "2010-01-01",
+        "end": "2030-01-01"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_credit_side_cfets",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "start": "2010-01-01",
+        "end": "2030-01-01"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_dfz_bond_day_cfets",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "symbol": "240011.IB",
+        "start": "2010-01-01",
+        "end": "2030-01-01"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_repo_buyback_item_cfets",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "start": "2010-01-01",
+        "end": "2030-01-01"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_repo_buyout_item_cfets",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "start": "2010-01-01",
+        "end": "2030-01-01"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_repo_item_cfets",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "start": "2010-01-01",
+        "end": "2030-01-01"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
+    },
+    {
+      "function": "fetch_repo_side_cfets",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "start": "2010-01-01",
+        "end": "2030-01-01"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
     },
     {
       "function": "fetch_wind_indicators",
-      "source": "wbdata",
+      "source": "fetch",
       "smoke_kwargs": {
         "indicators": "all",
         "start": "2010-01-01",
@@ -303,13 +343,15 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
     },
     {
       "function": "fetch_yc_valuation",
-      "source": "wbdata",
+      "source": "fetch",
       "smoke_kwargs": {
-        "symbol": "国开",
+        "symbol": "\u56fd\u5f00",
         "start": "2026-01-01",
         "end": "2026-02-11"
       },
@@ -319,27 +361,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "window_tuned_for_30s_smoke"
-    },
-    {
-      "function": "fetch_zz_bond_valuation",
-      "source": "wbdata",
-      "smoke_kwargs": {
-        "symbol": "240011.IB",
-        "start": "2026-01-01",
-        "end": "2026-02-11"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "window_tuned_for_30s_smoke"
+      "notes": "window_tuned_for_30s_smoke",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
     },
     {
       "function": "fetch_zz_index",
-      "source": "wbdata",
+      "source": "fetch",
       "smoke_kwargs": {
         "symbol": "all",
         "start": "2010-01-01",
@@ -351,13 +379,15 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
     },
     {
       "function": "fetch_zz_valuation",
-      "source": "wbdata",
+      "source": "fetch",
       "smoke_kwargs": {
-        "symbol": "国开",
+        "symbol": "\u56fd\u5f00",
         "start": "2010-01-01",
         "end": "2030-01-01"
       },
@@ -367,11 +397,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mysql_fetch",
+      "engine": "mysql"
     },
     {
       "function": "fetch_ctp_future_list",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {},
       "smoke_timeout_sec": 30,
       "research_default": {
@@ -379,11 +411,178 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
-      "function": "fetch_ctp_tick",
-      "source": "wequant",
+      "function": "fetch_dk_data",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "code": "588000",
+        "start": "2024-01-01",
+        "end": "2024-01-31"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
+    },
+    {
+      "function": "fetch_etf_dk",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "code": "588000",
+        "start": "2024-01-01",
+        "end": "2024-01-31"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
+    },
+    {
+      "function": "fetch_etf_list",
+      "source": "fetch",
+      "smoke_kwargs": {},
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
+    },
+    {
+      "function": "fetch_etf_name",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "code": "000001"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
+    },
+    {
+      "function": "fetch_financial_report",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "code": "000001",
+        "report_date": "2024-01-01"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
+    },
+    {
+      "function": "fetch_future_day",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "code": "TL8",
+        "start": "2024-01-01",
+        "end": "2024-01-31"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
+    },
+    {
+      "function": "fetch_future_dk",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "code": "TL8",
+        "start": "2024-01-01",
+        "end": "2024-01-31"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
+    },
+    {
+      "function": "fetch_future_list",
+      "source": "fetch",
+      "smoke_kwargs": {},
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
+    },
+    {
+      "function": "fetch_future_min",
+      "source": "fetch",
+      "smoke_kwargs": {
+        "code": "TL8",
+        "start": "2024-01-01",
+        "end": "2024-01-31"
+      },
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
+    },
+    {
+      "function": "fetch_future_tick",
+      "source": "fetch",
+      "smoke_kwargs": {},
+      "smoke_timeout_sec": 30,
+      "research_default": {
+        "mode": "research",
+        "timeout_sec": null,
+        "llm_params_priority": true
+      },
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
+    },
+    {
+      "function": "fetch_future_transaction_ctp",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01",
@@ -396,171 +595,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_dk_data",
-      "source": "wequant",
-      "smoke_kwargs": {
-        "code": "588000",
-        "start": "2024-01-01",
-        "end": "2024-01-31"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_etf_dk",
-      "source": "wequant",
-      "smoke_kwargs": {
-        "code": "588000",
-        "start": "2024-01-01",
-        "end": "2024-01-31"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_etf_list",
-      "source": "wequant",
-      "smoke_kwargs": {},
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_etf_name",
-      "source": "wequant",
-      "smoke_kwargs": {
-        "code": "000001"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_financial_report",
-      "source": "wequant",
-      "smoke_kwargs": {
-        "code": "000001",
-        "report_date": "2024-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_financial_report_adv",
-      "source": "wequant",
-      "smoke_kwargs": {
-        "code": "000001",
-        "start": "2024-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_future_day",
-      "source": "wequant",
-      "smoke_kwargs": {
-        "code": "TL8",
-        "start": "2024-01-01",
-        "end": "2024-01-31"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_future_dk",
-      "source": "wequant",
-      "smoke_kwargs": {
-        "code": "TL8",
-        "start": "2024-01-01",
-        "end": "2024-01-31"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_future_list",
-      "source": "wequant",
-      "smoke_kwargs": {},
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_future_min",
-      "source": "wequant",
-      "smoke_kwargs": {
-        "code": "TL8",
-        "start": "2024-01-01",
-        "end": "2024-01-31"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_future_tick",
-      "source": "wequant",
-      "smoke_kwargs": {},
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_get_hkstock_list",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {},
       "smoke_timeout_sec": 30,
       "research_default": {
@@ -568,11 +609,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_hkstock_day",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "09988",
         "start": "2024-01-01",
@@ -584,11 +627,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_hkstock_dk",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "09988",
         "start": "2024-01-01",
@@ -600,11 +645,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_index_day",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01",
@@ -616,11 +663,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_index_day_adv",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01"
@@ -631,11 +680,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_index_dk",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01",
@@ -647,11 +698,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_index_list",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {},
       "smoke_timeout_sec": 30,
       "research_default": {
@@ -659,11 +712,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_index_min",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2020-01-01",
@@ -675,11 +730,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_index_name",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001"
       },
@@ -689,11 +746,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_index_transaction",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01",
@@ -705,11 +764,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_index_transaction_adv",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01"
@@ -720,25 +781,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_lhb",
-      "source": "wequant",
-      "smoke_kwargs": {
-        "date": "2024-01-01"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_lof_dk",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01",
@@ -750,37 +799,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_quotation",
-      "source": "wequant",
-      "smoke_kwargs": {
-        "code": "000001"
-      },
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_quotations",
-      "source": "wequant",
-      "smoke_kwargs": {},
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_reits_dk",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01",
@@ -792,11 +817,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_adj",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01",
@@ -808,11 +835,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_block",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {},
       "smoke_timeout_sec": 30,
       "research_default": {
@@ -820,11 +849,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_block_history",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "600010",
         "start": "2022-08-01",
@@ -837,11 +868,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "window_tuned_for_30s_smoke"
+      "notes": "window_tuned_for_30s_smoke",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_block_slice_history",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {},
       "smoke_timeout_sec": 30,
       "research_default": {
@@ -849,11 +882,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_day",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01",
@@ -865,11 +900,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_day_adv",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001"
       },
@@ -879,11 +916,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_divyield",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01"
@@ -894,11 +933,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_dk",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01",
@@ -910,11 +951,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_dk_adv",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001"
       },
@@ -924,11 +967,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_financial_calendar",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01"
@@ -939,11 +984,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_full",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {},
       "smoke_timeout_sec": 30,
       "research_default": {
@@ -954,11 +1001,13 @@
       "notes": "notebook_param_baseline",
       "smoke_args": [
         "2026-01-02"
-      ]
+      ],
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_info",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001"
       },
@@ -968,11 +1017,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_list",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {},
       "smoke_timeout_sec": 30,
       "research_default": {
@@ -980,11 +1031,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_min",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01",
@@ -996,11 +1049,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_min_adv",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01",
@@ -1012,11 +1067,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_name",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001"
       },
@@ -1026,23 +1083,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
-    },
-    {
-      "function": "fetch_stock_realtime_adv",
-      "source": "wequant",
-      "smoke_kwargs": {},
-      "smoke_timeout_sec": 30,
-      "research_default": {
-        "mode": "research",
-        "timeout_sec": null,
-        "llm_params_priority": true
-      },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_realtime_min",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001"
       },
@@ -1052,11 +1099,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_terminated",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {},
       "smoke_timeout_sec": 30,
       "research_default": {
@@ -1064,11 +1113,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_to_market_date",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "stock_code": null
       },
@@ -1078,11 +1129,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_transaction",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01",
@@ -1094,11 +1147,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_transaction_adv",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001",
         "start": "2024-01-01"
@@ -1109,11 +1164,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_stock_xdxr",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {
         "code": "000001"
       },
@@ -1123,11 +1180,13 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     },
     {
       "function": "fetch_trade_date",
-      "source": "wequant",
+      "source": "fetch",
       "smoke_kwargs": {},
       "smoke_timeout_sec": 30,
       "research_default": {
@@ -1135,7 +1194,9 @@
         "timeout_sec": null,
         "llm_params_priority": true
       },
-      "notes": "notebook_param_baseline"
+      "notes": "notebook_param_baseline",
+      "source_internal": "mongo_fetch",
+      "engine": "mongo"
     }
   ]
 }

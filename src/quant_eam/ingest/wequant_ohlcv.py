@@ -114,10 +114,10 @@ class RealWeQuantProvider:
 
     def __init__(self) -> None:
         try:
-            from quant_eam.qa_fetch.providers.wequant_local import wefetch  # noqa: F401
+            from quant_eam.qa_fetch.providers.mongo_fetch import wefetch  # noqa: F401
         except Exception as e:  # noqa: BLE001
             raise ValueError(
-                "wequant local provider is not available under quant_eam.qa_fetch.providers; "
+                "mongo fetch provider is not available under quant_eam.qa_fetch.providers; "
                 "use --provider mock (tests/CI) or complete qa_fetch providers migration"
             ) from e
 

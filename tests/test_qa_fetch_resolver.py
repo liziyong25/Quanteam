@@ -4,24 +4,31 @@ import pytest
 
 import quant_eam.qa_fetch.resolver as resolver
 from quant_eam.qa_fetch.resolver import FetchResolution, fetch_market_data, qa_fetch_registry_payload, resolve_fetch
+from quant_eam.qa_fetch.source import SOURCE_MONGO, SOURCE_MYSQL
 
 
 def test_registry_payload_has_machine_entries() -> None:
     payload = qa_fetch_registry_payload(include_drop=False)
     assert payload["schema_version"] == "qa_fetch_registry_v1"
-    assert len(payload.get("functions", [])) == 77
+    assert len(payload.get("functions", [])) == 71
     assert len(payload.get("resolver_entries", [])) >= 10
+    sources = {row.get("source") for row in payload.get("functions", [])}
+    provider_ids = {row.get("provider_id") for row in payload.get("functions", [])}
+    engines = {row.get("engine") for row in payload.get("functions", [])}
+    assert sources == {"fetch"}
+    assert provider_ids == {"fetch"}
+    assert engines == {"mongo", "mysql"}
 
 
 def test_resolve_fetch_defaults_generic_source() -> None:
     r = resolve_fetch(asset="bond", freq="day", adjust="raw")
     assert r.public_name == "fetch_bond_day"
-    assert r.source == "wbdata"
+    assert r.source == SOURCE_MYSQL
     assert r.target_name == "fetch_bond_day"
 
     r_cfets = resolve_fetch(asset="bond", freq="day", venue="cfets", adjust="raw")
     assert r_cfets.public_name == "fetch_bond_day_cfets"
-    assert r_cfets.source == "wbdata"
+    assert r_cfets.source == SOURCE_MYSQL
     assert r_cfets.target_name == "fetch_settlement_bond_day"
 
 
@@ -71,13 +78,13 @@ def _stub_resolution(*, used_adv: bool = False, adjust: str = "raw") -> FetchRes
         freq="day",
         venue=None,
         adjust=adjust,
-        source="wequant",
+        source=SOURCE_MONGO,
         target_name="fetch_stock_day_adv" if used_adv else "fetch_stock_day",
         public_name="fetch_stock_day_adv" if used_adv else "fetch_stock_day",
-        raw_source="wequant",
+        raw_source=SOURCE_MONGO,
         raw_target_name="fetch_stock_day",
         raw_public_name="fetch_stock_day",
-        adv_source="wequant",
+        adv_source=SOURCE_MONGO,
         adv_target_name="fetch_stock_day_adv",
         adv_public_name="fetch_stock_day_adv",
         used_adv=used_adv,

@@ -55,3 +55,17 @@ DataCatalog enforces:
 - Filtering by `symbols`, `start`, `end`
 - Stable sorting by `(symbol, dt)`
 
+## Fetch Runtime Layer
+
+To support `6.4 Agents Plane`, fetch functions are exposed via:
+
+- `src/quant_eam/qa_fetch/runtime.py`
+  - `execute_fetch_by_intent(...)`
+  - `execute_fetch_by_name(...)`
+
+Boundaries:
+
+- `DataCatalog.query_dataset(...)` is the primary query semantic for agents.
+- `qa_fetch.runtime` is the compatibility/runtime fetch layer for function-based access.
+- Runtime parameter precedence is deterministic:
+  - `LLM input` > `smoke window profile` > `function defaults`.

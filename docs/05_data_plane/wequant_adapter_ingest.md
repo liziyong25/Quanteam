@@ -1,5 +1,8 @@
 # WeQuant Adapter Ingest (Phase-03B)
 
+Legacy note: this document is adapter-specific historical reference.
+Agents Plane primary contracts are `source=fetch` + `engine=mongo|mysql`.
+
 This adapter **only** performs ingest into DataLake snapshots. It does not backtest, arbitrate, or evaluate strategy
 validity.
 
@@ -89,4 +92,3 @@ docker compose run --rm api python -m quant_eam.wequant_adapter.ingest \
 ```
 
 If `wequant` is not available, the CLI will instruct you to use `--client fake`.
-

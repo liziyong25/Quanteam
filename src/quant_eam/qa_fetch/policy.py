@@ -8,6 +8,7 @@ from dataclasses import replace
 from typing import Iterable
 
 from .registry import FetchMapping
+from .source import SOURCE_MONGO, SOURCE_MYSQL, normalize_source
 
 
 ADV_ALLOWED_FREQ = {"day", "min", "transaction", "dk"}
@@ -76,13 +77,20 @@ def _matrix_v3_rows() -> dict[tuple[str, str], dict[str, object]]:
         parts = [item.strip() for item in line.strip("|").split("|")]
         if len(parts) < 8:
             continue
-        source = parts[0]
+        source_token = parts[0]
+        source = normalize_source(source_token)
+        if source is None and source_token.strip().lower() == "fetch":
+            raw_notes = parts[7]
+            if "/mongo_fetch/" in raw_notes:
+                source = SOURCE_MONGO
+            elif "/mysql_fetch/" in raw_notes:
+                source = SOURCE_MYSQL
         old_name = parts[1].strip("`")
         proposed_name = parts[2].strip("`")
         keep_alias_text = parts[5].lower()
         status = parts[6].lower()
-        notes = parts[7]
-        if source not in {"wequant", "wbdata"} or not old_name.startswith("fetch_"):
+        notes = re.sub(r";\s*source=`[^`]+`", "", parts[7]).strip()
+        if source not in {SOURCE_MONGO, SOURCE_MYSQL} or not old_name.startswith("fetch_"):
             continue
         rows[(source, snake_case(old_name))] = {
             "old_name": old_name,
@@ -110,14 +118,20 @@ def _function_registry_active_set() -> set[tuple[str, str]]:
     for row in rows:
         if not isinstance(row, dict):
             continue
-        source = str(row.get("source", "")).strip().lower()
+        source = normalize_source(
+            row.get("source_internal") or row.get("provider_internal") or row.get("source")
+        )
         function = str(row.get("function", "")).strip()
+        target_name = str(row.get("target_name", "")).strip()
         status = str(row.get("status", "")).strip().lower()
-        if source not in {"wequant", "wbdata"} or not function.startswith("fetch_"):
+        if source not in {SOURCE_MONGO, SOURCE_MYSQL}:
             continue
         if status not in {"active", "allow", "review", ""}:
             continue
-        out.add((source, snake_case(function)))
+        candidate = target_name if target_name.startswith("fetch_") else function
+        if not candidate.startswith("fetch_"):
+            continue
+        out.add((source, snake_case(candidate)))
     return out
 
 
