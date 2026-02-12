@@ -21,6 +21,8 @@ SCHEMA_VERSION_TO_FILE = {
     "blueprint_v1": "blueprint_schema_v1.json",
     "variable_dictionary_v1": "variable_dictionary_v1.json",
     "calc_trace_plan_v1": "calc_trace_plan_v1.json",
+    "diagnostic_spec_v1": "diagnostic_spec_v1.json",
+    "gate_spec_v1": "gate_spec_v1.json",
     "run_spec_v1": "run_spec_schema_v1.json",
     "run_spec_v2": "run_spec_schema_v2.json",
     "dossier_v1": "dossier_schema_v1.json",

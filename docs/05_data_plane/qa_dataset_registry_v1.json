@@ -1,0 +1,1435 @@
+{
+  "dataset_count": 75,
+  "datasets": [
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "bond_date_list",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_date_list"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "bond_day",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_day"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "bond_industry_settlement",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_industry_settlement"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "bond_min",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_min"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "bond_reference",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bondInformation"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_bond_amount",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_cfets_bond_amount"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_credit_item",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_cfets_credit_item"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_credit_side",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_cfets_credit_side"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "cfets_dfz_bond_day",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_cfets_dfz_bond_day"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_repo_buyback_item",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_cfets_repo_buyback_item"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_repo_buyout_item",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_cfets_repo_buyout_item"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_repo_item",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_cfets_repo_item"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_repo_side",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_cfets_repo_side"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "clean_quote",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_clean_quote"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "clean_transaction",
+      "default_adjust": "raw",
+      "domain": "generic",
+      "functions": [
+        "fetch_clean_transaction"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "ctp_future_list",
+      "default_adjust": "raw",
+      "domain": "future",
+      "functions": [
+        "fetch_ctp_future_list"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "ctp_tick",
+      "default_adjust": "raw",
+      "domain": "generic",
+      "functions": [
+        "fetch_ctp_tick"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "dk_data",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_dk_data"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "etf_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_etf_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "etf_list",
+      "default_adjust": "raw",
+      "domain": "etf",
+      "functions": [
+        "fetch_etf_list"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "etf_name",
+      "default_adjust": "raw",
+      "domain": "etf",
+      "functions": [
+        "fetch_etf_name"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "financial_report",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_financial_report"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "financial_report_adv",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_financial_report_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "future_day",
+      "default_adjust": "raw",
+      "domain": "future",
+      "functions": [
+        "fetch_future_day"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "future_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_future_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "future_list",
+      "default_adjust": "raw",
+      "domain": "future",
+      "functions": [
+        "fetch_future_list"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "future_min",
+      "default_adjust": "raw",
+      "domain": "future",
+      "functions": [
+        "fetch_future_min"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "future_tick",
+      "default_adjust": "raw",
+      "domain": "future",
+      "functions": [
+        "fetch_future_tick"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "generic_reference",
+      "default_adjust": "raw",
+      "domain": "generic",
+      "functions": [
+        "fetch_lhb",
+        "fetch_quotation",
+        "fetch_quotations"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "get_hkstock_list",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_get_hkstock_list"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "hkstock_day",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_hkstock_day"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "hkstock_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_hkstock_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "index_day",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_day"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "index_day_adv",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_day_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "index_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_index_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "index_list",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_list"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "index_min",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_min"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "index_name",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_name"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "index_transaction",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_transaction"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "index_transaction_adv",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_transaction_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "lof_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_lof_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "realtime_bid",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_realtime_bid"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "realtime_min",
+      "default_adjust": "raw",
+      "domain": "generic",
+      "functions": [
+        "fetch_realtime_min"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "realtime_transaction",
+      "default_adjust": "raw",
+      "domain": "generic",
+      "functions": [
+        "fetch_realtime_transaction"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "reits_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_reits_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "settlement_bond_day",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_settlement_bond_day"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_adj",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_adj"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_block",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_block"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_block_history",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_block_history"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_block_slice_history",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_block_slice_history"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_day",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_day"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_day_adv",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_day_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_divyield",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_divyield"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_stock_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_dk_adv",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_stock_dk_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_financial_calendar",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_financial_calendar"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_full",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_full"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_info",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_info"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_list",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_list"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_min",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_min"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_min_adv",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_min_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_name",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_name"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_realtime_adv",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_realtime_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_realtime_min",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_realtime_min"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_terminated",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_terminated"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_to_market_date",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_to_market_date"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_transaction",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_transaction"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_transaction_adv",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_transaction_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_xdxr",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_xdxr"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "trade_date",
+      "default_adjust": "raw",
+      "domain": "generic",
+      "functions": [
+        "fetch_trade_date"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "wind_indicators",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_wind_indicators"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "yc_valuation",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_yc_valuation"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "zz_bond_valuation",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_zz_bond_valuation"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "zz_index",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_zz_index"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "zz_valuation",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_zz_valuation"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt"
+    }
+  ],
+  "generated_at_utc": "2026-02-12T03:40:23.351269+00:00",
+  "schema_version": "qa_dataset_registry_v1"
+}

@@ -1,0 +1,29 @@
+{
+  "artifacts": {
+    "gate_results_path": "gate_results.json",
+    "metrics_path": "metrics.json"
+  },
+  "checks": [
+    {
+      "check_id": "max_drawdown_guard",
+      "description": "Ensure drawdown stays below policy threshold.",
+      "metric_key": "max_drawdown",
+      "operator": "le",
+      "severity": "error",
+      "threshold": 0.25
+    },
+    {
+      "check_id": "sharpe_floor",
+      "description": "Warn when sharpe is below conservative floor.",
+      "metric_key": "sharpe",
+      "operator": "ge",
+      "severity": "warn",
+      "threshold": 0.7
+    }
+  ],
+  "diagnostic_id": "diag_drawdown_v1",
+  "objective": "Translate run evidence into promotable gate candidates.",
+  "run_id": "abc123def456",
+  "schema_version": "diagnostic_spec_v1",
+  "title": "Risk Stability Diagnostic"
+}

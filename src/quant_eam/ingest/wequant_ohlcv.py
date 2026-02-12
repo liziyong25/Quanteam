@@ -109,16 +109,16 @@ class MockWeQuantProvider:
 class RealWeQuantProvider:
     """Optional real provider. Tests must not depend on it.
 
-    This wrapper tries to import 'wequant' at runtime. If it is unavailable, it fails with a clear error.
+    This wrapper checks local qa_fetch provider modules at runtime.
     """
 
     def __init__(self) -> None:
         try:
-            import wequant  # type: ignore  # noqa: F401
+            from quant_eam.qa_fetch.providers.wequant_local import wefetch  # noqa: F401
         except Exception as e:  # noqa: BLE001
             raise ValueError(
-                "wequant provider requested but 'wequant' is not available; "
-                "use --provider mock (tests/CI) or install/configure wequant for manual runs"
+                "wequant local provider is not available under quant_eam.qa_fetch.providers; "
+                "use --provider mock (tests/CI) or complete qa_fetch providers migration"
             ) from e
 
     def fetch_ohlcv_1d(self, *, symbols: list[str], start: str, end: str) -> list[dict[str, Any]]:

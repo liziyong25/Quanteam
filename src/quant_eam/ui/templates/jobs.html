@@ -1,28 +1,30 @@
 {% extends "base.html" %}
 {% block content %}
-  <h1>Jobs</h1>
-
-  <div class="muted">
-    Workflow: blueprint -> compile -> WAITING_APPROVAL -> run -> gates -> registry
+  <div class="page-header">
+    <h1 class="page-title">Jobs</h1>
+    <p class="page-subtitle">Workflow: blueprint -> compile -> WAITING_APPROVAL -> run -> gates -> registry</p>
   </div>
 
-  <table class="table">
-    <thead>
-      <tr>
-        <th>job_id</th>
-        <th>state</th>
-        <th>blueprint</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for j in jobs %}
-      <tr>
-        <td><a href="/ui/jobs/{{ j.job_id }}">{{ j.job_id }}</a></td>
-        <td>{{ j.state }}</td>
-        <td>{{ j.title or j.blueprint_id or "" }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="card">
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>job_id</th>
+            <th>state</th>
+            <th>blueprint</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for j in jobs %}
+          <tr>
+            <td><a href="/ui/jobs/{{ j.job_id }}">{{ j.job_id }}</a></td>
+            <td>{{ j.state }}</td>
+            <td>{{ j.title or j.blueprint_id or "" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 {% endblock %}
-

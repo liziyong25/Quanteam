@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Run {{ run_id }}</h1>
+    <p class="page-subtitle">Dossier-backed review of gates, risk, attribution, and segment-scoped evidence.</p>
+  </div>
+
   <div class="section">
     <div class="card">
       <h2>Run</h2>
@@ -72,7 +77,7 @@
         <div class="section">
           <details>
             <summary>risk_report.json (raw)</summary>
-            <pre style="white-space: pre-wrap">{{ risk_report | tojson(indent=2) }}</pre>
+            <pre class="code">{{ risk_report | tojson(indent=2) }}</pre>
           </details>
         </div>
       {% else %}
@@ -94,14 +99,14 @@
         <div class="section">
           <details>
             <summary>attribution_report.json (raw)</summary>
-            <pre style="white-space: pre-wrap">{{ attribution_report | tojson(indent=2) }}</pre>
+            <pre class="code">{{ attribution_report | tojson(indent=2) }}</pre>
           </details>
         </div>
         {% if attribution_md %}
         <div class="section">
           <details>
             <summary>reports/attribution/report.md</summary>
-            <pre style="white-space: pre-wrap">{{ attribution_md }}</pre>
+            <pre class="code">{{ attribution_md }}</pre>
           </details>
         </div>
         {% endif %}
@@ -112,21 +117,24 @@
 
     <div class="card">
       <h2>Gate Results</h2>
+      <div class="muted">Need full gate evidence? Open <a href="/ui/runs/{{ run_id }}/gates">run gate detail</a>.</div>
       {% if gate_rows and gate_rows|length > 0 %}
-      <table>
-        <thead><tr><th>gate</th><th>pass</th><th>status</th></tr></thead>
-        <tbody>
-        {% for g in gate_rows %}
-          <tr>
-            <td>{{ g.gate_id }}</td>
-            <td>
-              {% if g.pass %}<span class="pill good">PASS</span>{% else %}<span class="pill bad">FAIL</span>{% endif %}
-            </td>
-            <td><span class="pill">{{ g.status if g.status else "" }}</span></td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>gate</th><th>pass</th><th>status</th></tr></thead>
+          <tbody>
+          {% for g in gate_rows %}
+            <tr>
+              <td>{{ g.gate_id }}</td>
+              <td>
+                {% if g.pass %}<span class="pill good">PASS</span>{% else %}<span class="pill bad">FAIL</span>{% endif %}
+              </td>
+              <td><span class="pill">{{ g.status if g.status else "" }}</span></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
       {% else %}
         <div class="plot-fallback">No gate_results.json found for this run.</div>
       {% endif %}
@@ -142,6 +150,52 @@
       {% endif %}
     </div>
   </div>
+
+  {% if diagnostics and diagnostics|length > 0 %}
+  <div class="section">
+    <div class="card">
+      <h2>Diagnostics</h2>
+      <div class="muted">Phase-43 deterministic diagnostics evidence and promotion candidates.</div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>diagnostic_id</th><th>overall</th><th>checks</th><th>candidate_gates</th></tr></thead>
+          <tbody>
+          {% for d in diagnostics %}
+            {% set sm = d.summary if d.summary else {} %}
+            <tr>
+              <td>
+                <a href="/ui/runs/{{ run_id }}?diagnostic_id={{ d.diagnostic_id|urlencode }}{% if symbol %}&symbol={{ symbol|urlencode }}{% endif %}{% if segment_id %}&segment_id={{ segment_id|urlencode }}{% endif %}">
+                  {{ d.diagnostic_id }}
+                </a>
+              </td>
+              <td><span class="pill">{{ sm.overall if sm and sm.overall else "unknown" }}</span></td>
+              <td>{{ sm.check_count if sm and sm.check_count is not none else 0 }}</td>
+              <td>{{ d.candidate_gate_count }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if selected_diagnostic_id %}
+      <div class="section">
+        <h2>Diagnostic {{ selected_diagnostic_id }}</h2>
+        {% if selected_diagnostic_report %}
+        <details>
+          <summary>diagnostic_report.json</summary>
+          <pre class="code">{{ selected_diagnostic_report | tojson(indent=2) }}</pre>
+        </details>
+        {% endif %}
+        {% if selected_promotion_gate_spec %}
+        <details>
+          <summary>promotion_candidate/gate_spec.json</summary>
+          <pre class="code">{{ selected_promotion_gate_spec | tojson(indent=2) }}</pre>
+        </details>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
 
   {% if is_holdout_view %}
   <div class="section">

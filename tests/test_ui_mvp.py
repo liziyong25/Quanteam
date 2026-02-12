@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from fastapi.testclient import TestClient
@@ -10,6 +11,7 @@ from quant_eam.data_lake.demo_ingest import main as demo_ingest_main
 from quant_eam.gaterunner.run import main as gaterunner_main
 from quant_eam.registry import cli as registry_cli
 from quant_eam.runner.run import main as runner_main
+from quant_eam.worker.main import main as worker_main
 
 
 def _repo_root() -> Path:
@@ -80,18 +82,206 @@ def test_readonly_api_and_ui_pages_200(tmp_path: Path, monkeypatch) -> None:
     assert r.status_code == 200
     assert card_id in r.text
     assert run_id in r.text
+    assert 'class="page-header"' in r.text
+    assert 'class="table-wrap"' in r.text
 
     r = client.get(f"/ui/runs/{run_id}")
     assert r.status_code == 200
     assert run_id in r.text
+    assert f'Run {run_id}' in r.text
+    assert 'class="page-title"' in r.text
+    assert f"/ui/runs/{run_id}/gates" in r.text
     # Provenance linkage: run page must link to snapshot detail page (read-only).
     assert "/ui/snapshots/" in r.text
     # Phase-22: risk report rendered when present.
     assert "Risk" in r.text
 
+    rg = client.get(f"/ui/runs/{run_id}/gates")
+    assert rg.status_code == 200
+    assert f"Run {run_id} Gates" in rg.text
+    assert "Holdout (Minimal Summary)" in rg.text
+    assert "<form" not in rg.text.lower()
+    assert "method=\"post\"" not in rg.text.lower()
+
     r = client.get(f"/ui/cards/{card_id}")
     assert r.status_code == 200
     assert card_id in r.text
+    assert f'Card {card_id}' in r.text
+
+    r = client.get("/ui/jobs")
+    assert r.status_code == 200
+    assert "Workflow: blueprint -> compile -> WAITING_APPROVAL -> run -> gates -> registry" in r.text
+
+    r = client.get("/ui/qa-fetch")
+    assert r.status_code == 200
+    assert "QA Fetch Explorer" in r.text
+    assert "docs/05_data_plane/qa_fetch_registry_v1.json" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/governance-checks")
+    assert r.status_code == 200
+    assert "Whole View Governance Checklist" in r.text
+    assert "g32_governance_checks_ui_scope" in r.text
+    assert "python3 scripts/check_docs_tree.py" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/policies-constraints")
+    assert r.status_code == 200
+    assert "Policies and Constraints Evidence" in r.text
+    assert "Whole View Hard Constraints" in r.text
+    assert "Playbook Task Rules (0.1)" in r.text
+    assert "Playbook Quality Gates (0.2)" in r.text
+    assert "Whole View Framework.md" in r.text
+    assert "Implementation Phases Playbook.md" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/contracts-coverage")
+    assert r.status_code == 200
+    assert "Whole View Required Contracts Coverage" in r.text
+    assert "5.1 必须落地的 Contracts（v1）" in r.text
+    assert "contracts/blueprint_schema_v1.json" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/dossier-evidence")
+    assert r.status_code == 200
+    assert "Dossier Evidence Spec Coverage" in r.text
+    assert "4.4 Dossier" in r.text
+    assert "dossiers/&lt;run_id&gt;/" in r.text
+    assert run_id in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/playbook-phases")
+    assert r.status_code == 200
+    assert "Playbook Phase Matrix Read-Only Evidence" in r.text
+    assert "phase_dispatch_plan_v2" in r.text
+    assert "goal_checklist" in r.text
+    assert "G36" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/ia-coverage")
+    assert r.status_code == 200
+    assert "UI Information Architecture Coverage" in r.text
+    assert "8. UI 信息架构（不看源码的审阅体验）" in r.text
+    assert "Whole View IA Checklist Mapping" in r.text
+    assert "/ui/runs/{run_id}/gates" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/agent-roles")
+    assert r.status_code == 200
+    assert "Agents Roles and Harness Boundary Evidence" in r.text
+    assert "6.4 Agents Plane" in r.text
+    assert "Phase-8" in r.text
+    assert "agents_pipeline_v1" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/workflow-checkpoints")
+    assert r.status_code == 200
+    assert "Whole View Workflow Checkpoints Matrix" in r.text
+    assert "3. Whole View 工作流（UI Checkpoint 驱动的状态机）" in r.text
+    assert "phase_dispatch_plan_v2" in r.text
+    assert "orchestrator_autopilot_v1" in r.text
+    assert "G39" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/object-model")
+    assert r.status_code == 200
+    assert "Whole View Object Model I/O Coverage" in r.text
+    assert "4. 核心对象模型（系统只认这些 I/O）" in r.text
+    assert "Playbook Phase Flow/Context (Section 3)" in r.text
+    assert "phase_dispatch_plan_v2" in r.text
+    assert "g40_object_model_ui_scope" in r.text
+    assert "G40" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/module-boundaries")
+    assert r.status_code == 200
+    assert "Whole View Modules Deterministic-Agent Boundary Evidence" in r.text
+    assert "6. 模块（Modules）与职责边界（Deterministic vs Agent）" in r.text
+    assert "Playbook Phase Flow/Context (Section 3)" in r.text
+    assert "phase_dispatch_plan_v2" in r.text
+    assert "g41_module_boundaries_ui_scope" in r.text
+    assert "G41" in r.text
+    assert "<form" not in r.text.lower()
+
+    r = client.get("/ui/diagnostics-promotion")
+    assert r.status_code == 200
+    assert "Codex Diagnostics Promotion Chain Read-Only Evidence" in r.text
+    assert "7. Codex CLI 的定位：探索者 + 工具工，不是裁判" in r.text
+    assert "Playbook Phase-12 Diagnostics Promote Evidence" in r.text
+    assert "phase_dispatch_plan_v2" in r.text
+    assert "g42_diagnostics_promotion_ui_scope" in r.text
+    assert "G42" in r.text
+    assert "<form" not in r.text.lower()
+
+
+def test_ui_create_idea_job_from_form(tmp_path: Path, monkeypatch) -> None:
+    data_root = tmp_path / "data"
+    art_root = tmp_path / "artifacts"
+    reg_root = tmp_path / "registry"
+    job_root = tmp_path / "jobs"
+    data_root.mkdir()
+    art_root.mkdir()
+    reg_root.mkdir()
+    job_root.mkdir()
+
+    monkeypatch.setenv("EAM_DATA_ROOT", str(data_root))
+    monkeypatch.setenv("EAM_ARTIFACT_ROOT", str(art_root))
+    monkeypatch.setenv("EAM_REGISTRY_ROOT", str(reg_root))
+    monkeypatch.setenv("EAM_JOB_ROOT", str(job_root))
+    monkeypatch.setenv("EAM_LLM_PROVIDER", "mock")
+    monkeypatch.setenv("EAM_LLM_MODE", "live")
+    monkeypatch.setenv("SOURCE_DATE_EPOCH", "1700000000")
+
+    snapshot_id = "demo_snap_ui_idea_001"
+    assert demo_ingest_main(["--root", str(data_root), "--snapshot-id", snapshot_id]) == 0
+
+    client = TestClient(app)
+    r = client.get("/ui")
+    assert r.status_code == 200
+    assert "Create Idea Job" in r.text
+    assert 'class="btn"' in r.text
+
+    form = {
+        "title": "UI Idea Demo",
+        "hypothesis_text": "UI submission should create deterministic idea job artifacts.",
+        "symbols": "AAA,BBB",
+        "frequency": "1d",
+        "start": "2024-01-01",
+        "end": "2024-01-10",
+        "evaluation_intent": "ui_e2e",
+        "snapshot_id": snapshot_id,
+        "policy_bundle_path": "policies/policy_bundle_v1.yaml",
+    }
+    r = client.post("/ui/jobs/idea", data=form, follow_redirects=False)
+    assert r.status_code == 303, r.text
+    loc = r.headers.get("location", "")
+    assert loc.startswith("/ui/jobs/")
+    job_id = loc.rsplit("/", 1)[-1]
+
+    job_dir = job_root / job_id
+    assert (job_dir / "job_spec.json").is_file()
+    assert (job_dir / "inputs" / "idea_spec.json").is_file()
+    assert (job_dir / "events.jsonl").is_file()
+
+    lines = [ln for ln in (job_dir / "events.jsonl").read_text(encoding="utf-8").splitlines() if ln.strip()]
+    events = [json.loads(ln) for ln in lines]
+    assert events
+    assert any(str(ev.get("event_type")) == "IDEA_SUBMITTED" for ev in events)
+
+    # After worker advance, the workflow should stop at blueprint checkpoint.
+    assert worker_main(["--run-jobs", "--once"]) == 0
+    lines2 = [ln for ln in (job_dir / "events.jsonl").read_text(encoding="utf-8").splitlines() if ln.strip()]
+    events2 = [json.loads(ln) for ln in lines2]
+    assert any(
+        str(ev.get("event_type")) == "WAITING_APPROVAL"
+        and isinstance(ev.get("outputs"), dict)
+        and str(ev["outputs"].get("step")) == "blueprint"
+        for ev in events2
+    )
+
+    rd = client.get(loc)
+    assert rd.status_code == 200
+    assert job_id in rd.text
 
 
 def test_path_traversal_blocked() -> None:

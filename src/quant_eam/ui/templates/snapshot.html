@@ -1,20 +1,25 @@
 {% extends "base.html" %}
 {% block content %}
-  <h1>Snapshot {{ snapshot_id }}</h1>
-
-  <div class="card">
-    <div><b>snapshot_dir</b>: {{ snapshot_dir }}</div>
+  <div class="page-header">
+    <h1 class="page-title">Snapshot {{ snapshot_id }}</h1>
+    <p class="page-subtitle">As-of preview is read-only and enforced through DataCatalog query semantics.</p>
   </div>
 
-  <h2>As-Of Preview (ohlcv_1d)</h2>
   <div class="card">
-    <form method="get" action="/ui/snapshots/{{ snapshot_id }}">
+    <div class="kv">
+      <div class="k">snapshot_dir</div><div class="v">{{ snapshot_dir }}</div>
+    </div>
+  </div>
+
+  <h2 class="section-title">As-Of Preview (ohlcv_1d)</h2>
+  <div class="card">
+    <form method="get" action="/ui/snapshots/{{ snapshot_id }}" class="form-inline">
       <label>symbols <input name="symbols" value="{{ preview_symbols }}" /></label>
       <label>start <input name="start" value="{{ preview_start }}" /></label>
       <label>end <input name="end" value="{{ preview_end }}" /></label>
       <label>as_of <input name="as_of" value="{{ preview_as_of }}" size="28" /></label>
       <label>limit <input name="limit" value="{{ preview_limit }}" size="6" /></label>
-      <button type="submit">Preview</button>
+      <button type="submit" class="btn">Preview</button>
     </form>
     <div class="muted">Preview is served via DataCatalog.query_ohlcv (enforces available_at &lt;= as_of). No direct CSV reads.</div>
   </div>
@@ -26,54 +31,65 @@
 
   {% if preview_rows %}
   <h3>Preview Rows</h3>
-  <table class="table">
-    <thead>
-      <tr>
-        <th>symbol</th>
-        <th>dt</th>
-        <th>open</th>
-        <th>high</th>
-        <th>low</th>
-        <th>close</th>
-        <th>volume</th>
-        <th>available_at</th>
-        <th>source</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for r in preview_rows %}
-      <tr>
-        <td>{{ r.symbol }}</td>
-        <td>{{ r.dt }}</td>
-        <td>{{ r.open }}</td>
-        <td>{{ r.high }}</td>
-        <td>{{ r.low }}</td>
-        <td>{{ r.close }}</td>
-        <td>{{ r.volume }}</td>
-        <td>{{ r.available_at }}</td>
-        <td>{{ r.source }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>symbol</th>
+          <th>dt</th>
+          <th>open</th>
+          <th>high</th>
+          <th>low</th>
+          <th>close</th>
+          <th>volume</th>
+          <th>available_at</th>
+          <th>source</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in preview_rows %}
+        <tr>
+          <td>{{ r.symbol }}</td>
+          <td>{{ r.dt }}</td>
+          <td>{{ r.open }}</td>
+          <td>{{ r.high }}</td>
+          <td>{{ r.low }}</td>
+          <td>{{ r.close }}</td>
+          <td>{{ r.volume }}</td>
+          <td>{{ r.available_at }}</td>
+          <td>{{ r.source }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
   {% endif %}
 
-  {% if quality_key_json %}
-  <h2>Quality (key metrics)</h2>
-  <pre class="code">{{ quality_key_json }}</pre>
-  {% endif %}
+  <div class="card-stack">
+    {% if quality_key_json %}
+    <div>
+      <h2 class="section-title">Quality (key metrics)</h2>
+      <pre class="code">{{ quality_key_json }}</pre>
+    </div>
+    {% endif %}
 
-  <h2>manifest.json</h2>
-  <pre class="code">{{ manifest_json }}</pre>
+    <div>
+      <h2 class="section-title">manifest.json</h2>
+      <pre class="code">{{ manifest_json }}</pre>
+    </div>
 
-  {% if ingest_manifest_json %}
-  <h2>ingest_manifest.json</h2>
-  <pre class="code">{{ ingest_manifest_json }}</pre>
-  {% endif %}
+    {% if ingest_manifest_json %}
+    <div>
+      <h2 class="section-title">ingest_manifest.json</h2>
+      <pre class="code">{{ ingest_manifest_json }}</pre>
+    </div>
+    {% endif %}
 
-  {% if quality_report_json %}
-  <h2>quality_report.json</h2>
-  <pre class="code">{{ quality_report_json }}</pre>
-  {% endif %}
+    {% if quality_report_json %}
+    <div>
+      <h2 class="section-title">quality_report.json</h2>
+      <pre class="code">{{ quality_report_json }}</pre>
+    </div>
+    {% endif %}
+  </div>
 {% endblock %}
-

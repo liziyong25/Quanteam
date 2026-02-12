@@ -23,10 +23,10 @@ class WequantClientProtocol(Protocol):
 class RealWequantClient:
     def __init__(self) -> None:
         try:
-            import wequant  # type: ignore  # noqa: F401
+            import quant_eam.qa_fetch as _qa_fetch  # noqa: F401
         except Exception as e:  # noqa: BLE001
             raise RuntimeError(
-                "wequant is not installed/available in this environment. "
+                "qa_fetch integration is not available in this environment. "
                 "Run with --client fake for offline demo/tests."
             ) from e
 
@@ -40,9 +40,54 @@ class RealWequantClient:
         fields: list[str],
         **kwargs: Any,
     ) -> pd.DataFrame:
-        # Placeholder integration point.
-        # Real implementation will call the vendor SDK and return a normalized DataFrame.
-        raise NotImplementedError("RealWequantClient integration is not implemented in Phase-03B MVP.")
+        import quant_eam.qa_fetch as qa_fetch
+
+        asset_type = str(kwargs.get("asset_type", "stock")).strip().lower()
+        fetch_map = {
+            "stock": "fetch_stock_day",
+            "etf": "fetch_etf_dk",
+            "future": "fetch_future_day",
+            "index": "fetch_index_day",
+        }
+        if asset_type not in fetch_map:
+            raise ValueError(f"unsupported asset_type={asset_type!r}")
+
+        fetch_name = fetch_map[asset_type]
+        fetch_fn = getattr(qa_fetch, fetch_name, None)
+        if not callable(fetch_fn):
+            raise RuntimeError(f"missing qa_fetch callable: {fetch_name}")
+
+        result = fetch_fn(symbols, start, end, format="pd")
+        if result is None:
+            return pd.DataFrame(columns=["symbol", "dt", "open", "high", "low", "close", "volume"])
+        if not isinstance(result, pd.DataFrame):
+            result = pd.DataFrame(result)
+        if result.empty:
+            return pd.DataFrame(columns=["symbol", "dt", "open", "high", "low", "close", "volume"])
+
+        frame = result.copy()
+        if "date" in frame.columns:
+            frame["dt"] = pd.to_datetime(frame["date"], errors="coerce").dt.strftime("%Y-%m-%d")
+        elif "datetime" in frame.columns:
+            frame["dt"] = pd.to_datetime(frame["datetime"], errors="coerce").dt.strftime("%Y-%m-%d")
+        else:
+            raise ValueError(f"{fetch_name} result missing date/datetime column")
+
+        if "volume" not in frame.columns:
+            if "vol" in frame.columns:
+                frame["volume"] = frame["vol"]
+            elif "trade" in frame.columns:
+                frame["volume"] = frame["trade"]
+
+        required = ["open", "high", "low", "close", "volume"]
+        missing = [c for c in required if c not in frame.columns]
+        if missing:
+            raise ValueError(f"{fetch_name} result missing required columns: {missing}")
+
+        frame["symbol"] = frame["code"] if "code" in frame.columns else symbols[0]
+        out = frame.loc[:, ["symbol", "dt", "open", "high", "low", "close", "volume"]]
+        out = out.dropna(subset=["dt"]).reset_index(drop=True)
+        return out
 
 
 @dataclass(frozen=True)
@@ -103,4 +148,3 @@ class FakeWequantClient:
 
         df = pd.DataFrame.from_records(rows)
         return df
-

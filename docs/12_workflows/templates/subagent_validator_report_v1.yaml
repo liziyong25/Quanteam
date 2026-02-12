@@ -1,0 +1,29 @@
+schema_version: subagent_validator_report_v1
+phase_id: phase_xx
+reported_at: "2026-02-11T00:00:00+08:00"
+validator:
+  role: orchestrator_codex
+status: pass
+
+checks:
+  - name: task_card_published
+    pass: true
+    detail: "task_card.yaml exists and is valid"
+  - name: executor_is_codex_cli
+    pass: true
+    detail: "executor role/runtime matches required"
+  - name: allowed_paths_only
+    pass: true
+    detail: "changed_files are within allowed_paths"
+  - name: acceptance_commands_executed
+    pass: true
+    detail: "required commands observed in executor report"
+  - name: ssot_updated
+    pass: true
+    detail: "SSOT state updated for targeted goals"
+  - name: evidence_crosscheck
+    pass: true
+    detail: "Hardened evidence (workspace snapshots + acceptance log) is consistent"
+
+notes:
+  - "Validation summary."

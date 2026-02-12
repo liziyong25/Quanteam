@@ -1,23 +1,80 @@
 {% extends "base.html" %}
 {% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Review Console</h1>
+    <p class="page-subtitle">Create idea jobs and inspect recent registry evidence without changing API/business behavior.</p>
+  </div>
+
+  <div class="card">
+    <h2>Create Idea Job</h2>
+    <div class="muted">UI entry for idea workflow. Submitting writes append-only job artifacts and starts at <code>IDEA_SUBMITTED</code>.</div>
+    {% if idea_form_error %}
+      <div class="pill bad">submit failed</div>
+      <div class="muted">{{ idea_form_error }}</div>
+    {% endif %}
+    <form method="post" action="/ui/jobs/idea" class="form-grid">
+      <label>
+        <span>title</span>
+        <input name="title" value="{{ idea_form.title }}" placeholder="Idea title" required/>
+      </label>
+      <label>
+        <span>symbols (comma-separated)</span>
+        <input name="symbols" value="{{ idea_form.symbols }}" placeholder="AAA,BBB" required/>
+      </label>
+      <label class="full">
+        <span>hypothesis_text</span>
+        <textarea name="hypothesis_text" rows="3" placeholder="State your hypothesis" required>{{ idea_form.hypothesis_text }}</textarea>
+      </label>
+      <label>
+        <span>frequency</span>
+        <input name="frequency" value="{{ idea_form.frequency }}" placeholder="1d" required/>
+      </label>
+      <label>
+        <span>evaluation_intent</span>
+        <input name="evaluation_intent" value="{{ idea_form.evaluation_intent }}" placeholder="demo_e2e" required/>
+      </label>
+      <label>
+        <span>start</span>
+        <input name="start" value="{{ idea_form.start }}" placeholder="YYYY-MM-DD" required/>
+      </label>
+      <label>
+        <span>end</span>
+        <input name="end" value="{{ idea_form.end }}" placeholder="YYYY-MM-DD" required/>
+      </label>
+      <label>
+        <span>snapshot_id</span>
+        <input name="snapshot_id" value="{{ idea_form.snapshot_id }}" placeholder="demo_snap_idea_001" required/>
+      </label>
+      <label>
+        <span>policy_bundle_path</span>
+        <input name="policy_bundle_path" value="{{ idea_form.policy_bundle_path }}" placeholder="policies/policy_bundle_v1.yaml" required/>
+      </label>
+      <div class="full">
+        <button type="submit" class="btn">Create Idea Job</button>
+      </div>
+    </form>
+  </div>
+
   <div class="grid">
     <div class="card">
       <h2>Experience Cards</h2>
       {% if cards and cards|length > 0 %}
-      <table>
-        <thead>
-          <tr><th>card_id</th><th>status</th><th>title</th></tr>
-        </thead>
-        <tbody>
-          {% for c in cards %}
-          <tr>
-            <td><a href="/ui/cards/{{ c.card_id }}">{{ c.card_id }}</a></td>
-            <td><span class="pill">{{ c.status }}</span></td>
-            <td>{{ c.title }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>card_id</th><th>status</th><th>title</th></tr>
+          </thead>
+          <tbody>
+            {% for c in cards %}
+            <tr>
+              <td><a href="/ui/cards/{{ c.card_id }}">{{ c.card_id }}</a></td>
+              <td><span class="pill">{{ c.status }}</span></td>
+              <td>{{ c.title }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
       {% else %}
         <div class="plot-fallback">No cards yet. Create one via Registry after Gate PASS.</div>
       {% endif %}
@@ -26,30 +83,31 @@
     <div class="card">
       <h2>Recent Trials</h2>
       {% if trials and trials|length > 0 %}
-      <table>
-        <thead>
-          <tr><th>run_id</th><th>pass</th><th>recorded_at</th></tr>
-        </thead>
-        <tbody>
-          {% for t in trials %}
-          <tr>
-            <td><a href="/ui/runs/{{ t.run_id }}">{{ t.run_id }}</a></td>
-            <td>
-              {% if t.overall_pass %}
-                <span class="pill good">PASS</span>
-              {% else %}
-                <span class="pill bad">FAIL</span>
-              {% endif %}
-            </td>
-            <td>{{ t.recorded_at }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>run_id</th><th>pass</th><th>recorded_at</th></tr>
+          </thead>
+          <tbody>
+            {% for t in trials %}
+            <tr>
+              <td><a href="/ui/runs/{{ t.run_id }}">{{ t.run_id }}</a></td>
+              <td>
+                {% if t.overall_pass %}
+                  <span class="pill good">PASS</span>
+                {% else %}
+                  <span class="pill bad">FAIL</span>
+                {% endif %}
+              </td>
+              <td>{{ t.recorded_at }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
       {% else %}
         <div class="plot-fallback">No trials recorded. Run: registry record-trial.</div>
       {% endif %}
     </div>
   </div>
 {% endblock %}
-

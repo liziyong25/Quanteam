@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Whole View Required Contracts Coverage</h1>
+    <p class="page-subtitle">Read-only evidence for section <code>{{ source_file.section }}</code> required contracts and on-disk coverage.</p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions. Governance boundaries stay unchanged.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">no holdout expansion</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Section</h2>
+      <div class="kv">
+        <div class="k">path</div>
+        <div class="v"><code>{{ source_file.path }}</code></div>
+        <div class="k">status</div>
+        <div class="v">{% if source_file.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</div>
+        <div class="k">section</div>
+        <div class="v"><span class="pill">{{ source_file.section }}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Coverage Summary</h2>
+      <div class="kv">
+        <div class="k">required_total</div>
+        <div class="v"><span data-testid="required-total">{{ summary.required_total }}</span></div>
+        <div class="k">present_total</div>
+        <div class="v"><span data-testid="present-total">{{ summary.present_total }}</span></div>
+        <div class="k">missing_total</div>
+        <div class="v"><span data-testid="missing-total">{{ summary.missing_total }}</span></div>
+        <div class="k">coverage_ratio</div>
+        <div class="v"><span class="pill">{{ summary.coverage_ratio }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Required Contracts (5.1)</h2>
+    {% if coverage_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>required_contract</th><th>detail</th><th>on_disk_path</th><th>status</th><th>sha256</th></tr></thead>
+          <tbody>
+          {% for row in coverage_rows %}
+            <tr data-testid="contract-row-{{ loop.index }}">
+              <td>{{ row.index }}</td>
+              <td><code>{{ row.contract_file }}</code></td>
+              <td>{{ row.detail if row.detail else "n/a" }}</td>
+              <td><code>{{ row.path }}</code></td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+              <td>{% if row.sha256 %}<code>{{ row.sha256 }}</code>{% else %}<span class="muted">n/a</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No required contracts were extracted from Whole View section 5.1.</div>
+    {% endif %}
+  </div>
+{% endblock %}

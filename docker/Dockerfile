@@ -15,5 +15,5 @@ COPY pyproject.toml README.md /app/
 COPY src /app/src
 
 RUN python -m pip install --no-cache-dir -U pip setuptools wheel && \
-    python -m pip install --no-cache-dir -e ".[dev]"
-
+    python -m pip install --no-cache-dir -e ".[dev]" && \
+    python -m pip install --no-cache-dir notebook ipykernel

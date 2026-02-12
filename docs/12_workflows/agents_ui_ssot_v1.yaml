@@ -1,0 +1,2285 @@
+schema_version: agents_ui_ssot_v1
+timezone: Asia/Taipei
+product: quant-eam
+status: active
+source_documents:
+- docs/00_overview/Quant‑EAM Implementation Phases Playbook.md
+- docs/00_overview/Quant‑EAM Whole View Framework.md
+intent: 'UI-first, dossier-first quant research system. User reviews artifacts in
+  UI and does not need to read source code. Deterministic kernel is the arbiter (GateRunner).
+  Agents only propose/transform/analyze via harness.
+
+  '
+design_principles:
+  dossier_is_ui_ssot: true
+  append_only_everywhere: true
+  policies_are_read_only: true
+  strategy_generation_is_declarative_only: true
+  arbitration_is_gate_only: true
+  holdout_minimal_output_only: true
+  deterministic_replay_required: true
+  budgets_mandatory: true
+  orchestrator_full_takeover: true
+  frontend_style_from_figma_design: true
+  frontend_changes_must_be_tokenized: true
+implementation_alignment:
+  notes:
+  - This SSOT is aligned to current repository behavior and path conventions.
+  - Planned capabilities are kept as planned; implemented capabilities are marked
+    explicitly.
+  approved_step_allowlist_now:
+  - blueprint
+  - strategy_spec
+  - runspec
+  - trace_preview
+  - improvements
+  - sweep
+  internal_waiting_step_possible:
+  - llm_live_confirm
+  agent_output_dirs_now:
+    intent: outputs/agents/intent
+    strategy_spec: outputs/agents/strategy_spec
+    report: outputs/agents/report
+    improvement: outputs/agents/improvement
+  outputs_index_paths_now:
+    runspec_path: outputs/runspec.json
+    calc_trace_preview_path: outputs/calc_trace_preview.csv
+    trace_meta_path: outputs/trace_meta.json
+    blueprint_draft_path: outputs/agents/intent/blueprint_draft.json
+    blueprint_final_path: outputs/agents/strategy_spec/blueprint_final.json
+    signal_dsl_path: outputs/agents/strategy_spec/signal_dsl.json
+    variable_dictionary_path: outputs/agents/strategy_spec/variable_dictionary.json
+    calc_trace_plan_path: outputs/agents/strategy_spec/calc_trace_plan.json
+    improvement_proposals_path: outputs/agents/improvement/improvement_proposals.json
+  implemented_agents_now:
+  - intent_agent_v1
+  - strategy_spec_agent_v1
+  - spec_qa_agent_v1
+  - demo_agent_v1
+  - backtest_agent_v1
+  - report_agent_v1
+  - improvement_agent_v1
+  planned_agents_not_in_repo_yet: []
+goal_checklist:
+- id: G01
+  title: Create an Idea Job from UI
+  status_now: implemented
+  ui_path: /ui
+  expected_state_change: IDEA_SUBMITTED; after worker advance -> WAITING_APPROVAL(step=blueprint)
+  expected_artifacts:
+  - jobs/<job_id>/job_spec.json
+  - jobs/<job_id>/inputs/idea_spec.json
+  notes:
+  - UI index now includes Create Idea Job form.
+  - UI POST /ui/jobs/idea creates deterministic idea jobs and redirects to /ui/jobs/<job_id>.
+- id: G02
+  title: Blueprint Review Checkpoint
+  status_now: implemented
+  ui_path: /ui/jobs/<job_id>
+  expected_state_change: APPROVED(step=blueprint) then WAITING_APPROVAL(step=strategy_spec)
+  expected_artifacts:
+  - jobs/<job_id>/outputs/agents/intent/blueprint_draft.json
+  - jobs/<job_id>/events.jsonl
+- id: G03
+  title: StrategySpec Review Checkpoint
+  status_now: implemented
+  ui_path: /ui/jobs/<job_id>
+  expected_state_change: APPROVED(step=strategy_spec) then WAITING_APPROVAL(step=runspec)
+  expected_artifacts:
+  - jobs/<job_id>/outputs/agents/strategy_spec/signal_dsl.json
+  - jobs/<job_id>/outputs/agents/strategy_spec/variable_dictionary.json
+  - jobs/<job_id>/outputs/agents/strategy_spec/calc_trace_plan.json
+  - jobs/<job_id>/outputs/agents/strategy_spec/blueprint_final.json
+- id: G04
+  title: RunSpec Review Checkpoint
+  status_now: implemented
+  ui_path: /ui/jobs/<job_id>
+  expected_state_change: APPROVED(step=runspec) then WAITING_APPROVAL(step=trace_preview)
+  expected_artifacts:
+  - jobs/<job_id>/outputs/runspec.json
+- id: G05
+  title: Trace Preview Review
+  status_now: implemented
+  ui_path: /ui/jobs/<job_id>
+  expected_state_change: APPROVED(step=trace_preview) then run/gates proceed
+  expected_artifacts:
+  - jobs/<job_id>/outputs/calc_trace_preview.csv
+  - jobs/<job_id>/outputs/trace_meta.json
+  notes:
+  - Trace table is implemented.
+  - K-line overlay on the job page is implemented by phase_33.
+- id: G06
+  title: Backtest Run Evidence
+  status_now: implemented
+  ui_path: /ui/runs/<run_id>
+  expected_artifacts:
+  - dossiers/<run_id>/dossier_manifest.json
+  - dossiers/<run_id>/gate_results.json
+  - dossiers/<run_id>/segments/<segment_id>/metrics.json
+- id: G07
+  title: Gate Results Review
+  status_now: implemented
+  ui_path: /ui/runs/<run_id>
+  expected_artifacts:
+  - dossiers/<run_id>/gate_results.json
+  - dossiers/<run_id>/risk_report.json (when enabled)
+  - dossiers/<run_id>/attribution_report.json (when report generated)
+- id: G08
+  title: Registry Card Created If PASS
+  status_now: implemented
+  ui_path: /ui/cards/<card_id>
+  expected_artifacts:
+  - registry/cards/card_<run_id>/card_v1.json
+  - registry/trial_log.jsonl
+- id: G09
+  title: Improvement Proposals and Spawn
+  status_now: implemented
+  ui_path: /ui/jobs/<job_id>
+  expected_state_change: child job returns to WAITING_APPROVAL(step=blueprint)
+  expected_artifacts:
+  - jobs/<job_id>/outputs/agents/improvement/improvement_proposals.json
+  - jobs/<child_job_id>/job_spec.json
+- id: G10
+  title: Parameter Sweep and Spawn Best
+  status_now: implemented
+  ui_path: /ui/jobs/<job_id>
+  expected_artifacts:
+  - jobs/<job_id>/outputs/sweep/trials.jsonl
+  - jobs/<job_id>/outputs/sweep/leaderboard.json
+- id: G11
+  title: Prompt Studio (edit/publish vN+1/pin per job)
+  status_now: implemented
+  ui_path: /ui/prompts
+  expected_artifacts:
+  - prompts/agents/<agent_id>/prompt_v<N+1>.md (or overlay equivalent)
+  - jobs/<job_id>/outputs/agents/<dir>/llm_session.json includes prompt_version and
+    prompt_hash
+  notes:
+  - Implemented by phase_35 with /ui/prompts index/detail + publish vN+1 + pin per
+    job metadata.
+  - Writes are append-only via artifacts/prompt_overrides and audit trail artifacts/audit/prompt_events.jsonl.
+  - Implementation boundary follows G11 exception scope; no contracts/policies changes.
+- id: G12
+  title: Snapshot Review and as_of Preview
+  status_now: implemented
+  ui_path: /ui/snapshots
+  expected_artifacts:
+  - data/lake/<snapshot_id>/manifest.json
+  - data/lake/<snapshot_id>/quality_report.json
+  - data/lake/<snapshot_id>/ingest_manifest.json (if present)
+- id: G13
+  title: Frontend Foundation Refactor (structure first)
+  status_now: implemented
+  depends_on: []
+  ui_path: /ui
+  expected_state_change: UI structure normalized without business or API behavior
+    change.
+  expected_artifacts:
+  - docs/08_phases/phase_<id>_frontend_foundation_refactor.md
+  - artifacts/subagent_control/<phase_id>/task_card.yaml
+  - artifacts/subagent_control/<phase_id>/executor_report.yaml
+  - artifacts/subagent_control/<phase_id>/validator_report.yaml
+  notes:
+  - Refactor only templates/static assets.
+  - No contract/policy/API schema change.
+  - Completed by phase_31 with template structure normalization and foundational UI
+    classes.
+- id: G14
+  title: Figma-Design Style Adoption Baseline
+  status_now: implemented
+  depends_on:
+  - G13
+  ui_path: /ui
+  expected_state_change: Visual language aligned to figma-design via tokens and components.
+  expected_artifacts:
+  - src/quant_eam/ui/static/ui.css
+  - docs/08_phases/phase_<id>_figma_style_adoption.md
+  - artifacts/subagent_control/<phase_id>/validator_report.yaml
+  notes:
+  - Use figma-design as method reference, not direct code copy.
+  - Apply same method to all future frontend phases.
+  - Completed by phase_32 with token-and-component baseline in UI static/template
+    layer.
+- id: G15
+  title: Subagent Evidence Hardening (anti-self-report)
+  status_now: implemented
+  depends_on:
+  - G14
+  ui_path: /ui
+  expected_state_change: Packet validation must cross-check real workspace evidence,
+    not executor self-report only.
+  expected_artifacts:
+  - scripts/check_subagent_packet.py
+  - docs/12_workflows/subagent_control_packet_v1.md
+  - docs/08_phases/phase_<id>_subagent_evidence_hardening.md
+  notes:
+  - Must validate changed files from actual git diff against allowed_paths.
+  - Must validate required acceptance commands from executable command logs.
+  - Designed as long-term governance hardening for unattended orchestration.
+  - Completed by phase_34 with hardened evidence mode (workspace snapshots + acceptance
+    run log cross-check).
+- id: G16
+  title: Spec-QA Agent Step and Checkpoint
+  status_now: implemented
+  depends_on:
+  - G15
+  ui_path: /ui/jobs/<job_id>
+  expected_state_change: After strategy_spec approval, workflow supports WAITING_APPROVAL(step=spec_qa)
+    with machine-readable findings.
+  expected_artifacts:
+  - jobs/<job_id>/outputs/agents/spec_qa/spec_qa_report.json
+  - jobs/<job_id>/outputs/agents/spec_qa/spec_qa_report.md
+  - jobs/<job_id>/events.jsonl
+  notes:
+  - Spec-QA must remain read-only for policies/contracts.
+  - Findings must be append-only and auditable.
+  - Completed by phase_36 with spec_qa_agent_v1 report artifacts and WAITING_APPROVAL(step=spec_qa).
+- id: G17
+  title: Demo Agent Step Integration
+  status_now: implemented
+  depends_on:
+  - G16
+  ui_path: /ui/jobs/<job_id>
+  expected_state_change: After spec_qa approval, demo step runs deterministic trace
+    preview and pauses at trace_preview review.
+  expected_artifacts:
+  - jobs/<job_id>/outputs/agents/demo/agent_run.json
+  - jobs/<job_id>/outputs/calc_trace_preview.csv
+  - jobs/<job_id>/outputs/trace_meta.json
+  - jobs/<job_id>/events.jsonl
+  notes:
+  - Demo step must not introduce route/schema changes.
+  - Completed by phase_37 with demo_agent_v1 harness evidence and deterministic trace
+    preview checkpoint flow.
+- id: G18
+  title: Backtest Agent Step Integration
+  status_now: implemented
+  depends_on:
+  - G17
+  ui_path: /ui/jobs/<job_id>
+  expected_state_change: After runspec approval, backtest step bridges to deterministic
+    compiler/runner/gaterunner with auditable run link.
+  expected_artifacts:
+  - jobs/<job_id>/outputs/agents/backtest/agent_run.json
+  - jobs/<job_id>/outputs/run_link.json
+  - dossiers/<run_id>/dossier_manifest.json
+  - dossiers/<run_id>/gate_results.json
+  notes:
+  - Deterministic kernel remains the only PASS/FAIL arbiter.
+  - Completed by phase_38 with backtest_agent_v1 evidence and outputs/run_link.json
+    bridge to dossier/gate artifacts.
+- id: G19
+  title: UI Reject(step=...) Interaction
+  status_now: implemented
+  depends_on:
+  - G18
+  ui_path: /ui/jobs/<job_id>
+  expected_state_change: Reject action appends reject evidence with note and routes
+    workflow to configured fallback step.
+  expected_artifacts:
+  - jobs/<job_id>/events.jsonl
+  - jobs/<job_id>/outputs/rejections/reject_log.jsonl
+  - jobs/<job_id>/outputs/rejections/reject_state.json
+  notes:
+  - Reject must not mutate previous artifacts.
+  - Reject routing behavior must be deterministic and replayable.
+  - Completed by phase_39 with POST /jobs/{job_id}/reject and /ui/jobs/{job_id}/reject
+    plus append-only rejection evidence.
+- id: G20
+  title: UI Rerun(agent_id) Interaction
+  status_now: implemented
+  depends_on:
+  - G19
+  ui_path: /ui/jobs/<job_id>
+  expected_state_change: Rerun action appends deterministic rerun request evidence
+    and executes selected agent with pinned prompt/version context when available.
+  expected_artifacts:
+  - jobs/<job_id>/events.jsonl
+  - jobs/<job_id>/outputs/reruns/rerun_log.jsonl
+  - jobs/<job_id>/outputs/reruns/rerun_state.json
+  - jobs/<job_id>/outputs/agents/<agent_dir>/reruns/<rerun_id>/agent_run.json
+  - jobs/<job_id>/outputs/agents/<agent_dir>/reruns/<rerun_id>/llm_session.json (if
+    enabled)
+  notes:
+  - Rerun must be idempotent under replay constraints.
+  - Rerun must keep append-only history.
+  - Completed by phase_40 with POST /jobs/{job_id}/rerun and /ui/jobs/{job_id}/rerun,
+    plus append-only rerun logs/state.
+- id: G21
+  title: Rerun/Reject Semantics Hardening
+  status_now: implemented
+  depends_on:
+  - G20
+  ui_path: /ui/jobs/<job_id>
+  expected_state_change: Rerun must not consume spawn budget; reject(step=current_waiting_step)
+    must still work after rerun.
+  expected_artifacts:
+  - jobs/<job_id>/events.jsonl
+  - jobs/<job_id>/outputs/reruns/rerun_log.jsonl
+  - jobs/<job_id>/outputs/rejections/reject_log.jsonl
+  - jobs/<job_id>/outputs/reruns/rerun_state.json
+  - jobs/<job_id>/outputs/rejections/reject_state.json
+  notes:
+  - This goal hardens event semantics without changing contracts/** or policies/**.
+  - Rerun evidence remains append-only and auditable.
+  - Reject fallback checkpoint semantics remain deterministic and replayable.
+  - 'Completed by phase_41: rerun audit events are excluded from spawn budget counting;
+    reject(step=current_waiting_step) stays available after rerun.'
+- id: G22
+  title: Contracts Completion for DiagnosticSpec/GateSpec
+  status_now: implemented
+  depends_on:
+  - G21
+  ui_path: /ui/runs/<run_id>
+  expected_state_change: DiagnosticSpec/GateSpec contracts become first-class validated
+    artifacts that can be rendered and audited.
+  expected_artifacts:
+  - contracts/diagnostic_spec_v1.json
+  - contracts/gate_spec_v1.json
+  - docs/03_contracts/diagnostic_spec_v1.md
+  - docs/03_contracts/gate_spec_v1.md
+  - contracts/examples/diagnostic_spec_*.json
+  - contracts/examples/gate_spec_*.json
+  notes:
+  - Contracts must be versioned and locally resolvable (no network schema fetch).
+  - Changes must preserve deterministic validation behavior.
+  - Completed by phase_42 with diagnostic_spec_v1/gate_spec_v1 contracts, examples,
+    docs, and contracts-example checks.
+  - Phase_46 fixed discriminator registry mapping gap in contracts.validate for diagnostic_spec_v1/gate_spec_v1.
+- id: G23
+  title: Diagnostics Promotion Chain Productization
+  status_now: implemented
+  depends_on:
+  - G22
+  ui_path: /ui/runs/<run_id>
+  expected_state_change: DiagnosticSpec can run deterministically, write dossier diagnostics
+    artifacts, and emit promotable GateSpec evidence.
+  expected_artifacts:
+  - dossiers/<run_id>/diagnostics/<diag_id>/diagnostic_spec.json
+  - dossiers/<run_id>/diagnostics/<diag_id>/diagnostic_report.json
+  - dossiers/<run_id>/diagnostics/<diag_id>/diagnostic_outputs/**
+  - dossiers/<run_id>/diagnostics/<diag_id>/promotion_candidate/gate_spec.json
+  notes:
+  - Promotion candidate must cite dossier evidence refs, never free-text arbitration.
+  - Holdout restrictions remain unchanged (minimal summary only).
+  - Completed by phase_43 with deterministic diagnostics run/read APIs, dossier diagnostics
+    artifacts, and /ui/runs diagnostics evidence rendering.
+- id: G24
+  title: Composer UI Entry and Workflow Integration
+  status_now: implemented
+  depends_on:
+  - G23
+  ui_path: /ui/composer
+  expected_state_change: User can compose from registry cards in UI and create a governed
+    composed run with dossier/gate evidence.
+  expected_artifacts:
+  - dossiers/<run_id>/dossier_manifest.json
+  - dossiers/<run_id>/gate_results.json
+  - registry/trial_log.jsonl
+  - registry/cards/card_<run_id>/card_v1.json (if pass)
+  notes:
+  - Composer UI must consume artifacts/contracts, not in-memory hidden state.
+  - Composer must preserve read-only policy reference semantics.
+  - Completed by phase_44 with /ui/composer entry+submit flow, deterministic compose
+    integration, and UI regression coverage.
+- id: G25
+  title: Agents Plane Productization (Curator/Composer/Diagnostics Roles)
+  status_now: implemented
+  depends_on:
+  - G24
+  ui_path: /ui/jobs/<job_id>
+  expected_state_change: Curator/Composer/Diagnostics roles are orchestrator-managed,
+    harnessed, and auditable in UI timeline/evidence views.
+  expected_artifacts:
+  - jobs/<job_id>/outputs/agents/diagnostics_agent/agent_run.json
+  - jobs/<job_id>/outputs/agents/registry_curator/agent_run.json
+  - jobs/<job_id>/outputs/agents/composer_agent/agent_run.json
+  - jobs/<job_id>/events.jsonl
+  notes:
+  - Agent outputs remain proposals/evidence; deterministic kernel remains sole PASS/FAIL
+    arbiter.
+  - All new agent runs must keep replay/record evidence compatibility.
+  - Completed by phase_45 with diagnostics/registry_curator/composer role agents harnessed
+    and surfaced in jobs timeline/evidence views.
+- id: G26
+  title: Contract Discriminator Registry Fix
+  status_now: implemented
+  depends_on:
+  - G25
+  ui_path: /ui/runs/<run_id>
+  expected_state_change: contracts.validate correctly resolves diagnostic_spec_v1
+    and gate_spec_v1 via schema_version discriminator and examples pass validation.
+  expected_artifacts:
+  - src/quant_eam/contracts/validate.py
+  - contracts/examples/diagnostic_spec_ok.json
+  - contracts/examples/gate_spec_ok.json
+  - tests/test_contracts_examples.py
+  - tests/test_contracts_registry_phase26.py
+  notes:
+  - This goal is a focused validator-registry fix and regression hardening.
+  - Unknown schema_version must continue to fail (no silent fallback).
+  - Completed by phase_46 with SCHEMA_VERSION_TO_FILE mapping fix and discriminator-path
+    regression tests.
+- id: G27
+  title: QA Fetch Registry Deterministic Sync Guard
+  status_now: implemented
+  depends_on:
+  - G26
+  ui_path: /ui/snapshots
+  expected_state_change: qa_fetch resolver registry JSON stays deterministic and machine-checkable
+    against code-generated payload.
+  expected_artifacts:
+  - docs/05_data_plane/qa_fetch_registry_v1.json
+  - scripts/generate_qa_fetch_registry_json.py
+  - tests/test_qa_fetch_registry_json.py
+  - tests/test_qa_fetch_registry_phase27.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_qa_fetch_registry.py tests/test_qa_fetch_registry_json.py
+    tests/test_qa_fetch_registry_phase27.py
+  - docker compose run --rm api python scripts/generate_qa_fetch_registry_json.py
+    --check
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_47
+  stop_condition_exception_scope:
+    exception_id: g27_qa_fetch_registry_sync_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/qa_fetch/**
+    - scripts/generate_qa_fetch_registry_json.py
+    - tests/test_qa_fetch_registry*.py
+    - docs/05_data_plane/qa_fetch_registry_v1.json
+    - docs/05_data_plane/qa_fetch_resolver_registry_v1.md
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - Derived from Whole View Data Plane + Contracts deterministic requirements.
+  - This goal hardens reproducibility for qa_fetch registry generation and CI drift
+    detection.
+  - Completed by phase_47 with registry generator --check mode (semantic diff ignores
+    generated_at_utc) and regression tests.
+- id: G28
+  title: QA Fetch Resolver Runtime Contract Hardening
+  status_now: implemented
+  depends_on:
+  - G27
+  ui_path: /ui/snapshots
+  expected_state_change: qa_fetch resolve/fetch runtime behavior is deterministic
+    across asset/freq/venue/adjust combinations with explicit error semantics.
+  expected_artifacts:
+  - src/quant_eam/qa_fetch/resolver.py
+  - src/quant_eam/qa_fetch/__init__.py
+  - tests/test_qa_fetch_resolver.py
+  - tests/test_qa_fetch_exports.py
+  - docs/05_data_plane/qa_fetch_resolver_registry_v1.md
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_qa_fetch_resolver.py tests/test_qa_fetch_exports.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_48
+  stop_condition_exception_scope:
+    exception_id: g28_qa_fetch_resolver_runtime_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/qa_fetch/**
+    - tests/test_qa_fetch_*.py
+    - docs/05_data_plane/qa_fetch_resolver_registry_v1.md
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View Data Plane boundary: deterministic adapter behavior and
+    machine-auditable contracts.'
+  - Completed by phase_48 with runtime input normalization/validation hardening and
+    resolver runtime regression coverage.
+- id: G29
+  title: QA Fetch Probe Evidence Pipeline Baseline
+  status_now: implemented
+  depends_on:
+  - G28
+  ui_path: /ui/snapshots
+  expected_state_change: qa_fetch probe pipeline outputs stable machine-readable evidence
+    pack and summary for review without source-code inspection.
+  expected_artifacts:
+  - scripts/run_qa_fetch_probe_v3.py
+  - src/quant_eam/qa_fetch/probe.py
+  - tests/test_qa_fetch_probe.py
+  - docs/05_data_plane/qa_fetch_smoke_evidence_v1.md
+  - docs/05_data_plane/qa_fetch_probe_v3/**
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_qa_fetch_probe.py tests/test_qa_fetch_registry_json.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_49
+  stop_condition_exception_scope:
+    exception_id: g29_qa_fetch_probe_evidence_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - scripts/run_qa_fetch_probe_v3.py
+    - src/quant_eam/qa_fetch/probe.py
+    - tests/test_qa_fetch_probe.py
+    - docs/05_data_plane/qa_fetch_smoke_evidence_v1.md
+    - docs/05_data_plane/qa_fetch_probe_v3/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View Demo/Trace evidence requirement: methods and evidence
+    must be append-only and reviewable in UI context.'
+  - Completed by phase_49 with hardened packet evidence and acceptance validation
+    for probe evidence pipeline baseline.
+- id: G30
+  title: QA Fetch Registry Read-Only UI Explorer
+  status_now: implemented
+  depends_on:
+  - G29
+  ui_path: /ui/qa-fetch
+  expected_state_change: UI provides read-only explorer for qa_fetch registry/resolver/probe
+    evidence, preserving governance boundaries.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/qa_fetch.html
+  - src/quant_eam/ui/static/**
+  - tests/test_ui_mvp.py
+  - tests/test_qa_fetch_ui_phase30.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_qa_fetch_ui_phase30.py tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_50
+  stop_condition_exception_scope:
+    exception_id: g30_qa_fetch_ui_explorer_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_qa_fetch_ui_phase30.py
+    - docs/05_data_plane/qa_fetch_*.md
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View UI Plane requirement: user can review governed evidence
+    without reading source code.'
+  - Completed by phase_50 with /ui/qa-fetch read-only explorer route/template and
+    UI regression coverage.
+- id: G31
+  title: Run Gate Detail Read-Only Page
+  status_now: implemented
+  depends_on:
+  - G30
+  ui_path: /ui/runs/<run_id>/gates
+  expected_state_change: UI provides dedicated gate-detail page with per-gate pass/fail
+    evidence refs for review without source-code inspection.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/run_gates.html
+  - tests/test_ui_run_gates_phase31.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_run_gates_phase31.py tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_51
+  stop_condition_exception_scope:
+    exception_id: g31_run_gate_detail_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_run_gates_phase31.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View UI Plane requirement: Gate detail evidence must be reviewable
+    via dedicated UI path.'
+  - Completed by phase_51 with `/ui/runs/<run_id>/gates` read-only gate detail page
+    and UI regression coverage.
+- id: G32
+  title: Whole View Governance Checklist Read-Only Page
+  status_now: implemented
+  depends_on:
+  - G31
+  ui_path: /ui/governance-checks
+  expected_state_change: UI renders whole-view non-drift checklist and minimum final
+    checks as read-only governance evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/governance_checks.html
+  - tests/test_ui_governance_checks_phase32.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_governance_checks_phase32.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_52
+  stop_condition_exception_scope:
+    exception_id: g32_governance_checks_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_governance_checks_phase32.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View no-drift checklist: governance checks must be visible
+    in UI without reading code.'
+  - Completed by phase_52 with `/ui/governance-checks` read-only checklist UI and
+    regression coverage.
+- id: G33
+  title: Contracts Coverage Read-Only Page
+  status_now: implemented
+  depends_on:
+  - G32
+  ui_path: /ui/contracts-coverage
+  expected_state_change: UI renders required contract schemas and on-disk coverage
+    from Whole View contract system for no-source-code governance review.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/contracts_coverage.html
+  - tests/test_ui_contracts_coverage_phase33.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_contracts_coverage_phase33.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_53
+  stop_condition_exception_scope:
+    exception_id: g33_contracts_coverage_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_contracts_coverage_phase33.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View section 5.1: required Contracts must be reviewable from
+    UI evidence without code inspection.'
+  - Completed by phase_53 with `/ui/contracts-coverage` read-only contracts coverage
+    page and regression coverage.
+- id: G34
+  title: Policies Constraints Read-Only Page
+  status_now: implemented
+  depends_on:
+  - G33
+  ui_path: /ui/policies-constraints
+  expected_state_change: UI renders policies-readonly and hard-constraint governance
+    evidence from Whole View and Playbook planning docs.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/policies_constraints.html
+  - tests/test_ui_policies_constraints_phase34.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_policies_constraints_phase34.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_54
+  stop_condition_exception_scope:
+    exception_id: g34_policies_constraints_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_policies_constraints_phase34.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - Derived from Whole View section 1 hard constraints and Playbook 0.x governance
+    rules.
+  - Completed by phase_54 with `/ui/policies-constraints` read-only rules evidence
+    page and regression coverage.
+- id: G35
+  title: Dossier Evidence Spec Read-Only Page
+  status_now: implemented
+  depends_on:
+  - G34
+  ui_path: /ui/dossier-evidence
+  expected_state_change: UI renders Whole View dossier structure requirements and
+    current artifacts/dossiers evidence index for governance review.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/dossier_evidence.html
+  - tests/test_ui_dossier_evidence_phase35.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_dossier_evidence_phase35.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_55
+  stop_condition_exception_scope:
+    exception_id: g35_dossier_evidence_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_dossier_evidence_phase35.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View section 4.4 dossier evidence model: dossier structure
+    must be reviewable without source inspection.'
+  - Completed by phase_55 with `/ui/dossier-evidence` read-only dossier evidence coverage
+    page and regression coverage.
+- id: G36
+  title: Playbook Phase Matrix Read-Only Page
+  status_now: implemented
+  depends_on:
+  - G35
+  ui_path: /ui/playbook-phases
+  expected_state_change: UI renders implementation playbook phase matrix and SSOT
+    mapping evidence as read-only planning governance view.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/playbook_phases.html
+  - tests/test_ui_playbook_phases_phase36.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_playbook_phases_phase36.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_56
+  stop_condition_exception_scope:
+    exception_id: g36_playbook_phases_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_phases_phase36.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Implementation Phases Playbook section 3: phase progression must
+    be transparently reviewable in UI.'
+  - Completed by phase_56 with `/ui/playbook-phases` read-only phase matrix UI and
+    regression coverage.
+- id: G37
+  title: UI Information Architecture Coverage Page
+  status_now: implemented
+  depends_on:
+  - G36
+  ui_path: /ui/ia-coverage
+  expected_state_change: UI renders Whole View section 8 information-architecture
+    checklist and current route coverage as read-only governance evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/ia_coverage.html
+  - tests/test_ui_ia_coverage_phase37.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_ia_coverage_phase37.py tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_57
+  stop_condition_exception_scope:
+    exception_id: g37_ia_coverage_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_ia_coverage_phase37.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View section 8: UI information architecture coverage must
+    be visible without source inspection.'
+  - Completed by phase_57 with `/ui/ia-coverage` read-only IA checklist coverage page
+    and regression coverage.
+- id: G38
+  title: Agents Roles Harness Boundary Page
+  status_now: implemented
+  depends_on:
+  - G37
+  ui_path: /ui/agent-roles
+  expected_state_change: UI renders agents-plane role boundaries and harness/evidence
+    rules from Whole View and Playbook as read-only governance evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/agent_roles.html
+  - tests/test_ui_agent_roles_phase38.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_agent_roles_phase38.py tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_58
+  stop_condition_exception_scope:
+    exception_id: g38_agent_roles_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_agent_roles_phase38.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View section 6.4 and Playbook phase-8 scope: agent role boundaries
+    must be transparently reviewable in UI.'
+  - Completed by phase_58 with `/ui/agent-roles` read-only role/harness boundary evidence
+    page and regression coverage.
+- id: G39
+  title: Whole View Workflow Checkpoints Matrix Page
+  status_now: implemented
+  depends_on:
+  - G38
+  ui_path: /ui/workflow-checkpoints
+  expected_state_change: UI renders Whole View section 3 workflow phases and UI checkpoint
+    boundaries as read-only governance evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/workflow_checkpoints.html
+  - tests/test_ui_workflow_checkpoints_phase39.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_workflow_checkpoints_phase39.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_59
+  stop_condition_exception_scope:
+    exception_id: g39_workflow_checkpoints_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_workflow_checkpoints_phase39.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View section 3: workflow phase/checkpoint governance must
+    be reviewable without source inspection.'
+  - Completed by phase_59 with `/ui/workflow-checkpoints` read-only workflow/checkpoint
+    matrix evidence page and regression coverage.
+- id: G40
+  title: Whole View Object Model I/O Coverage Page
+  status_now: implemented
+  depends_on:
+  - G39
+  ui_path: /ui/object-model
+  expected_state_change: UI renders Whole View section 4 core object model (IdeaSpec/Blueprint/RunSpec/Dossier/GateResults/Experience
+    Card) as read-only I/O governance evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/object_model.html
+  - tests/test_ui_object_model_phase40.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_object_model_phase40.py tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_60
+  stop_condition_exception_scope:
+    exception_id: g40_object_model_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_object_model_phase40.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View section 4: core object I/O semantics must be transparently
+    reviewable in UI governance views.'
+  - Completed by phase_60 with `/ui/object-model` read-only core object model I/O
+    evidence page and regression coverage.
+- id: G41
+  title: Whole View Modules Deterministic-Agent Boundary Page
+  status_now: implemented
+  depends_on:
+  - G40
+  ui_path: /ui/module-boundaries
+  expected_state_change: UI renders Whole View section 6 module responsibilities and
+    deterministic-vs-agent boundaries as read-only governance evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/module_boundaries.html
+  - tests/test_ui_module_boundaries_phase41.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_module_boundaries_phase41.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_61
+  stop_condition_exception_scope:
+    exception_id: g41_module_boundaries_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_module_boundaries_phase41.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View section 6: deterministic kernel vs agents boundary evidence
+    must be reviewable without source inspection.'
+  - Completed by phase_61 with `/ui/module-boundaries` read-only deterministic-vs-agent
+    module boundary evidence page and regression coverage.
+- id: G42
+  title: Codex Diagnostics Promotion Chain Read-Only Page
+  status_now: implemented
+  depends_on:
+  - G41
+  ui_path: /ui/diagnostics-promotion
+  expected_state_change: UI renders Whole View section 7 diagnostics-to-gate promotion
+    chain and Playbook phase-12 acceptance boundaries as read-only governance evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/diagnostics_promotion.html
+  - tests/test_ui_diagnostics_promotion_phase42.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_diagnostics_promotion_phase42.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_62
+  stop_condition_exception_scope:
+    exception_id: g42_diagnostics_promotion_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_diagnostics_promotion_phase42.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View section 7 and Playbook phase-12: diagnostics promotion
+    governance must be transparently reviewable in UI.'
+  - Completed by phase_62 with `/ui/diagnostics-promotion` read-only diagnostics-to-gate
+    promotion chain evidence page and regression coverage.
+- id: G43
+  title: Whole View UI Eight-Page Coverage Matrix
+  status_now: planned
+  depends_on:
+  - G42
+  ui_path: /ui/ui-coverage-matrix
+  expected_state_change: UI renders Whole View section 8 eight-page architecture checklist
+    and current route coverage as read-only governance evidence matrix.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/ui_coverage_matrix.html
+  - tests/test_ui_coverage_matrix_phase43.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_coverage_matrix_phase43.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_63
+  stop_condition_exception_scope:
+    exception_id: g43_ui_coverage_matrix_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_coverage_matrix_phase43.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View section 8: eight-page IA checklist coverage must be continuously
+    reviewable in UI.'
+- id: G44
+  title: Whole View Runtime Topology and Service Ports Page
+  status_now: planned
+  depends_on:
+  - G43
+  ui_path: /ui/runtime-topology
+  expected_state_change: UI renders Whole View section 9 runtime topology (repo modules
+    + service ports/commands) as read-only operations governance evidence.
+  expected_artifacts:
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/runtime_topology.html
+  - tests/test_ui_runtime_topology_phase44.py
+  - tests/test_ui_mvp.py
+  acceptance_commands:
+  - docker compose run --rm api pytest -q tests/test_ui_runtime_topology_phase44.py
+    tests/test_ui_mvp.py
+  - python3 scripts/check_docs_tree.py
+  - python3 scripts/check_subagent_packet.py --phase-id phase_64
+  stop_condition_exception_scope:
+    exception_id: g44_runtime_topology_ui_scope
+    waived_stop_condition:
+    - Any API schema or route behavior change
+    allowed_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_runtime_topology_phase44.py
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+  notes:
+  - 'Derived from Whole View section 9: runtime topology/ports and operational commands
+    should be reviewable without source inspection.'
+agents_pipeline_v1:
+  pipeline_id: agents_pipeline_v1
+  execution_model: serial_pipeline_with_checkpoints
+  orchestration_owner: deterministic_orchestrator
+  shared_storage_contract:
+    jobs_root: /artifacts/jobs/<job_id>
+    agents_root: /artifacts/jobs/<job_id>/outputs/agents/<intent|strategy_spec|report|improvement|diagnostics_agent|registry_curator|composer_agent>
+    dossier_root: /artifacts/dossiers/<run_id>
+    registry_root: /artifacts/registry
+    snapshot_root: /data/lake/<snapshot_id>
+  global_read_rules:
+  - Agents may read job inputs + prior step outputs + non-holdout dossier artifacts.
+  - Agents must not read holdout internals beyond minimal summary.
+  - Agents must not write policies/** or contracts/**.
+  - Every agent run must be harnessed with input/output and evidence.
+  steps:
+  - step_id: 1
+    name: Intent
+    agent_id: intent_agent_v1
+    status_now: implemented
+    checkpoint_step: blueprint
+    outputs_dir: outputs/agents/intent
+  - step_id: 2
+    name: StrategySpec
+    agent_id: strategy_spec_agent_v1
+    status_now: implemented
+    checkpoint_step: strategy_spec
+    outputs_dir: outputs/agents/strategy_spec
+  - step_id: 3
+    name: Spec_QA
+    agent_id: spec_qa_agent_v1
+    status_now: implemented
+    mapped_goal_id: G16
+    checkpoint_step: null
+    planned_checkpoint_step: spec_qa
+  - step_id: 4
+    name: Demo
+    agent_id: demo_agent_v1
+    status_now: implemented
+    mapped_goal_id: G17
+    checkpoint_step: trace_preview
+    notes:
+    - Demo agent run is harnessed and recorded before deterministic trace preview
+      execution.
+  - step_id: 5
+    name: Backtest
+    agent_id: backtest_agent_v1
+    status_now: implemented
+    mapped_goal_id: G18
+    checkpoint_step: runspec
+    notes:
+    - Backtest agent run evidence is emitted after runspec approval.
+    - Deterministic runner/gaterunner outputs are linked through outputs/run_link.json.
+  - step_id: 6
+    name: Attribution_Report
+    agent_id: report_agent_v1
+    status_now: implemented
+    checkpoint_step: null
+    optional_manual_checkpoint_planned: report
+    outputs_dir: outputs/agents/report
+  - step_id: 7
+    name: Improvement
+    agent_id: improvement_agent_v1
+    status_now: implemented
+    checkpoint_step: improvements
+    outputs_dir: outputs/agents/improvement
+  - step_id: 8
+    name: Diagnostics_Role
+    agent_id: diagnostics_agent_v1
+    status_now: implemented
+    mapped_goal_id: G25
+    checkpoint_step: null
+    outputs_dir: outputs/agents/diagnostics_agent
+    notes:
+    - Evidence-only diagnostics role runs after registry update and writes advisory
+      diagnostics plan.
+  - step_id: 9
+    name: Registry_Curator_Role
+    agent_id: registry_curator_v1
+    status_now: implemented
+    mapped_goal_id: G25
+    checkpoint_step: null
+    outputs_dir: outputs/agents/registry_curator
+    notes:
+    - Curator role writes append-only registry curation summary without changing deterministic
+      gate arbitration.
+  - step_id: 10
+    name: Composer_Role
+    agent_id: composer_agent_v1
+    status_now: implemented
+    mapped_goal_id: G25
+    checkpoint_step: null
+    outputs_dir: outputs/agents/composer_agent
+    notes:
+    - Composer role emits advisory compose plan and remains non-arbitration evidence.
+prompt_studio_v1:
+  status_now: implemented
+  goal: Iterate prompts in UI with replayability and auditability.
+  immutability_rule:
+    existing_versions_are_immutable: true
+    publish_mode: publish_vN_plus_1_only
+  prompt_locations:
+    canonical_repo_path: prompts/agents/<agent_id>/prompt_v<N>.md
+    optional_overlay_path: /artifacts/prompt_overrides/agents/<agent_id>/prompt_v<N>.md
+  operations_allowed_in_ui:
+  - view_versions
+  - diff_versions
+  - draft_edit
+  - publish_vN_plus_1
+  - pin_per_job
+  required_llm_evidence_fields:
+  - promptpack_path
+  - prompt_version
+  - output_schema_version
+  - prompt_hash
+  - provider_id
+  - mode
+  notes:
+  - 'UI routes: GET /ui/prompts, GET /ui/prompts/{agent_id}, POST /ui/prompts/{agent_id}/publish,
+    POST /ui/prompts/{agent_id}/pin.'
+  - Publish defaults to overlay path and enforces latest base -> next version.
+  - Pin writes append-only events + derived prompt_pin_state.json under jobs/<job_id>/outputs/prompts.
+ui_requirements_v1:
+  ui_ports:
+    backend_api_host_port: 8002
+    frontend_ui_host_port: 3002
+  required_paths:
+  - /ui
+  - /ui/jobs
+  - /ui/jobs/<job_id>
+  - /ui/runs/<run_id>
+  - /ui/cards/<card_id>
+  - /ui/snapshots
+  - /ui/snapshots/<snapshot_id>
+  required_interactions:
+  - CreateIdeaJob
+  - Approve(step=...)
+  - Reject(step=...)
+  - Rerun(agent_id)
+  - Spawn(proposal_id)
+  - SpawnBest
+  - PromptStudio(view/publish/pin)
+  planned_interactions: []
+  evidence_views_required:
+  - IdeaSpec / blueprint draft and final
+  - DSL / variable dictionary / trace plan
+  - Trace preview table
+  - Run and dossier summary
+  - Gate results and evidence references
+  - LLM evidence + LLM usage budget
+  - Sweep leaderboard/trials
+  - Improvement proposals and spawn controls
+runtime_preferences_v1:
+  automation_mode_one_liner: 'Auto-advance to next checkpoint; hard-stop at checkpoints
+    for user approval.
+
+    '
+  llm:
+    supported_provider_names:
+    - mock
+    - real_http
+    modes:
+    - live
+    - record
+    - replay
+    default_provider: mock
+    default_mode_by_environment:
+      dev: record
+      ci: replay
+      prod: live
+  queue_and_workers:
+    controls:
+    - worker --run-jobs --once
+    - worker --run-jobs
+  acceptance_evidence_min_set:
+    required_commands:
+    - docker compose up -d
+    - curl -s http://<host>:8002/healthz
+    - python3 scripts/check_docs_tree.py
+    required_ui_checks:
+    - Run goals where status_now is implemented or partial
+orchestrator_autopilot_v1:
+  status_now: active
+  enabled: true
+  entry_command_aliases:
+  - 启动主控
+  - start orchestrator
+  requires_user_prompt_each_round: false
+  user_intervention_policy: stop_conditions_only
+  stop_condition_exception_policy_ref: autopilot_stop_condition_exceptions_v1
+  cycle:
+  - select_next_goal
+  - publish_phase_task_card
+  - dispatch_codex_cli_subagent
+  - collect_executor_and_validator_reports
+  - run_acceptance_commands
+  - update_ssot_status_and_evidence
+  - continue_next_goal
+  next_goal_policy:
+    source: goal_checklist
+    selectable_status:
+    - partial
+    - planned
+    dependency_rule: depends_on all implemented
+    priority_order:
+    - G43
+    - G44
+    - G41
+    - G42
+    - G39
+    - G40
+    - G37
+    - G38
+    - G35
+    - G36
+    - G33
+    - G34
+    - G31
+    - G32
+    - G27
+    - G28
+    - G29
+    - G30
+    - G26
+    - G22
+    - G23
+    - G24
+    - G25
+    - G16
+    - G17
+    - G18
+    - G19
+    - G20
+    - G15
+    - G11
+    fallback_order: goal_id_asc
+phase_dispatch_plan_v2:
+  status_now: active
+  mode: sequential_hard_dependencies
+  phases:
+  - phase_id: phase_57
+    goal_id: G37
+    title: ui_information_architecture_coverage_page
+  - phase_id: phase_58
+    goal_id: G38
+    title: agents_roles_harness_boundary_page
+  - phase_id: phase_59
+    goal_id: G39
+    title: whole_view_workflow_checkpoints_matrix_page
+  - phase_id: phase_60
+    goal_id: G40
+    title: whole_view_object_model_io_coverage_page
+  - phase_id: phase_61
+    goal_id: G41
+    title: whole_view_modules_deterministic_agent_boundary_page
+  - phase_id: phase_62
+    goal_id: G42
+    title: codex_diagnostics_promotion_chain_readonly_page
+  - phase_id: phase_63
+    goal_id: G43
+    title: whole_view_ui_eight_page_coverage_matrix
+  - phase_id: phase_64
+    goal_id: G44
+    title: whole_view_runtime_topology_service_ports_page
+  - phase_id: phase_55
+    goal_id: G35
+    title: dossier_evidence_spec_readonly_page
+  - phase_id: phase_56
+    goal_id: G36
+    title: playbook_phase_matrix_readonly_page
+  - phase_id: phase_53
+    goal_id: G33
+    title: contracts_coverage_readonly_page
+  - phase_id: phase_54
+    goal_id: G34
+    title: policies_constraints_readonly_page
+  - phase_id: phase_51
+    goal_id: G31
+    title: run_gate_detail_readonly_page
+  - phase_id: phase_52
+    goal_id: G32
+    title: whole_view_governance_checklist_readonly_page
+  - phase_id: phase_47
+    goal_id: G27
+    title: qa_fetch_registry_deterministic_sync_guard
+  - phase_id: phase_48
+    goal_id: G28
+    title: qa_fetch_resolver_runtime_contract_hardening
+  - phase_id: phase_49
+    goal_id: G29
+    title: qa_fetch_probe_evidence_pipeline_baseline
+  - phase_id: phase_50
+    goal_id: G30
+    title: qa_fetch_registry_readonly_ui_explorer
+  - phase_id: phase_46
+    goal_id: G26
+    title: contract_discriminator_registry_fix
+  - phase_id: phase_42
+    goal_id: G22
+    title: contracts_diagnostic_and_gate_spec
+  - phase_id: phase_43
+    goal_id: G23
+    title: diagnostics_promotion_chain_productization
+  - phase_id: phase_44
+    goal_id: G24
+    title: composer_ui_entry_and_workflow_integration
+  - phase_id: phase_45
+    goal_id: G25
+    title: agents_plane_productization_roles
+frontend_style_method_v1:
+  status_now: active
+  source_reference_path: figma-design
+  adoption_mode: token_and_component_mapping
+  apply_to_all_future_frontend_tasks: true
+  hard_constraints:
+    keep_api_contract_unchanged: true
+    keep_routes_unchanged: true
+    no_change_paths:
+    - contracts/**
+    - policies/**
+    - src/quant_eam/api/**
+  allowed_paths:
+  - src/quant_eam/ui/templates/**
+  - src/quant_eam/ui/static/**
+  required_style_elements:
+  - design tokens (color/type/spacing/radius/motion)
+  - component-level class normalization
+  - responsive behavior on desktop/mobile
+  acceptance_minimum:
+    required_commands:
+    - pytest -q tests/test_ui_mvp.py
+    - python3 scripts/check_docs_tree.py
+    - PHASE_ID=<phase_id> make subagent-check
+    ui_checks:
+    - core flows still usable (create/approve/spawn)
+    - no API regression
+    - style consistency with figma-design method
+subagent_control_v1:
+  required: true
+  packet_root: artifacts/subagent_control
+  executor_required:
+    role: codex_cli_subagent
+    runtime: codex_cli
+  required_packet_files:
+  - task_card.yaml
+  - executor_report.yaml
+  - validator_report.yaml
+  validation_command: python3 scripts/check_subagent_packet.py --phase-id <phase_id>
+autopilot_stop_condition_exceptions_v1:
+- exception_id: g16_spec_qa_step_scope
+  enabled: true
+  applies_to_goal_id: G16
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/jobs
+    - /jobs
+    allowed_code_paths:
+    - src/quant_eam/orchestrator/workflow.py
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/api/jobs_api.py
+    - src/quant_eam/agents/**
+    - prompts/agents/spec_qa_agent_v1/**
+    - src/quant_eam/ui/templates/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Spec-QA outputs remain append-only and auditable.
+    - Spec-QA step approval uses deterministic checkpoint semantics.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g11_prompt_studio_route_scope
+  enabled: true
+  applies_to_goal_id: G11
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/prompts
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - prompts/agents/**
+    - artifacts/prompt_overrides/**
+    - artifacts/audit/prompt_events.jsonl
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Prompt Studio writes are append-only (publish vN+1) and auditable.
+    - Existing non-prompt routes keep behavior-compatible responses.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g16_spec_qa_approve_scope
+  enabled: true
+  applies_to_goal_id: G16
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/jobs
+    - /jobs
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/api/jobs_api.py
+    - src/quant_eam/orchestrator/**
+    - src/quant_eam/agents/**
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Only spec_qa approval path is added or adjusted; existing checkpoint approvals
+      stay behavior-compatible.
+    - spec_qa findings remain append-only and auditable.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g19_reject_route_scope
+  enabled: true
+  applies_to_goal_id: G19
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/jobs
+    - /jobs
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/api/jobs_api.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Reject action must append deterministic events and preserve artifact immutability.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g20_rerun_route_scope
+  enabled: true
+  applies_to_goal_id: G20
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/jobs
+    - /jobs
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/api/jobs_api.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - src/quant_eam/agents/**
+    - src/quant_eam/orchestrator/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Rerun action must record agent_id and pinned prompt context in append-only events.
+    - Rerun must remain replay-compatible and deterministic.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g21_rerun_reject_semantics_scope
+  enabled: true
+  applies_to_goal_id: G21
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/jobs
+    - /jobs
+    allowed_code_paths:
+    - src/quant_eam/api/jobs_api.py
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/jobstore/store.py
+    - src/quant_eam/ui/templates/job.html
+    - src/quant_eam/ui/static/**
+    - tests/test_reject_step_phase19.py
+    - tests/test_rerun_agent_phase20.py
+    - tests/test_ui_mvp.py
+    - docs/08_phases/phase_41_rerun_reject_semantics_hardening_g21.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_41/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Rerun must not consume spawn budget.
+    - Reject(step=current_waiting_step) must remain available after rerun.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g22_contracts_completion_scope
+  enabled: true
+  applies_to_goal_id: G22
+  waives_stop_condition:
+  - Any change touching contracts/**
+  preauthorized_scope:
+    allowed_route_prefixes: []
+    allowed_code_paths:
+    - contracts/diagnostic_spec_v1.json
+    - contracts/gate_spec_v1.json
+    - contracts/examples/**
+    - scripts/check_contracts_examples.py
+    - tests/test_contracts_examples.py
+    - docs/03_contracts/**
+    - docs/08_phases/phase_42_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_42/**
+    still_forbidden:
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Both new contracts must validate examples in CI/local checks.
+    - Contract changes must remain backward-compatible with existing validators.
+- exception_id: g23_diagnostics_promotion_scope
+  enabled: true
+  applies_to_goal_id: G23
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  - Any change touching policies/**
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/runs
+    - /runs
+    allowed_code_paths:
+    - src/quant_eam/diagnostics/**
+    - src/quant_eam/gates/**
+    - src/quant_eam/api/**
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - policies/gate_suite_*.yaml
+    - policies/policy_bundle_*.yaml
+    - tests/test_diagnostic*.py
+    - tests/test_gate*.py
+    - docs/08_gates/**
+    - docs/14_trace_preview/**
+    - docs/08_phases/phase_43_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_43/**
+    still_forbidden:
+    - contracts/**
+    - Holdout visibility expansion
+    required_guards:
+    - Diagnostic outputs must be deterministic dossier artifacts.
+    - Promotion candidate must reference evidence refs and preserve GateRunner arbitration
+      boundary.
+- exception_id: g24_composer_ui_scope
+  enabled: true
+  applies_to_goal_id: G24
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/composer
+    - /ui/cards
+    - /ui/runs
+    allowed_code_paths:
+    - src/quant_eam/composer/**
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_composer*.py
+    - docs/11_composer/**
+    - docs/08_phases/phase_44_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_44/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Composer UI must read/write only governed artifacts and contract-validated json.
+    - Composed run must still go through deterministic gates before registry promotion.
+- exception_id: g25_agents_plane_productization_scope
+  enabled: true
+  applies_to_goal_id: G25
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/jobs
+    - /ui/runs
+    allowed_code_paths:
+    - src/quant_eam/agents/**
+    - src/quant_eam/orchestrator/**
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - prompts/agents/**
+    - tests/test_agents_*.py
+    - docs/13_agents/**
+    - docs/08_phases/phase_45_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_45/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - All new agent roles must run via harness with replay/record evidence.
+    - Deterministic kernel remains sole PASS/FAIL arbiter.
+- exception_id: g26_contract_discriminator_registry_fix_scope
+  enabled: true
+  applies_to_goal_id: G26
+  waives_stop_condition:
+  - Any change touching contracts/**
+  preauthorized_scope:
+    allowed_route_prefixes: []
+    allowed_code_paths:
+    - src/quant_eam/contracts/validate.py
+    - contracts/examples/**
+    - tests/test_contracts_examples.py
+    - tests/test_contracts_registry_phase26.py
+    - docs/08_phases/phase_46_contract_discriminator_registry_fix_g26.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_46/**
+    still_forbidden:
+    - policies/**
+    - Holdout visibility expansion
+    - Any unrelated API schema or route behavior change
+    required_guards:
+    - SCHEMA_VERSION_TO_FILE includes diagnostic_spec_v1 and gate_spec_v1 mappings.
+    - diagnostic_spec_ok.json and gate_spec_ok.json pass via discriminator selection.
+    - unknown schema_version remains invalid.
+- exception_id: g27_qa_fetch_registry_sync_scope
+  enabled: true
+  applies_to_goal_id: G27
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes: []
+    allowed_code_paths:
+    - src/quant_eam/qa_fetch/**
+    - scripts/generate_qa_fetch_registry_json.py
+    - tests/test_qa_fetch_registry.py
+    - tests/test_qa_fetch_registry_json.py
+    - tests/test_qa_fetch_registry_phase27.py
+    - docs/05_data_plane/qa_fetch_registry_v1.json
+    - docs/05_data_plane/qa_fetch_resolver_registry_v1.md
+    - docs/08_phases/phase_47_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_47/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Registry JSON must remain machine-generated and deterministic (timestamp field
+      excluded from semantic diff).
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g28_qa_fetch_resolver_runtime_scope
+  enabled: true
+  applies_to_goal_id: G28
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes: []
+    allowed_code_paths:
+    - src/quant_eam/qa_fetch/**
+    - tests/test_qa_fetch_*.py
+    - docs/05_data_plane/qa_fetch_resolver_registry_v1.md
+    - docs/08_phases/phase_48_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_48/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Resolver semantics must be deterministic and replay-compatible.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g29_qa_fetch_probe_evidence_scope
+  enabled: true
+  applies_to_goal_id: G29
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes: []
+    allowed_code_paths:
+    - src/quant_eam/qa_fetch/probe.py
+    - scripts/run_qa_fetch_probe_v3.py
+    - tests/test_qa_fetch_probe.py
+    - docs/05_data_plane/qa_fetch_smoke_evidence_v1.md
+    - docs/05_data_plane/qa_fetch_probe_v3/**
+    - docs/08_phases/phase_49_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_49/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Probe artifacts must remain append-only evidence and not alter governance inputs.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g30_qa_fetch_ui_explorer_scope
+  enabled: true
+  applies_to_goal_id: G30
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/qa-fetch
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_qa_fetch_ui_phase30.py
+    - docs/05_data_plane/qa_fetch_*.md
+    - docs/08_phases/phase_50_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_50/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - UI explorer is read-only and must render from artifacts/contracts only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g31_run_gate_detail_ui_scope
+  enabled: true
+  applies_to_goal_id: G31
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/runs
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_run_gates_phase31.py
+    - docs/08_phases/phase_51_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_51/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Gate detail page is read-only and renders from dossier/gate artifacts only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g32_governance_checks_ui_scope
+  enabled: true
+  applies_to_goal_id: G32
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/governance-checks
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_governance_checks_phase32.py
+    - docs/08_phases/phase_52_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_52/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Governance checklist page is read-only and must not introduce write actions.
+    - Checklist content is sourced from SSOT + Whole View planning docs.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g33_contracts_coverage_ui_scope
+  enabled: true
+  applies_to_goal_id: G33
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/contracts-coverage
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_contracts_coverage_phase33.py
+    - docs/08_phases/phase_53_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_53/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Contracts coverage page is read-only and must render contract existence/summary
+      evidence only.
+    - Contract schemas are referenced as governance evidence and must not be modified.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g34_policies_constraints_ui_scope
+  enabled: true
+  applies_to_goal_id: G34
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/policies-constraints
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_policies_constraints_phase34.py
+    - docs/08_phases/phase_54_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_54/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Policies constraints page is read-only and must not introduce any write operation.
+    - Policies are displayed as evidence paths/metadata only; no policy content mutation.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g35_dossier_evidence_ui_scope
+  enabled: true
+  applies_to_goal_id: G35
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/dossier-evidence
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_dossier_evidence_phase35.py
+    - docs/08_phases/phase_55_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_55/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Dossier evidence page is read-only and must render artifact/index evidence only.
+    - No write operation is introduced for dossier artifacts.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g36_playbook_phases_ui_scope
+  enabled: true
+  applies_to_goal_id: G36
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/playbook-phases
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_playbook_phases_phase36.py
+    - docs/08_phases/phase_56_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_56/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Playbook matrix page is read-only and maps planning evidence without write effects.
+    - Displayed phase mapping must be sourced from playbook + SSOT documents.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g37_ia_coverage_ui_scope
+  enabled: true
+  applies_to_goal_id: G37
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/ia-coverage
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_ia_coverage_phase37.py
+    - docs/08_phases/phase_57_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_57/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - IA coverage page is read-only and only reports route/view coverage evidence.
+    - Coverage extraction is sourced from Whole View section 8 and existing UI routes.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g38_agent_roles_ui_scope
+  enabled: true
+  applies_to_goal_id: G38
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/agent-roles
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_agent_roles_phase38.py
+    - docs/08_phases/phase_58_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_58/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Agent roles page is read-only and must not expose write controls.
+    - Role/harness boundaries are sourced from Whole View + Playbook evidence text
+      only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g39_workflow_checkpoints_ui_scope
+  enabled: true
+  applies_to_goal_id: G39
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/workflow-checkpoints
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_workflow_checkpoints_phase39.py
+    - docs/08_phases/phase_59_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_59/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Workflow checkpoints page is read-only and must not introduce write controls.
+    - Workflow/checkpoint evidence is sourced from Whole View section 3 and Playbook
+      phase flow text only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g40_object_model_ui_scope
+  enabled: true
+  applies_to_goal_id: G40
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/object-model
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_object_model_phase40.py
+    - docs/08_phases/phase_60_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_60/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Object model page is read-only and must not expose write controls.
+    - Object model evidence is sourced from Whole View section 4 and Playbook phase
+      list text only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g41_module_boundaries_ui_scope
+  enabled: true
+  applies_to_goal_id: G41
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/module-boundaries
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_module_boundaries_phase41.py
+    - docs/08_phases/phase_61_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_61/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Module boundaries page is read-only and must not expose write controls.
+    - Boundary evidence is sourced from Whole View section 6 and Playbook phase list
+      text only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g42_diagnostics_promotion_ui_scope
+  enabled: true
+  applies_to_goal_id: G42
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/diagnostics-promotion
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_diagnostics_promotion_phase42.py
+    - docs/08_phases/phase_62_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_62/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Diagnostics promotion page is read-only and must not expose write controls.
+    - Promotion evidence is sourced from Whole View section 7 and Playbook phase-12
+      text only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g43_ui_coverage_matrix_scope
+  enabled: true
+  applies_to_goal_id: G43
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/ui-coverage-matrix
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_coverage_matrix_phase43.py
+    - docs/08_phases/phase_63_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_63/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - UI coverage matrix page is read-only and must not expose write controls.
+    - Coverage evidence is sourced from Whole View section 8 and existing UI route
+      metadata only.
+    - Subagent packet and acceptance checks must still pass.
+- exception_id: g44_runtime_topology_ui_scope
+  enabled: true
+  applies_to_goal_id: G44
+  waives_stop_condition:
+  - Any API schema or route behavior change
+  preauthorized_scope:
+    allowed_route_prefixes:
+    - /ui/runtime-topology
+    allowed_code_paths:
+    - src/quant_eam/api/ui_routes.py
+    - src/quant_eam/ui/templates/**
+    - src/quant_eam/ui/static/**
+    - tests/test_ui_mvp.py
+    - tests/test_ui_runtime_topology_phase44.py
+    - docs/08_phases/phase_64_*.md
+    - docs/12_workflows/agents_ui_ssot_v1.yaml
+    - artifacts/subagent_control/phase_64/**
+    still_forbidden:
+    - contracts/**
+    - policies/**
+    - Holdout visibility expansion
+    required_guards:
+    - Runtime topology page is read-only and must not expose write controls.
+    - Topology/ports evidence is sourced from Whole View section 9 and Playbook section
+      1/3 text only.
+    - Subagent packet and acceptance checks must still pass.
+autopilot_stop_conditions_v1:
+- Any change touching contracts/**
+- Any change touching policies/**
+- Any API schema or route behavior change
+- Any holdout visibility rule change
+- Acceptance command failure
+- Subagent control packet validation failure
+ssot_enforcement_rules:
+- Any change must update this SSOT before code/UI changes.
+- UI must render from artifacts and contract-validated JSON only.
+- Phase acceptance is invalid unless subagent control packet passes validation.
+- When orchestrator autopilot is enabled, main controller must continue until stop
+  condition or explicit user halt.
+- G11 route/API behavior exception is permanently pre-authorized only within autopilot_stop_condition_exceptions_v1
+  scope.
+- G15 evidence hardening is a persistent governance goal for unattended subagent execution.
+whole_view_autopilot_v1:
+  status_now: active
+  goal: Allow unattended rolling planning and execution until Whole View completion
+    criteria are met.
+  execution_precedence:
+  - detect_planned_or_partial_goals
+  - if_none_generate_next_goal_batch_from_rolling_policy
+  - ssot_writeback_for_generated_goals
+  - dispatch_next_phase_after_generation
+  - evaluate_done_criteria_only_after_generation_attempt
+  done_criteria:
+    goal_checklist_all_implemented: true
+    agents_pipeline_steps_all_implemented: true
+    required_interactions_has_no_planned_items: true
+    packet_validation_required_for_every_phase: true
+    minimum_final_checks:
+    - python3 scripts/check_docs_tree.py
+    - python3 scripts/check_subagent_packet.py --phase-id <latest_phase_id>
+    - docker compose run --rm api pytest -q tests/test_ui_mvp.py
+  rolling_goal_policy:
+    enabled: true
+    trigger_when_no_planned_or_partial: true
+    must_generate_before_done_check_when_queue_empty: true
+    queue_empty_behavior: generate_new_goals_first; stop_only_if_generation_is_blocked_or_disabled
+    source_documents:
+    - docs/00_overview/Quant‑EAM Whole View Framework.md
+    - docs/00_overview/Quant‑EAM Implementation Phases Playbook.md
+    generation_batch_size:
+      min: 2
+      max: 4
+    numbering_rule: new goals must continue from current max goal id (G<N+1>...)
+    ssot_writeback_required_before_dispatch: true
+    required_new_goal_fields:
+    - id
+    - title
+    - status_now
+    - depends_on
+    - ui_path
+    - expected_state_change
+    - expected_artifacts
+    - acceptance_commands
+    - stop_condition_exception_scope
+    dispatch_rule:
+      single_phase_at_a_time: true
+      required_lifecycle:
+      - publish_phase_task_card
+      - dispatch_codex_cli_subagent
+      - run_acceptance_commands
+      - validate_packet
+      - ssot_writeback
+      - continue_next_goal
+  stop_condition_exception_templates:
+    enabled: true
+    applies_when_new_goals_are_generated: true
+    template_rules:
+    - template_id: ui_readonly_explorer_scope
+      allows:
+        route_prefixes:
+        - /ui
+        code_paths:
+        - src/quant_eam/api/ui_routes.py
+        - src/quant_eam/ui/templates/**
+        - src/quant_eam/ui/static/**
+        - tests/test_ui_mvp.py
+      still_forbidden:
+      - contracts/**
+      - policies/**
+      - Holdout visibility expansion
+    - template_id: data_plane_runtime_scope
+      allows:
+        route_prefixes: []
+        code_paths:
+        - src/quant_eam/qa_fetch/**
+        - scripts/**
+        - tests/test_qa_fetch_*.py
+        - docs/05_data_plane/**
+      still_forbidden:
+      - contracts/**
+      - policies/**
+      - Holdout visibility expansion
+  failure_policy:
+    retry:
+      max_attempts_per_phase: 2
+      require_same_task_card_scope: true
+      require_new_acceptance_log_append_only: true
+    workspace_noise_handling:
+      use_external_noise_paths_first: true
+      forbid_allowed_paths_expansion_for_noise_only: true
+    on_retry_exhausted:
+      action: mark_goal_blocked_and_stop
+      required_outputs:
+      - docs/08_phases/phase_<id>_blocked.md
+      - artifacts/subagent_control/<phase_id>/validator_report.yaml
+  operator_promptless_mode:
+    enabled: true
+    human_confirmation_required_each_round: false
+    ask_user_only_when:
+    - stop condition has no matching preauthorized exception scope
+  no_premature_stop_guard:
+    enabled: true
+    rule: When rolling_goal_policy is enabled and queue is empty, orchestrator must
+      attempt goal generation before any done/stop decision.
+    stop_allowed_only_if:
+    - rolling_goal_policy.enabled is false
+    - goal generation failed and triggered a stop condition without matching preauthorized
+      exception

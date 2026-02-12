@@ -1,0 +1,24 @@
+schema_version: subagent_executor_report_v1
+phase_id: phase_xx
+reported_at: "2026-02-11T00:00:00+08:00"
+executor:
+  role: codex_cli_subagent
+  runtime: codex_cli
+  session_ref: "optional-session-id-or-url"
+status: completed
+
+changed_files:
+  - src/quant_eam/example_module/example.py
+  - tests/test_example.py
+
+commands_run:
+  - pytest -q tests/test_example.py
+  - python3 scripts/check_docs_tree.py
+
+evidence_summary:
+  workspace_before: artifacts/subagent_control/phase_xx/workspace_before.json
+  workspace_after: artifacts/subagent_control/phase_xx/workspace_after.json
+  acceptance_log: artifacts/subagent_control/phase_xx/acceptance_run_log.jsonl
+
+notes:
+  - "Implementation summary."

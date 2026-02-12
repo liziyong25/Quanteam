@@ -60,3 +60,18 @@ Quality report contract:
 
 - `schema_version`: `quality_report_v1`
 - contract: `contracts/quality_report_schema_v1.json`
+
+## 3) Agents Plane Registries
+
+Data function/dataset contracts for agent runtime:
+
+- `docs/05_data_plane/qa_fetch_function_registry_v1.json`
+  - `schema_version`: `qa_fetch_function_registry_v1`
+  - frozen function baseline from v3 matrix
+- `docs/05_data_plane/qa_dataset_registry_v1.json`
+  - `schema_version`: `qa_dataset_registry_v1`
+  - dataset semantics for `query_dataset(...)` and as_of policy
+
+Usage reference:
+
+- `docs/05_data_plane/agents_plane_data_contract_v1.md`

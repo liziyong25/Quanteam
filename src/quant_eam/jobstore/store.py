@@ -353,6 +353,16 @@ class BudgetExceeded(RuntimeError):
         self.outputs = outputs
 
 
+def _counts_toward_spawn_budget(ev: dict[str, Any]) -> bool:
+    if str(ev.get("event_type")) != "SPAWNED":
+        return False
+    out = ev.get("outputs")
+    if not isinstance(out, dict):
+        return True
+    # Rerun writes SPAWNED(action=rerun_requested) for audit, but it is not a child spawn.
+    return str(out.get("action") or "").strip() != "rerun_requested"
+
+
 def _load_sweep_best_params(*, job_id: str, job_root: Path | None = None) -> dict[str, Any]:
     """Load best sweep params from jobs/<job_id>/outputs/sweep/leaderboard.json.
 
@@ -407,7 +417,7 @@ def spawn_child_job_from_sweep_best(
     params = budget_doc.get("params") if isinstance(budget_doc.get("params"), dict) else {}
 
     # Budget: spawn limit per base job.
-    spawn_count = sum(1 for ev in events if str(ev.get("event_type")) == "SPAWNED")
+    spawn_count = sum(1 for ev in events if _counts_toward_spawn_budget(ev))
     max_spawn = int(params.get("max_spawn_per_job", 0)) if isinstance(params.get("max_spawn_per_job", 0), int) else 0
     if max_spawn and spawn_count >= max_spawn:
         stop_out = {"reason": "max_spawn_per_job", "limit": max_spawn, "current_spawn_count": spawn_count}
@@ -544,7 +554,7 @@ def spawn_child_job_from_proposal(
     params = budget_doc.get("params") if isinstance(budget_doc.get("params"), dict) else {}
 
     # Budget: spawn limit per base job.
-    spawn_count = sum(1 for ev in events if str(ev.get("event_type")) == "SPAWNED")
+    spawn_count = sum(1 for ev in events if _counts_toward_spawn_budget(ev))
     max_spawn = int(params.get("max_spawn_per_job", 0)) if isinstance(params.get("max_spawn_per_job", 0), int) else 0
     if max_spawn and spawn_count >= max_spawn:
         stop_out = {"reason": "max_spawn_per_job", "limit": max_spawn, "current_spawn_count": spawn_count}

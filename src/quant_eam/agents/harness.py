@@ -177,7 +177,18 @@ def run_agent(
     - agent outputs (paths listed in agent_run.output_refs)
     """
     agent_id = str(agent_id).strip()
-    if agent_id not in ("intent_agent_v1", "strategy_spec_agent_v1", "report_agent_v1", "improvement_agent_v1"):
+    if agent_id not in (
+        "intent_agent_v1",
+        "strategy_spec_agent_v1",
+        "spec_qa_agent_v1",
+        "demo_agent_v1",
+        "backtest_agent_v1",
+        "report_agent_v1",
+        "improvement_agent_v1",
+        "diagnostics_agent_v1",
+        "registry_curator_v1",
+        "composer_agent_v1",
+    ):
         raise ValueError(f"unknown agent_id: {agent_id}")
     provider = str(provider).strip()
     if provider not in ("mock", "external"):
@@ -543,11 +554,14 @@ def run_agent(
                 )
         agent_version = "v1"
     else:
-        if agent_id == "report_agent_v1":
+        if agent_id == "spec_qa_agent_v1":
             bundle_schema = {
                 "type": "object",
-                "required": ["report_md", "report_summary"],
-                "properties": {"report_md": {"type": "string"}, "report_summary": {"type": "object"}},
+                "required": ["spec_qa_report", "spec_qa_report_md"],
+                "properties": {
+                    "spec_qa_report": {"type": "object"},
+                    "spec_qa_report_md": {"type": "string"},
+                },
             }
             request_obj["schema_sha256"] = sha256_hex(bundle_schema)
             prompt_hash = prompt_hash_v1(request=request_obj)
@@ -555,15 +569,15 @@ def run_agent(
                 response_bundle = cassette.replay_response(prompt_hash)
                 if response_bundle is None:
                     raise ValueError("cassette miss for prompt_hash (replay mode)")
-                md = response_bundle.get("report_md")
-                summ = response_bundle.get("report_summary")
-                if not isinstance(md, str) or not isinstance(summ, dict):
-                    raise ValueError("cassette response missing report_md/report_summary")
-                report_md = out_dir / "report_agent.md"
-                summary_path = out_dir / "report_summary.json"
-                _write_text(report_md, md)
-                _write_json(summary_path, summ)
-                output_paths = [report_md, summary_path]
+                rep = response_bundle.get("spec_qa_report")
+                rep_md = response_bundle.get("spec_qa_report_md")
+                if not isinstance(rep, dict) or not isinstance(rep_md, str):
+                    raise ValueError("cassette response missing spec_qa_report/spec_qa_report_md")
+                report_path = out_dir / "spec_qa_report.json"
+                report_md_path = out_dir / "spec_qa_report.md"
+                _write_json(report_path, rep)
+                _write_text(report_md_path, rep_md)
+                output_paths = [report_path, report_md_path]
             else:
                 if llm_provider != "mock":
                     prov = get_provider(llm_provider)
@@ -578,24 +592,24 @@ def run_agent(
                         user=str(request_obj["user"]),
                         schema=bundle_schema,
                     )
-                    md = response_bundle.get("report_md")
-                    summ = response_bundle.get("report_summary")
-                    if not isinstance(md, str) or not isinstance(summ, dict):
-                        raise ValueError("real provider must return {report_md: str, report_summary: object}")
-                    report_md = out_dir / "report_agent.md"
-                    summary_path = out_dir / "report_summary.json"
-                    _write_text(report_md, md)
-                    _write_json(summary_path, summ)
-                    output_paths = [report_md, summary_path]
+                    rep = response_bundle.get("spec_qa_report")
+                    rep_md = response_bundle.get("spec_qa_report_md")
+                    if not isinstance(rep, dict) or not isinstance(rep_md, str):
+                        raise ValueError("real provider must return {spec_qa_report: object, spec_qa_report_md: string}")
+                    report_path = out_dir / "spec_qa_report.json"
+                    report_md_path = out_dir / "spec_qa_report.md"
+                    _write_json(report_path, rep)
+                    _write_text(report_md_path, rep_md)
+                    output_paths = [report_path, report_md_path]
                 else:
-                    from quant_eam.agents.report_agent import run_report_agent
+                    from quant_eam.agents.spec_qa_agent import run_spec_qa_agent
 
-                    output_paths = run_report_agent(input_path=input_path, out_dir=out_dir, provider=provider)
-                    report_md = out_dir / "report_agent.md"
-                    summ_p = out_dir / "report_summary.json"
+                    output_paths = run_spec_qa_agent(input_path=input_path, out_dir=out_dir, provider=provider)
+                    report_path = out_dir / "spec_qa_report.json"
+                    report_md_path = out_dir / "spec_qa_report.md"
                     response_bundle = {
-                        "report_md": report_md.read_text(encoding="utf-8") if report_md.is_file() else "",
-                        "report_summary": _load_json(summ_p) if summ_p.is_file() else {},
+                        "spec_qa_report": _load_json(report_path) if report_path.is_file() else {},
+                        "spec_qa_report_md": report_md_path.read_text(encoding="utf-8") if report_md_path.is_file() else "",
                     }
                 if llm_mode == "record":
                     cassette.append_call(
@@ -610,22 +624,23 @@ def run_agent(
                         }
                     )
             agent_version = "v1"
-        else:
-            bundle_schema = {"type": "object", "required": ["improvement_proposals"], "properties": {"improvement_proposals": {"type": "object"}}}
+        elif agent_id == "demo_agent_v1":
+            bundle_schema = {
+                "type": "object",
+                "required": ["demo_plan"],
+                "properties": {"demo_plan": {"type": "object"}},
+            }
             request_obj["schema_sha256"] = sha256_hex(bundle_schema)
             prompt_hash = prompt_hash_v1(request=request_obj)
             if llm_mode == "replay":
                 response_bundle = cassette.replay_response(prompt_hash)
                 if response_bundle is None:
                     raise ValueError("cassette miss for prompt_hash (replay mode)")
-                props = response_bundle.get("improvement_proposals")
-                if not isinstance(props, dict):
-                    raise ValueError("cassette response missing improvement_proposals object")
-                code, msg = contracts_validate.validate_payload(props)
-                if code != contracts_validate.EXIT_OK:
-                    raise ValueError(f"cassette improvement_proposals invalid: {msg}")
-                out_path = out_dir / "improvement_proposals.json"
-                _write_json(out_path, props)
+                demo_plan = response_bundle.get("demo_plan")
+                if not isinstance(demo_plan, dict):
+                    raise ValueError("cassette response missing demo_plan object")
+                out_path = out_dir / "demo_plan.json"
+                _write_json(out_path, demo_plan)
                 output_paths = [out_path]
             else:
                 if llm_provider != "mock":
@@ -641,21 +656,18 @@ def run_agent(
                         user=str(request_obj["user"]),
                         schema=bundle_schema,
                     )
-                    props = response_bundle.get("improvement_proposals")
-                    if not isinstance(props, dict):
-                        raise ValueError("real provider missing improvement_proposals object")
-                    code, msg = contracts_validate.validate_payload(props)
-                    if code != contracts_validate.EXIT_OK:
-                        raise ValueError(f"real provider improvement_proposals invalid: {msg}")
-                    out_path = out_dir / "improvement_proposals.json"
-                    _write_json(out_path, props)
+                    demo_plan = response_bundle.get("demo_plan")
+                    if not isinstance(demo_plan, dict):
+                        raise ValueError("real provider must return {demo_plan: object}")
+                    out_path = out_dir / "demo_plan.json"
+                    _write_json(out_path, demo_plan)
                     output_paths = [out_path]
                 else:
-                    from quant_eam.agents.improvement_agent import run_improvement_agent
+                    from quant_eam.agents.demo_agent import run_demo_agent
 
-                    output_paths = run_improvement_agent(input_path=input_path, out_dir=out_dir, provider=provider)
-                    props = _load_json(out_dir / "improvement_proposals.json")
-                    response_bundle = {"improvement_proposals": props} if isinstance(props, dict) else {}
+                    output_paths = run_demo_agent(input_path=input_path, out_dir=out_dir, provider=provider)
+                    out_path = out_dir / "demo_plan.json"
+                    response_bundle = {"demo_plan": _load_json(out_path) if out_path.is_file() else {}}
                 if llm_mode == "record":
                     cassette.append_call(
                         {
@@ -669,6 +681,365 @@ def run_agent(
                         }
                     )
             agent_version = "v1"
+        elif agent_id == "backtest_agent_v1":
+            bundle_schema = {
+                "type": "object",
+                "required": ["backtest_plan"],
+                "properties": {"backtest_plan": {"type": "object"}},
+            }
+            request_obj["schema_sha256"] = sha256_hex(bundle_schema)
+            prompt_hash = prompt_hash_v1(request=request_obj)
+            if llm_mode == "replay":
+                response_bundle = cassette.replay_response(prompt_hash)
+                if response_bundle is None:
+                    raise ValueError("cassette miss for prompt_hash (replay mode)")
+                backtest_plan = response_bundle.get("backtest_plan")
+                if not isinstance(backtest_plan, dict):
+                    raise ValueError("cassette response missing backtest_plan object")
+                out_path = out_dir / "backtest_plan.json"
+                _write_json(out_path, backtest_plan)
+                output_paths = [out_path]
+            else:
+                if llm_provider != "mock":
+                    prov = get_provider(llm_provider)
+                    response_bundle, llm_mode = _provider_complete_json_with_fallback(
+                        prov_id=llm_provider,
+                        prov=prov,
+                        llm_mode=llm_mode,
+                        cassette=cassette,
+                        prompt_hash=prompt_hash,
+                        out_dir=out_dir,
+                        system=pp.system,
+                        user=str(request_obj["user"]),
+                        schema=bundle_schema,
+                    )
+                    backtest_plan = response_bundle.get("backtest_plan")
+                    if not isinstance(backtest_plan, dict):
+                        raise ValueError("real provider must return {backtest_plan: object}")
+                    out_path = out_dir / "backtest_plan.json"
+                    _write_json(out_path, backtest_plan)
+                    output_paths = [out_path]
+                else:
+                    from quant_eam.agents.backtest_agent import run_backtest_agent
+
+                    output_paths = run_backtest_agent(input_path=input_path, out_dir=out_dir, provider=provider)
+                    out_path = out_dir / "backtest_plan.json"
+                    response_bundle = {"backtest_plan": _load_json(out_path) if out_path.is_file() else {}}
+                if llm_mode == "record":
+                    cassette.append_call(
+                        {
+                            "schema_version": "llm_call_v1",
+                            "prompt_hash": prompt_hash,
+                            "provider_id": llm_provider,
+                            "mode": "record",
+                            "request": request_obj,
+                            "response_json": response_bundle,
+                            "extensions": {"redaction_summary_sha256": red_summary.sanitized_sha256},
+                        }
+                    )
+            agent_version = "v1"
+        else:
+            if agent_id == "report_agent_v1":
+                bundle_schema = {
+                    "type": "object",
+                    "required": ["report_md", "report_summary"],
+                    "properties": {"report_md": {"type": "string"}, "report_summary": {"type": "object"}},
+                }
+                request_obj["schema_sha256"] = sha256_hex(bundle_schema)
+                prompt_hash = prompt_hash_v1(request=request_obj)
+                if llm_mode == "replay":
+                    response_bundle = cassette.replay_response(prompt_hash)
+                    if response_bundle is None:
+                        raise ValueError("cassette miss for prompt_hash (replay mode)")
+                    md = response_bundle.get("report_md")
+                    summ = response_bundle.get("report_summary")
+                    if not isinstance(md, str) or not isinstance(summ, dict):
+                        raise ValueError("cassette response missing report_md/report_summary")
+                    report_md = out_dir / "report_agent.md"
+                    summary_path = out_dir / "report_summary.json"
+                    _write_text(report_md, md)
+                    _write_json(summary_path, summ)
+                    output_paths = [report_md, summary_path]
+                else:
+                    if llm_provider != "mock":
+                        prov = get_provider(llm_provider)
+                        response_bundle, llm_mode = _provider_complete_json_with_fallback(
+                            prov_id=llm_provider,
+                            prov=prov,
+                            llm_mode=llm_mode,
+                            cassette=cassette,
+                            prompt_hash=prompt_hash,
+                            out_dir=out_dir,
+                            system=pp.system,
+                            user=str(request_obj["user"]),
+                            schema=bundle_schema,
+                        )
+                        md = response_bundle.get("report_md")
+                        summ = response_bundle.get("report_summary")
+                        if not isinstance(md, str) or not isinstance(summ, dict):
+                            raise ValueError("real provider must return {report_md: str, report_summary: object}")
+                        report_md = out_dir / "report_agent.md"
+                        summary_path = out_dir / "report_summary.json"
+                        _write_text(report_md, md)
+                        _write_json(summary_path, summ)
+                        output_paths = [report_md, summary_path]
+                    else:
+                        from quant_eam.agents.report_agent import run_report_agent
+
+                        output_paths = run_report_agent(input_path=input_path, out_dir=out_dir, provider=provider)
+                        report_md = out_dir / "report_agent.md"
+                        summ_p = out_dir / "report_summary.json"
+                        response_bundle = {
+                            "report_md": report_md.read_text(encoding="utf-8") if report_md.is_file() else "",
+                            "report_summary": _load_json(summ_p) if summ_p.is_file() else {},
+                        }
+                    if llm_mode == "record":
+                        cassette.append_call(
+                            {
+                                "schema_version": "llm_call_v1",
+                                "prompt_hash": prompt_hash,
+                                "provider_id": llm_provider,
+                                "mode": "record",
+                                "request": request_obj,
+                                "response_json": response_bundle,
+                                "extensions": {"redaction_summary_sha256": red_summary.sanitized_sha256},
+                            }
+                        )
+                agent_version = "v1"
+            elif agent_id == "diagnostics_agent_v1":
+                bundle_schema = {
+                    "type": "object",
+                    "required": ["diagnostics_plan"],
+                    "properties": {"diagnostics_plan": {"type": "object"}},
+                }
+                request_obj["schema_sha256"] = sha256_hex(bundle_schema)
+                prompt_hash = prompt_hash_v1(request=request_obj)
+                if llm_mode == "replay":
+                    response_bundle = cassette.replay_response(prompt_hash)
+                    if response_bundle is None:
+                        raise ValueError("cassette miss for prompt_hash (replay mode)")
+                    plan = response_bundle.get("diagnostics_plan")
+                    if not isinstance(plan, dict):
+                        raise ValueError("cassette response missing diagnostics_plan object")
+                    out_path = out_dir / "diagnostics_plan.json"
+                    _write_json(out_path, plan)
+                    output_paths = [out_path]
+                else:
+                    if llm_provider != "mock":
+                        prov = get_provider(llm_provider)
+                        response_bundle, llm_mode = _provider_complete_json_with_fallback(
+                            prov_id=llm_provider,
+                            prov=prov,
+                            llm_mode=llm_mode,
+                            cassette=cassette,
+                            prompt_hash=prompt_hash,
+                            out_dir=out_dir,
+                            system=pp.system,
+                            user=str(request_obj["user"]),
+                            schema=bundle_schema,
+                        )
+                        plan = response_bundle.get("diagnostics_plan")
+                        if not isinstance(plan, dict):
+                            raise ValueError("real provider must return {diagnostics_plan: object}")
+                        out_path = out_dir / "diagnostics_plan.json"
+                        _write_json(out_path, plan)
+                        output_paths = [out_path]
+                    else:
+                        from quant_eam.agents.diagnostics_agent import run_diagnostics_agent
+
+                        output_paths = run_diagnostics_agent(input_path=input_path, out_dir=out_dir, provider=provider)
+                        out_path = out_dir / "diagnostics_plan.json"
+                        response_bundle = {"diagnostics_plan": _load_json(out_path) if out_path.is_file() else {}}
+                    if llm_mode == "record":
+                        cassette.append_call(
+                            {
+                                "schema_version": "llm_call_v1",
+                                "prompt_hash": prompt_hash,
+                                "provider_id": llm_provider,
+                                "mode": "record",
+                                "request": request_obj,
+                                "response_json": response_bundle,
+                                "extensions": {"redaction_summary_sha256": red_summary.sanitized_sha256},
+                            }
+                        )
+                agent_version = "v1"
+            elif agent_id == "registry_curator_v1":
+                bundle_schema = {
+                    "type": "object",
+                    "required": ["registry_curator_summary"],
+                    "properties": {"registry_curator_summary": {"type": "object"}},
+                }
+                request_obj["schema_sha256"] = sha256_hex(bundle_schema)
+                prompt_hash = prompt_hash_v1(request=request_obj)
+                if llm_mode == "replay":
+                    response_bundle = cassette.replay_response(prompt_hash)
+                    if response_bundle is None:
+                        raise ValueError("cassette miss for prompt_hash (replay mode)")
+                    summary = response_bundle.get("registry_curator_summary")
+                    if not isinstance(summary, dict):
+                        raise ValueError("cassette response missing registry_curator_summary object")
+                    out_path = out_dir / "registry_curator_summary.json"
+                    _write_json(out_path, summary)
+                    output_paths = [out_path]
+                else:
+                    if llm_provider != "mock":
+                        prov = get_provider(llm_provider)
+                        response_bundle, llm_mode = _provider_complete_json_with_fallback(
+                            prov_id=llm_provider,
+                            prov=prov,
+                            llm_mode=llm_mode,
+                            cassette=cassette,
+                            prompt_hash=prompt_hash,
+                            out_dir=out_dir,
+                            system=pp.system,
+                            user=str(request_obj["user"]),
+                            schema=bundle_schema,
+                        )
+                        summary = response_bundle.get("registry_curator_summary")
+                        if not isinstance(summary, dict):
+                            raise ValueError("real provider must return {registry_curator_summary: object}")
+                        out_path = out_dir / "registry_curator_summary.json"
+                        _write_json(out_path, summary)
+                        output_paths = [out_path]
+                    else:
+                        from quant_eam.agents.registry_curator_agent import run_registry_curator_agent
+
+                        output_paths = run_registry_curator_agent(input_path=input_path, out_dir=out_dir, provider=provider)
+                        out_path = out_dir / "registry_curator_summary.json"
+                        response_bundle = {"registry_curator_summary": _load_json(out_path) if out_path.is_file() else {}}
+                    if llm_mode == "record":
+                        cassette.append_call(
+                            {
+                                "schema_version": "llm_call_v1",
+                                "prompt_hash": prompt_hash,
+                                "provider_id": llm_provider,
+                                "mode": "record",
+                                "request": request_obj,
+                                "response_json": response_bundle,
+                                "extensions": {"redaction_summary_sha256": red_summary.sanitized_sha256},
+                            }
+                        )
+                agent_version = "v1"
+            elif agent_id == "composer_agent_v1":
+                bundle_schema = {
+                    "type": "object",
+                    "required": ["composer_agent_plan"],
+                    "properties": {"composer_agent_plan": {"type": "object"}},
+                }
+                request_obj["schema_sha256"] = sha256_hex(bundle_schema)
+                prompt_hash = prompt_hash_v1(request=request_obj)
+                if llm_mode == "replay":
+                    response_bundle = cassette.replay_response(prompt_hash)
+                    if response_bundle is None:
+                        raise ValueError("cassette miss for prompt_hash (replay mode)")
+                    plan = response_bundle.get("composer_agent_plan")
+                    if not isinstance(plan, dict):
+                        raise ValueError("cassette response missing composer_agent_plan object")
+                    out_path = out_dir / "composer_agent_plan.json"
+                    _write_json(out_path, plan)
+                    output_paths = [out_path]
+                else:
+                    if llm_provider != "mock":
+                        prov = get_provider(llm_provider)
+                        response_bundle, llm_mode = _provider_complete_json_with_fallback(
+                            prov_id=llm_provider,
+                            prov=prov,
+                            llm_mode=llm_mode,
+                            cassette=cassette,
+                            prompt_hash=prompt_hash,
+                            out_dir=out_dir,
+                            system=pp.system,
+                            user=str(request_obj["user"]),
+                            schema=bundle_schema,
+                        )
+                        plan = response_bundle.get("composer_agent_plan")
+                        if not isinstance(plan, dict):
+                            raise ValueError("real provider must return {composer_agent_plan: object}")
+                        out_path = out_dir / "composer_agent_plan.json"
+                        _write_json(out_path, plan)
+                        output_paths = [out_path]
+                    else:
+                        from quant_eam.agents.composer_agent import run_composer_agent
+
+                        output_paths = run_composer_agent(input_path=input_path, out_dir=out_dir, provider=provider)
+                        out_path = out_dir / "composer_agent_plan.json"
+                        response_bundle = {"composer_agent_plan": _load_json(out_path) if out_path.is_file() else {}}
+                    if llm_mode == "record":
+                        cassette.append_call(
+                            {
+                                "schema_version": "llm_call_v1",
+                                "prompt_hash": prompt_hash,
+                                "provider_id": llm_provider,
+                                "mode": "record",
+                                "request": request_obj,
+                                "response_json": response_bundle,
+                                "extensions": {"redaction_summary_sha256": red_summary.sanitized_sha256},
+                            }
+                        )
+                agent_version = "v1"
+            else:
+                bundle_schema = {
+                    "type": "object",
+                    "required": ["improvement_proposals"],
+                    "properties": {"improvement_proposals": {"type": "object"}},
+                }
+                request_obj["schema_sha256"] = sha256_hex(bundle_schema)
+                prompt_hash = prompt_hash_v1(request=request_obj)
+                if llm_mode == "replay":
+                    response_bundle = cassette.replay_response(prompt_hash)
+                    if response_bundle is None:
+                        raise ValueError("cassette miss for prompt_hash (replay mode)")
+                    props = response_bundle.get("improvement_proposals")
+                    if not isinstance(props, dict):
+                        raise ValueError("cassette response missing improvement_proposals object")
+                    code, msg = contracts_validate.validate_payload(props)
+                    if code != contracts_validate.EXIT_OK:
+                        raise ValueError(f"cassette improvement_proposals invalid: {msg}")
+                    out_path = out_dir / "improvement_proposals.json"
+                    _write_json(out_path, props)
+                    output_paths = [out_path]
+                else:
+                    if llm_provider != "mock":
+                        prov = get_provider(llm_provider)
+                        response_bundle, llm_mode = _provider_complete_json_with_fallback(
+                            prov_id=llm_provider,
+                            prov=prov,
+                            llm_mode=llm_mode,
+                            cassette=cassette,
+                            prompt_hash=prompt_hash,
+                            out_dir=out_dir,
+                            system=pp.system,
+                            user=str(request_obj["user"]),
+                            schema=bundle_schema,
+                        )
+                        props = response_bundle.get("improvement_proposals")
+                        if not isinstance(props, dict):
+                            raise ValueError("real provider missing improvement_proposals object")
+                        code, msg = contracts_validate.validate_payload(props)
+                        if code != contracts_validate.EXIT_OK:
+                            raise ValueError(f"real provider improvement_proposals invalid: {msg}")
+                        out_path = out_dir / "improvement_proposals.json"
+                        _write_json(out_path, props)
+                        output_paths = [out_path]
+                    else:
+                        from quant_eam.agents.improvement_agent import run_improvement_agent
+
+                        output_paths = run_improvement_agent(input_path=input_path, out_dir=out_dir, provider=provider)
+                        props = _load_json(out_dir / "improvement_proposals.json")
+                        response_bundle = {"improvement_proposals": props} if isinstance(props, dict) else {}
+                    if llm_mode == "record":
+                        cassette.append_call(
+                            {
+                                "schema_version": "llm_call_v1",
+                                "prompt_hash": prompt_hash,
+                                "provider_id": llm_provider,
+                                "mode": "record",
+                                "request": request_obj,
+                                "response_json": response_bundle,
+                                "extensions": {"redaction_summary_sha256": red_summary.sanitized_sha256},
+                            }
+                        )
+                agent_version = "v1"
 
     assert response_bundle is not None
     end_t = time.perf_counter()
@@ -787,4 +1158,3 @@ def run_agent(
     agent_run_path = out_dir / "agent_run.json"
     _write_json(agent_run_path, agent_run)
     return AgentResult(agent_run_path=agent_run_path, output_paths=output_paths)
-

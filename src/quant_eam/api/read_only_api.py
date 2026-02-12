@@ -156,6 +156,88 @@ def list_run_artifacts(run_id: str) -> dict[str, Any]:
     return {"run_id": run_id, "artifacts": safe}
 
 
+@router.get("/runs/{run_id}/diagnostics")
+def list_run_diagnostics(run_id: str) -> dict[str, Any]:
+    run_id = require_safe_id(run_id, kind="run_id")
+    d = require_child_dir(dossiers_root(), run_id)
+    if not d.is_dir():
+        raise HTTPException(status_code=404, detail="not found")
+
+    diag_root = d / "diagnostics"
+    rows: list[dict[str, Any]] = []
+    if diag_root.is_dir():
+        for dd in sorted(diag_root.iterdir(), key=lambda p: p.name):
+            if not dd.is_dir():
+                continue
+            diagnostic_id = str(dd.name)
+            try:
+                diagnostic_id = require_safe_id(diagnostic_id, kind="diagnostic_id")
+            except HTTPException:
+                continue
+            spec_path = dd / "diagnostic_spec.json"
+            report_path = dd / "diagnostic_report.json"
+            gate_spec_path = dd / "promotion_candidate" / "gate_spec.json"
+            report = _load_json(report_path) if report_path.is_file() else {}
+            gate_spec = _load_json(gate_spec_path) if gate_spec_path.is_file() else {}
+            candidates = gate_spec.get("candidate_gates") if isinstance(gate_spec, dict) else None
+            rows.append(
+                {
+                    "diagnostic_id": diagnostic_id,
+                    "summary": report.get("summary") if isinstance(report, dict) else None,
+                    "candidate_gate_count": len(candidates) if isinstance(candidates, list) else 0,
+                    "paths": {
+                        "diagnostic_spec_path": spec_path.relative_to(d).as_posix() if spec_path.is_file() else None,
+                        "diagnostic_report_path": report_path.relative_to(d).as_posix() if report_path.is_file() else None,
+                        "promotion_gate_spec_path": gate_spec_path.relative_to(d).as_posix() if gate_spec_path.is_file() else None,
+                    },
+                }
+            )
+
+    return {"run_id": run_id, "diagnostics": rows}
+
+
+@router.get("/runs/{run_id}/diagnostics/{diagnostic_id}")
+def get_run_diagnostic(run_id: str, diagnostic_id: str) -> dict[str, Any]:
+    run_id = require_safe_id(run_id, kind="run_id")
+    diagnostic_id = require_safe_id(diagnostic_id, kind="diagnostic_id")
+    d = require_child_dir(dossiers_root(), run_id)
+    if not d.is_dir():
+        raise HTTPException(status_code=404, detail="not found")
+
+    dd = require_child_dir(d / "diagnostics", diagnostic_id)
+    if not dd.is_dir():
+        raise HTTPException(status_code=404, detail="diagnostic not found")
+
+    spec_path = dd / "diagnostic_spec.json"
+    report_path = dd / "diagnostic_report.json"
+    outputs_dir = dd / "diagnostic_outputs"
+    gate_spec_path = dd / "promotion_candidate" / "gate_spec.json"
+    if not spec_path.is_file() or not report_path.is_file():
+        raise HTTPException(status_code=404, detail="diagnostic artifacts incomplete")
+
+    output_files: list[str] = []
+    if outputs_dir.is_dir():
+        for p in sorted(outputs_dir.glob("*.json"), key=lambda x: x.name):
+            if p.is_file():
+                output_files.append(p.relative_to(d).as_posix())
+
+    gate_spec = _load_json(gate_spec_path) if gate_spec_path.is_file() else {}
+    return {
+        "run_id": run_id,
+        "diagnostic_id": diagnostic_id,
+        "diagnostic_spec": _load_json(spec_path),
+        "diagnostic_report": _load_json(report_path),
+        "promotion_gate_spec": gate_spec if isinstance(gate_spec, dict) else {},
+        "paths": {
+            "diagnostic_spec_path": spec_path.relative_to(d).as_posix(),
+            "diagnostic_report_path": report_path.relative_to(d).as_posix(),
+            "diagnostic_outputs_dir": outputs_dir.relative_to(d).as_posix(),
+            "promotion_gate_spec_path": gate_spec_path.relative_to(d).as_posix() if gate_spec_path.is_file() else None,
+            "diagnostic_output_files": output_files,
+        },
+    }
+
+
 @router.get("/registry/trials")
 def list_trials(limit: int = 50, offset: int = 0) -> dict[str, Any]:
     limit = max(1, min(200, int(limit)))

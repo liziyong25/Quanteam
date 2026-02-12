@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Agents Roles and Harness Boundary Evidence</h1>
+    <p class="page-subtitle">
+      Read-only evidence sourced from Whole View section <code>6.4 Agents Plane</code>, Playbook <code>Phase-8</code>,
+      and SSOT <code>agents_pipeline_v1</code>.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">no holdout expansion</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Sections</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>G38 Goal Snapshot</h2>
+      <div class="kv">
+        <div class="k">goal_id</div>
+        <div class="v"><span class="pill">{{ g38.id if g38.id else "G38" }}</span></div>
+        <div class="k">title</div>
+        <div class="v">{{ g38.title if g38.title else "n/a" }}</div>
+        <div class="k">status_now</div>
+        <div class="v"><span class="pill">{{ g38.status_now if g38.status_now else "unknown" }}</span></div>
+        <div class="k">ui_path</div>
+        <div class="v"><code>{{ g38.ui_path if g38.ui_path else "n/a" }}</code></div>
+        <div class="k">depends_on</div>
+        <div class="v">{{ g38.depends_on|join(", ") if g38.depends_on else "n/a" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Coverage Summary</h2>
+      <div class="kv">
+        <div class="k">whole_view_roles</div>
+        <div class="v"><span data-testid="agent-role-total">{{ summary.whole_view_role_total }}</span></div>
+        <div class="k">playbook_phase8_modules</div>
+        <div class="v"><span data-testid="phase8-module-total">{{ summary.playbook_phase8_module_total }}</span></div>
+        <div class="k">playbook_phase8_harness_items</div>
+        <div class="v"><span data-testid="phase8-harness-total">{{ summary.playbook_phase8_harness_total }}</span></div>
+        <div class="k">playbook_phase8_acceptance_items</div>
+        <div class="v"><span data-testid="phase8-acceptance-total">{{ summary.playbook_phase8_acceptance_total }}</span></div>
+        <div class="k">pipeline_steps</div>
+        <div class="v"><span data-testid="pipeline-step-total">{{ summary.pipeline_step_total }}</span></div>
+        <div class="k">pipeline_steps_implemented</div>
+        <div class="v"><span data-testid="pipeline-implemented-total">{{ summary.pipeline_implemented_step_total }}</span></div>
+        <div class="k">pipeline_steps_with_checkpoint</div>
+        <div class="v"><span data-testid="pipeline-checkpoint-total">{{ summary.pipeline_checkpoint_step_total }}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Pipeline Meta</h2>
+      <div class="kv">
+        <div class="k">pipeline_id</div>
+        <div class="v"><code>{{ pipeline.pipeline_id if pipeline.pipeline_id else "n/a" }}</code></div>
+        <div class="k">execution_model</div>
+        <div class="v"><span class="pill">{{ pipeline.execution_model if pipeline.execution_model else "n/a" }}</span></div>
+        <div class="k">orchestration_owner</div>
+        <div class="v"><span class="pill">{{ pipeline.orchestration_owner if pipeline.orchestration_owner else "n/a" }}</span></div>
+        <div class="k">global_read_rules</div>
+        <div class="v"><span class="pill">{{ summary.global_read_rule_total }}</span></div>
+      </div>
+      <div class="section">
+        <h2>Shared Storage Contract</h2>
+        {% if pipeline.shared_storage_rows %}
+          {% for row in pipeline.shared_storage_rows %}
+            <div><code>{{ row.key }}</code>: <code>{{ row.value }}</code></div>
+          {% endfor %}
+        {% else %}
+          <div class="plot-fallback">No shared storage contract rows loaded.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Whole View 6.4 Agents Plane Roles</h2>
+    {% if whole_view_roles %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>source_line</th><th>role</th><th>boundary</th></tr></thead>
+          <tbody>
+          {% for row in whole_view_roles %}
+            <tr data-testid="whole-view-role-{{ loop.index }}">
+              <td>{{ row.source_line }}</td>
+              <td><span class="pill">{{ row.role_name }}</span></td>
+              <td>{{ row.boundary if row.boundary else "n/a" }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No role rows extracted from Whole View section 6.4.</div>
+    {% endif %}
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Playbook Phase-8 Agent Modules</h2>
+      {% if phase8.module_rows %}
+        {% for row in phase8.module_rows %}
+          <div data-testid="phase8-module-{{ loop.index }}"><code>{{ row }}</code></div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No Phase-8 module rows extracted.</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Playbook Phase-8 Harness Requirements</h2>
+      {% if phase8.harness_rows %}
+        {% for row in phase8.harness_rows %}
+          <div data-testid="phase8-harness-{{ loop.index }}">{{ row }}</div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No Phase-8 harness requirements extracted.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Playbook Phase-8 Acceptance Boundaries</h2>
+    {% if phase8.acceptance_rows %}
+      {% for row in phase8.acceptance_rows %}
+        <div data-testid="phase8-acceptance-{{ loop.index }}">{{ row }}</div>
+      {% endfor %}
+    {% else %}
+      <div class="plot-fallback">No Phase-8 acceptance boundaries extracted.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>SSOT Global Read Rules</h2>
+    {% if pipeline.global_read_rules %}
+      {% for rule in pipeline.global_read_rules %}
+        <div data-testid="pipeline-global-rule-{{ loop.index }}">{{ rule }}</div>
+      {% endfor %}
+    {% else %}
+      <div class="plot-fallback">No global read rules found in agents_pipeline_v1.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>agents_pipeline_v1 Steps</h2>
+    {% if pipeline.step_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>step_id</th><th>name</th><th>agent_id</th><th>status_now</th><th>checkpoint_step</th><th>outputs_dir</th><th>mapped_goal_id</th><th>notes</th></tr></thead>
+          <tbody>
+          {% for row in pipeline.step_rows %}
+            <tr data-testid="pipeline-step-{{ loop.index }}">
+              <td>{{ row.step_id }}</td>
+              <td>{{ row.name }}</td>
+              <td><code>{{ row.agent_id }}</code></td>
+              <td><span class="pill">{{ row.status_now }}</span></td>
+              <td><span class="pill">{{ row.checkpoint_step }}</span></td>
+              <td>{% if row.outputs_dir %}<code>{{ row.outputs_dir }}</code>{% else %}<span class="muted">n/a</span>{% endif %}</td>
+              <td>{% if row.mapped_goal_id %}<code>{{ row.mapped_goal_id }}</code>{% else %}<span class="muted">n/a</span>{% endif %}</td>
+              <td>
+                {% if row.notes %}
+                  {% for note in row.notes %}
+                    <div>{{ note }}</div>
+                  {% endfor %}
+                {% else %}
+                  <span class="muted">n/a</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No steps found under agents_pipeline_v1.</div>
+    {% endif %}
+  </div>
+{% endblock %}

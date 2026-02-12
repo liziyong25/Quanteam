@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Whole View Object Model I/O Coverage</h1>
+    <p class="page-subtitle">
+      Read-only evidence sourced from Whole View section <code>4</code> object-model I/O definitions,
+      Playbook phase flow/context text, and SSOT governance references.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">no holdout expansion</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Sections</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>G40 Goal Snapshot</h2>
+      <div class="kv">
+        <div class="k">goal_id</div>
+        <div class="v"><span class="pill">{{ g40.id if g40.id else "G40" }}</span></div>
+        <div class="k">title</div>
+        <div class="v">{{ g40.title if g40.title else "n/a" }}</div>
+        <div class="k">status_now</div>
+        <div class="v"><span class="pill">{{ g40.status_now if g40.status_now else "unknown" }}</span></div>
+        <div class="k">ui_path</div>
+        <div class="v"><code>{{ g40.ui_path if g40.ui_path else "/ui/object-model" }}</code></div>
+        <div class="k">depends_on</div>
+        <div class="v">{{ g40.depends_on|join(", ") if g40.depends_on else "n/a" }}</div>
+        <div class="k">expected_state_change</div>
+        <div class="v">{{ g40.expected_state_change if g40.expected_state_change else "n/a" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Coverage Summary</h2>
+      <div class="kv">
+        <div class="k">whole_view_objects</div>
+        <div class="v"><span data-testid="object-model-object-total">{{ summary.object_total }}</span></div>
+        <div class="k">whole_view_io_entries</div>
+        <div class="v"><span data-testid="object-model-io-total">{{ summary.io_entry_total }}</span></div>
+        <div class="k">playbook_phases</div>
+        <div class="v"><span data-testid="object-model-playbook-phase-total">{{ summary.playbook_phase_total }}</span></div>
+        <div class="k">objects_with_playbook_mapping</div>
+        <div class="v"><span data-testid="object-model-mapped-total">{{ summary.mapped_object_total }}</span></div>
+        <div class="k">required_guards</div>
+        <div class="v"><span data-testid="object-model-required-guard-total">{{ summary.required_guard_total }}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>SSOT Dispatch + Exception Meta</h2>
+      <div class="kv">
+        <div class="k">dispatch_table</div>
+        <div class="v"><code>phase_dispatch_plan_v2</code></div>
+        <div class="k">dispatch.status_now</div>
+        <div class="v"><span class="pill">{{ dispatch.status_now if dispatch.status_now else "n/a" }}</span></div>
+        <div class="k">dispatch.mode</div>
+        <div class="v"><span class="pill">{{ dispatch.mode if dispatch.mode else "n/a" }}</span></div>
+        <div class="k">phase_id</div>
+        <div class="v"><code>{{ dispatch.phase_id }}</code></div>
+        <div class="k">goal_id</div>
+        <div class="v"><code>{{ dispatch.goal_id }}</code></div>
+        <div class="k">dispatch_title</div>
+        <div class="v">{{ dispatch.title if dispatch.title else "n/a" }}</div>
+        <div class="k">exception_id</div>
+        <div class="v"><code>{{ g40_exception.exception_id if g40_exception.exception_id else "g40_object_model_ui_scope" }}</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Whole View Section 4 Object Model I/O Definitions</h2>
+    {% if object_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>object</th><th>i/o definitions</th><th>playbook phase context mapping</th></tr></thead>
+          <tbody>
+          {% for row in object_rows %}
+            <tr data-testid="object-model-row-{{ loop.index }}">
+              <td>
+                <div><span class="pill">{{ row.section_id }}</span> <strong>{{ row.object_name }}</strong></div>
+                <div>{{ row.object_title }}</div>
+                <div class="muted">line {{ row.source_line }}</div>
+              </td>
+              <td>
+                {% if row.io_rows %}
+                  {% for item in row.io_rows %}
+                    <div>{{ item }}</div>
+                  {% endfor %}
+                {% else %}
+                  <span class="muted">n/a</span>
+                {% endif %}
+              </td>
+              <td>
+                <div><span class="pill">{{ row.playbook_phase_total }}</span></div>
+                {% if row.playbook_phase_rows %}
+                  {% for phase in row.playbook_phase_rows %}
+                    <div>
+                      <span class="pill">{{ phase.phase_label }}</span>
+                      {{ phase.title }}
+                    </div>
+                    {% if phase.goal_excerpt %}
+                      <div class="muted">goal: {{ phase.goal_excerpt }}</div>
+                    {% endif %}
+                    {% if phase.background_excerpt %}
+                      <div class="muted">background: {{ phase.background_excerpt }}</div>
+                    {% endif %}
+                  {% endfor %}
+                {% else %}
+                  <span class="muted">no phase context match</span>
+                {% endif %}
+                {% if row.matched_keywords %}
+                  <div class="muted">keywords: {{ row.matched_keywords|join(", ") }}</div>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No object model rows extracted from Whole View section 4.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Playbook Phase Flow/Context (Section 3)</h2>
+    {% if playbook_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>phase</th><th>title</th><th>goal context</th><th>background context</th></tr></thead>
+          <tbody>
+          {% for row in playbook_rows %}
+            <tr data-testid="object-model-playbook-row-{{ loop.index }}">
+              <td><span class="pill">{{ row.phase_label }}</span></td>
+              <td>
+                <div>{{ row.title }}</div>
+                <div class="muted">line {{ row.source_line }}</div>
+              </td>
+              <td>
+                {% if row.goal_rows %}
+                  {% for item in row.goal_rows %}
+                    <div>{{ item }}</div>
+                  {% endfor %}
+                {% else %}
+                  <span class="muted">n/a</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.background_rows %}
+                  {% for item in row.background_rows %}
+                    <div>{{ item }}</div>
+                  {% endfor %}
+                {% else %}
+                  <span class="muted">n/a</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No phase rows extracted from Playbook section 3.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>SSOT Object Model Governance Evidence</h2>
+    <div class="section">
+      <h2>g40_object_model_ui_scope.required_guards</h2>
+      {% if g40_exception.required_guards %}
+        {% for row in g40_exception.required_guards %}
+          <div data-testid="object-model-guard-{{ loop.index }}">{{ row }}</div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No required guards under g40_object_model_ui_scope.</div>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <h2>g40_object_model_ui_scope.still_forbidden</h2>
+      {% if g40_exception.still_forbidden %}
+        {% for row in g40_exception.still_forbidden %}
+          <div><code>{{ row }}</code></div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No still_forbidden rows found.</div>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <h2>g40_object_model_ui_scope.allowed_route_prefixes</h2>
+      {% if g40_exception.allowed_route_prefixes %}
+        {% for row in g40_exception.allowed_route_prefixes %}
+          <div><code>{{ row }}</code></div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No allowed_route_prefixes rows found.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

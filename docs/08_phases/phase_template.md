@@ -20,6 +20,13 @@
 - 关键边界（deterministic vs agent）
 - 风险点与规避策略
 
+## 4.1) Subagent Control Packet（必填）
+- `phase_id`: `phase_XX`
+- `packet_root`: `artifacts/subagent_control/<phase_id>/`
+- 发布阶段（主控）必须生成：`task_card.yaml`
+- 执行阶段（subagent）必须生成：`executor_report.yaml`
+- 验收阶段（主控）必须生成：`validator_report.yaml`
+
 ## 5) 编码内容（Code Deliverables）
 - 修改目录范围（必须写清楚）：`<allowed_dirs>`
 - 新增/修改文件清单（按模块分组）
@@ -38,6 +45,7 @@
 - `docker compose up -d`
 - `pytest -q`
 - `python -m <module> ...`（给出确切命令）
+- `python3 scripts/check_subagent_packet.py --phase-id <phase_id>`
 
 ### 预期产物（Artifacts）
 - 运行后必须生成的文件路径列表（例如 dossier 目录结构）

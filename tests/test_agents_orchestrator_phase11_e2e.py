@@ -90,8 +90,25 @@ def test_phase11_idea_intent_two_checkpoints_then_report(tmp_path: Path, monkeyp
         code, _ = contracts_validate.validate_json(p)
         assert code == contracts_validate.EXIT_OK, (k, p)
 
-    # Approve strategy_spec and advance to runspec checkpoint.
+    # Approve strategy_spec and advance to spec_qa checkpoint.
     r = client.post(f"/jobs/{job_id}/approve", params={"step": "strategy_spec"})
+    assert r.status_code == 200
+    assert worker_main(["--run-jobs", "--once"]) == 0
+
+    r = client.get(f"/jobs/{job_id}")
+    assert r.status_code == 200
+    evs = r.json()["events"]
+    assert any(
+        ev.get("event_type") == "WAITING_APPROVAL" and (ev.get("outputs") or {}).get("step") == "spec_qa" for ev in evs
+    )
+    outputs = r.json().get("outputs") or {}
+    spec_qa_report = Path(outputs["spec_qa_report_path"])
+    spec_qa_report_md = Path(outputs["spec_qa_report_md_path"])
+    assert spec_qa_report.is_file()
+    assert spec_qa_report_md.is_file()
+
+    # Approve spec_qa and advance to runspec checkpoint.
+    r = client.post(f"/jobs/{job_id}/approve", params={"step": "spec_qa"})
     assert r.status_code == 200
     assert worker_main(["--run-jobs", "--once"]) == 0
 
@@ -124,6 +141,14 @@ def test_phase11_idea_intent_two_checkpoints_then_report(tmp_path: Path, monkeyp
     assert (not dossiers_dir.exists()) or (len([p for p in dossiers_dir.glob("*")]) == 0)
 
     outputs = r.json().get("outputs") or {}
+    backtest_agent_run = Path(outputs["backtest_agent_run_path"])
+    backtest_plan = Path(outputs["backtest_plan_path"])
+    assert backtest_agent_run.is_file()
+    assert contracts_validate.validate_json(backtest_agent_run)[0] == contracts_validate.EXIT_OK
+    assert backtest_plan.is_file()
+    demo_agent_run = Path(outputs["demo_agent_run_path"])
+    assert demo_agent_run.is_file()
+    assert contracts_validate.validate_json(demo_agent_run)[0] == contracts_validate.EXIT_OK
     tp = Path(outputs["calc_trace_preview_path"])
     tm = Path(outputs["trace_meta_path"])
     assert tp.is_file()
@@ -159,6 +184,12 @@ def test_phase11_idea_intent_two_checkpoints_then_report(tmp_path: Path, monkeyp
     assert dossier_dir.is_dir()
     assert (dossier_dir / "gate_results.json").is_file()
     assert (dossier_dir / "metrics.json").is_file()
+    run_link_path = Path(outputs["run_link_path"])
+    assert run_link_path.is_file()
+    run_link = json.loads(run_link_path.read_text(encoding="utf-8"))
+    assert str(run_link.get("run_id")) == str(outputs.get("run_id"))
+    assert Path(str(run_link.get("dossier_path", ""))).is_dir()
+    assert Path(str(run_link.get("gate_results_path", ""))).is_file()
 
     # Contracts validate for key evidence.
     assert contracts_validate.validate_json(dossier_dir / "dossier_manifest.json")[0] == contracts_validate.EXIT_OK
@@ -190,4 +221,9 @@ def test_phase11_idea_intent_two_checkpoints_then_report(tmp_path: Path, monkeyp
     # UI must expose LLM evidence (read-only) for agent runs.
     r = client.get(f"/ui/jobs/{job_id}")
     assert r.status_code == 200
+    assert "CalcTrace Preview (first rows)" in r.text
+    assert 'data-testid="trace-preview-overlay"' in r.text
+    assert "K-line Overlay" in r.text
+    assert 'class="trace-overlay-canvas"' in r.text
+    assert "entry_lagged" in r.text
     assert "LLM Evidence" in r.text

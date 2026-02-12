@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Card {{ card.card_id }}</h1>
+    <p class="page-subtitle">Registry card summary with immutable evidence pointers.</p>
+  </div>
+
   <div class="section">
     <div class="card">
       <h2>Card</h2>
@@ -22,15 +27,17 @@
         <div class="k">gate_results</div><div class="v">{{ card.evidence.gate_results_path }}</div>
       </div>
       <div class="section">
-        <h2>Key Artifacts</h2>
-        <table>
-          <thead><tr><th>path</th></tr></thead>
-          <tbody>
-            {% for p in card.evidence.key_artifacts %}
-              <tr><td>{{ p }}</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
+        <h2 class="section-title">Key Artifacts</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>path</th></tr></thead>
+            <tbody>
+              {% for p in card.evidence.key_artifacts %}
+                <tr><td>{{ p }}</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -54,18 +61,20 @@
     <div class="card">
       <h2>Events</h2>
       {% if card.events and card.events|length > 0 %}
-      <table>
-        <thead><tr><th>type</th><th>recorded_at</th><th>details</th></tr></thead>
-        <tbody>
-        {% for e in card.events %}
-          <tr>
-            <td>{{ e.event_type }}</td>
-            <td>{{ e.recorded_at }}</td>
-            <td>{{ e.new_status if e.new_status else e.notes if e.notes else "" }}</td>
-          </tr>
-        {% endfor %}
-        </tbody>
-      </table>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>type</th><th>recorded_at</th><th>details</th></tr></thead>
+          <tbody>
+          {% for e in card.events %}
+            <tr>
+              <td>{{ e.event_type }}</td>
+              <td>{{ e.recorded_at }}</td>
+              <td>{{ e.new_status if e.new_status else e.notes if e.notes else "" }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
       {% else %}
         <div class="plot-fallback">No events.</div>
       {% endif %}

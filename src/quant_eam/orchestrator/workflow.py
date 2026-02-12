@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +44,13 @@ EVENTS_ORDER = [
     "DONE",
     "ERROR",
 ]
+
+
+def _utc_now_iso() -> str:
+    sde = os.getenv("SOURCE_DATE_EPOCH")
+    if sde and sde.isdigit():
+        return datetime.fromtimestamp(int(sde), tz=timezone.utc).isoformat()
+    return datetime.now(tz=timezone.utc).isoformat()
 
 
 def _env_llm_provider_id() -> str:
@@ -353,6 +361,73 @@ def advance_job_once(*, job_id: str) -> dict[str, Any]:
             if not _is_approved(events, step="strategy_spec"):
                 return {"job_id": job_id, "status": "blocked", "state": "WAITING_APPROVAL", "step": "strategy_spec"}
 
+            # 2.5) Spec-QA step (read-only) and dedicated checkpoint before compile.
+            idx_path = paths.outputs_dir / "outputs.json"
+            idx_now = json.loads(idx_path.read_text(encoding="utf-8")) if idx_path.is_file() else {}
+            if not isinstance(idx_now, dict):
+                idx_now = {}
+            spec_qa_report_path = Path(str(idx_now.get("spec_qa_report_path", "")))
+            if not spec_qa_report_path.is_file():
+                from quant_eam.agents.harness import run_agent
+
+                agent_in = {
+                    "idea_spec": spec,
+                    "blueprint_final": json.loads(Path(str(idx_now.get("blueprint_final_path", ""))).read_text(encoding="utf-8")),
+                    "signal_dsl": json.loads(Path(str(idx_now.get("signal_dsl_path", ""))).read_text(encoding="utf-8")),
+                    "variable_dictionary": json.loads(Path(str(idx_now.get("variable_dictionary_path", ""))).read_text(encoding="utf-8")),
+                    "calc_trace_plan": json.loads(Path(str(idx_now.get("calc_trace_plan_path", ""))).read_text(encoding="utf-8")),
+                }
+
+                out_dir = paths.outputs_dir / "agents" / "spec_qa"
+                agent_in_path = out_dir / "agent_input.json"
+                agent_in_path.parent.mkdir(parents=True, exist_ok=True)
+                agent_in_path.write_text(json.dumps(agent_in, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                try:
+                    res = run_agent(agent_id="spec_qa_agent_v1", input_path=agent_in_path, out_dir=out_dir, provider="mock")
+                except Exception as e:  # noqa: BLE001
+                    err_p = out_dir / "error_summary.json"
+                    append_event(
+                        job_id=job_id,
+                        event_type="ERROR",
+                        message="STOPPED_LLM_ERROR",
+                        outputs={
+                            "reason": "STOPPED_LLM_ERROR",
+                            "step": "spec_qa_agent_v1",
+                            "error": str(e),
+                            "error_summary_path": err_p.as_posix() if err_p.is_file() else None,
+                        },
+                    )
+                    append_event(job_id=job_id, event_type="DONE", outputs={"status": "stopped_llm_error"})
+                    return {"job_id": job_id, "status": "stopped", "state": "ERROR", "reason": "STOPPED_LLM_ERROR"}
+
+                spec_qa_report = out_dir / "spec_qa_report.json"
+                spec_qa_report_md = out_dir / "spec_qa_report.md"
+                finding_count = 0
+                try:
+                    rep = json.loads(spec_qa_report.read_text(encoding="utf-8"))
+                    if isinstance(rep, dict):
+                        summary = rep.get("summary") if isinstance(rep.get("summary"), dict) else {}
+                        finding_count = int(summary.get("finding_count", 0) or 0)
+                except Exception:
+                    finding_count = 0
+                write_outputs_index(
+                    job_id=job_id,
+                    updates={
+                        "spec_qa_agent_run_path": res.agent_run_path.as_posix(),
+                        "spec_qa_report_path": spec_qa_report.as_posix(),
+                        "spec_qa_report_md_path": spec_qa_report_md.as_posix(),
+                    },
+                )
+                append_event(
+                    job_id=job_id,
+                    event_type="WAITING_APPROVAL",
+                    outputs={"step": "spec_qa", "spec_qa_report_path": spec_qa_report.as_posix(), "finding_count": finding_count},
+                )
+                return {"job_id": job_id, "status": "blocked", "state": "WAITING_APPROVAL", "step": "spec_qa"}
+
+            if not _is_approved(events, step="spec_qa"):
+                return {"job_id": job_id, "status": "blocked", "state": "WAITING_APPROVAL", "step": "spec_qa"}
+
             # 2) Compile runspec from blueprint_final.
             if not _has_event(events, "RUNSPEC_COMPILED"):
                 idx = json.loads((paths.outputs_dir / "outputs.json").read_text(encoding="utf-8"))
@@ -379,6 +454,7 @@ def advance_job_once(*, job_id: str) -> dict[str, Any]:
 
             # 3) CalcTrace Preview (as_of filtered via DataCatalog), then optional approval.
             if not _has_event(events, "TRACE_PREVIEW_COMPLETED"):
+                from quant_eam.agents.harness import run_agent
                 from quant_eam.diagnostics.calc_trace_preview import run_calc_trace_preview
 
                 idx = json.loads((paths.outputs_dir / "outputs.json").read_text(encoding="utf-8"))
@@ -389,6 +465,120 @@ def advance_job_once(*, job_id: str) -> dict[str, Any]:
                 as_of = str(seg.get("as_of", ""))
                 syms = runspec.get("extensions", {}).get("symbols", []) if isinstance(runspec, dict) else []
                 symbols = [str(s) for s in syms] if isinstance(syms, list) else []
+
+                backtest_run_path = Path(str(idx.get("backtest_agent_run_path", "")))
+                if not backtest_run_path.is_file():
+                    fetch_request = None
+                    if isinstance(spec.get("fetch_request"), dict):
+                        fetch_request = spec.get("fetch_request")
+                    else:
+                        spec_ext = spec.get("extensions") if isinstance(spec, dict) else None
+                        if isinstance(spec_ext, dict) and isinstance(spec_ext.get("fetch_request"), dict):
+                            fetch_request = spec_ext.get("fetch_request")
+                    if not isinstance(fetch_request, dict):
+                        rs_ext = runspec.get("extensions") if isinstance(runspec, dict) else None
+                        if isinstance(rs_ext, dict) and isinstance(rs_ext.get("fetch_request"), dict):
+                            fetch_request = rs_ext.get("fetch_request")
+                    backtest_in = {
+                        "job_id": job_id,
+                        "runspec_path": (paths.outputs_dir / "runspec.json").as_posix(),
+                        "policy_bundle_path": policy_bundle_path,
+                        "trace_preview_path": str(idx.get("calc_trace_preview_path", "")),
+                    }
+                    if isinstance(fetch_request, dict):
+                        backtest_in["fetch_request"] = fetch_request
+                    backtest_out_dir = paths.outputs_dir / "agents" / "backtest"
+                    backtest_in_path = backtest_out_dir / "agent_input.json"
+                    backtest_in_path.parent.mkdir(parents=True, exist_ok=True)
+                    backtest_in_path.write_text(json.dumps(backtest_in, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                    try:
+                        backtest_res = run_agent(
+                            agent_id="backtest_agent_v1",
+                            input_path=backtest_in_path,
+                            out_dir=backtest_out_dir,
+                            provider="mock",
+                        )
+                    except Exception as e:  # noqa: BLE001
+                        err_p = backtest_out_dir / "error_summary.json"
+                        append_event(
+                            job_id=job_id,
+                            event_type="ERROR",
+                            message="STOPPED_LLM_ERROR",
+                            outputs={
+                                "reason": "STOPPED_LLM_ERROR",
+                                "step": "backtest_agent_v1",
+                                "error": str(e),
+                                "error_summary_path": err_p.as_posix() if err_p.is_file() else None,
+                            },
+                        )
+                        append_event(job_id=job_id, event_type="DONE", outputs={"status": "stopped_llm_error"})
+                        return {"job_id": job_id, "status": "stopped", "state": "ERROR", "reason": "STOPPED_LLM_ERROR"}
+                    backtest_plan = backtest_out_dir / "backtest_plan.json"
+                    write_outputs_index(
+                        job_id=job_id,
+                        updates={
+                            "backtest_agent_run_path": backtest_res.agent_run_path.as_posix(),
+                            "backtest_plan_path": backtest_plan.as_posix(),
+                        },
+                    )
+                    idx = json.loads((paths.outputs_dir / "outputs.json").read_text(encoding="utf-8"))
+
+                demo_run_path = Path(str(idx.get("demo_agent_run_path", "")))
+                if not demo_run_path.is_file():
+                    fetch_request = None
+                    if isinstance(spec.get("fetch_request"), dict):
+                        fetch_request = spec.get("fetch_request")
+                    else:
+                        spec_ext = spec.get("extensions") if isinstance(spec, dict) else None
+                        if isinstance(spec_ext, dict) and isinstance(spec_ext.get("fetch_request"), dict):
+                            fetch_request = spec_ext.get("fetch_request")
+                    if not isinstance(fetch_request, dict):
+                        rs_ext = runspec.get("extensions") if isinstance(runspec, dict) else None
+                        if isinstance(rs_ext, dict) and isinstance(rs_ext.get("fetch_request"), dict):
+                            fetch_request = rs_ext.get("fetch_request")
+                    demo_in = {
+                        "snapshot_id": str(runspec.get("data_snapshot_id", snapshot_id)),
+                        "start": start,
+                        "end": end,
+                        "as_of": as_of,
+                        "symbols": symbols,
+                        "runspec_path": (paths.outputs_dir / "runspec.json").as_posix(),
+                        "signal_dsl_path": str(idx.get("signal_dsl_path", "")),
+                        "variable_dictionary_path": str(idx.get("variable_dictionary_path", "")),
+                        "calc_trace_plan_path": str(idx.get("calc_trace_plan_path", "")),
+                    }
+                    if isinstance(fetch_request, dict):
+                        demo_in["fetch_request"] = fetch_request
+                    demo_out_dir = paths.outputs_dir / "agents" / "demo"
+                    demo_in_path = demo_out_dir / "agent_input.json"
+                    demo_in_path.parent.mkdir(parents=True, exist_ok=True)
+                    demo_in_path.write_text(json.dumps(demo_in, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                    try:
+                        demo_res = run_agent(agent_id="demo_agent_v1", input_path=demo_in_path, out_dir=demo_out_dir, provider="mock")
+                    except Exception as e:  # noqa: BLE001
+                        err_p = demo_out_dir / "error_summary.json"
+                        append_event(
+                            job_id=job_id,
+                            event_type="ERROR",
+                            message="STOPPED_LLM_ERROR",
+                            outputs={
+                                "reason": "STOPPED_LLM_ERROR",
+                                "step": "demo_agent_v1",
+                                "error": str(e),
+                                "error_summary_path": err_p.as_posix() if err_p.is_file() else None,
+                            },
+                        )
+                        append_event(job_id=job_id, event_type="DONE", outputs={"status": "stopped_llm_error"})
+                        return {"job_id": job_id, "status": "stopped", "state": "ERROR", "reason": "STOPPED_LLM_ERROR"}
+                    demo_plan = demo_out_dir / "demo_plan.json"
+                    write_outputs_index(
+                        job_id=job_id,
+                        updates={
+                            "demo_agent_run_path": demo_res.agent_run_path.as_posix(),
+                            "demo_plan_path": demo_plan.as_posix(),
+                        },
+                    )
+                    idx = json.loads((paths.outputs_dir / "outputs.json").read_text(encoding="utf-8"))
 
                 out_dir = paths.outputs_dir / "trace_preview"
                 out_csv, meta_path, meta = run_calc_trace_preview(
@@ -406,6 +596,7 @@ def advance_job_once(*, job_id: str) -> dict[str, Any]:
                 write_outputs_index(
                     job_id=job_id,
                     updates={
+                        "demo_agent_run_path": str(idx.get("demo_agent_run_path", "")),
                         "calc_trace_preview_path": out_csv.as_posix(),
                         "trace_meta_path": meta_path.as_posix(),
                         "trace_rows_written": int(meta.rows_written),
@@ -440,8 +631,28 @@ def advance_job_once(*, job_id: str) -> dict[str, Any]:
                 out = _parse_json_maybe(msg)
                 run_id = str(out.get("run_id", "")).strip()
                 dossier_path = str(out.get("dossier_path", "")).strip()
-                write_outputs_index(job_id=job_id, updates={"run_id": run_id, "dossier_path": dossier_path})
-                append_event(job_id=job_id, event_type="RUN_COMPLETED", outputs={"run_id": run_id, "dossier_path": dossier_path})
+                run_link_path = paths.outputs_dir / "run_link.json"
+                run_link_doc = {
+                    "schema_version": "job_run_link_v1",
+                    "job_id": job_id,
+                    "run_id": run_id,
+                    "dossier_path": dossier_path,
+                    "gate_results_path": None,
+                    "overall_pass": None,
+                    "status": "run_completed",
+                    "updated_at": _utc_now_iso(),
+                }
+                run_link_path.parent.mkdir(parents=True, exist_ok=True)
+                run_link_path.write_text(json.dumps(run_link_doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                write_outputs_index(
+                    job_id=job_id,
+                    updates={"run_id": run_id, "dossier_path": dossier_path, "run_link_path": run_link_path.as_posix()},
+                )
+                append_event(
+                    job_id=job_id,
+                    event_type="RUN_COMPLETED",
+                    outputs={"run_id": run_id, "dossier_path": dossier_path, "run_link_path": run_link_path.as_posix()},
+                )
                 continue
 
             # 5) Gates
@@ -455,9 +666,38 @@ def advance_job_once(*, job_id: str) -> dict[str, Any]:
                 out = _parse_json_maybe(msg)
                 gate_results_path = str(out.get("gate_results_path", "")).strip()
                 overall_pass = bool(out.get("overall_pass"))
+                run_link_path = paths.outputs_dir / "run_link.json"
+                if run_link_path.is_file():
+                    try:
+                        run_link_doc = json.loads(run_link_path.read_text(encoding="utf-8"))
+                        if not isinstance(run_link_doc, dict):
+                            run_link_doc = {}
+                    except Exception:
+                        run_link_doc = {}
+                else:
+                    run_link_doc = {}
+                run_link_doc.update(
+                    {
+                        "schema_version": "job_run_link_v1",
+                        "job_id": job_id,
+                        "run_id": str(idx.get("run_id", "")).strip(),
+                        "dossier_path": str(idx.get("dossier_path", "")).strip(),
+                        "gate_results_path": gate_results_path,
+                        "overall_pass": overall_pass,
+                        "status": "gates_completed",
+                        "updated_at": _utc_now_iso(),
+                    }
+                )
+                run_link_path.parent.mkdir(parents=True, exist_ok=True)
+                run_link_path.write_text(json.dumps(run_link_doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
                 write_outputs_index(
                     job_id=job_id,
-                    updates={"gate_results_path": gate_results_path, "overall_pass": overall_pass, "gate_suite_id": out.get("gate_suite_id")},
+                    updates={
+                        "gate_results_path": gate_results_path,
+                        "overall_pass": overall_pass,
+                        "gate_suite_id": out.get("gate_suite_id"),
+                        "run_link_path": run_link_path.as_posix(),
+                    },
                 )
                 append_event(job_id=job_id, event_type="GATES_COMPLETED", outputs={"gate_results_path": gate_results_path, "overall_pass": overall_pass})
                 continue
@@ -481,6 +721,180 @@ def advance_job_once(*, job_id: str) -> dict[str, Any]:
                         card_id = None
                 write_outputs_index(job_id=job_id, updates={"trial_recorded": True, "card_id": card_id})
                 append_event(job_id=job_id, event_type="REGISTRY_UPDATED", outputs={"card_id": card_id})
+                continue
+
+            # 6.5) Phase-45: productized role agents (diagnostics/curator/composer), evidence-only.
+            idx = json.loads((paths.outputs_dir / "outputs.json").read_text(encoding="utf-8"))
+            diag_run_existing = Path(str(idx.get("diagnostics_agent_run_path", "")))
+            if not diag_run_existing.is_file():
+                from quant_eam.agents.harness import run_agent
+
+                run_id = str(idx.get("run_id", "")).strip()
+                dossier_path = Path(str(idx.get("dossier_path", "")))
+                gate_results_path = Path(str(idx.get("gate_results_path", "")))
+                gate_results = json.loads(gate_results_path.read_text(encoding="utf-8")) if gate_results_path.is_file() else {}
+                failed_gates: list[str] = []
+                if isinstance(gate_results, dict) and isinstance(gate_results.get("results"), list):
+                    for row in gate_results["results"]:
+                        if isinstance(row, dict) and not bool(row.get("pass")):
+                            gid = str(row.get("gate_id") or "").strip()
+                            if gid:
+                                failed_gates.append(gid)
+
+                agent_in = {
+                    "job_id": job_id,
+                    "run_id": run_id,
+                    "dossier_path": dossier_path.as_posix(),
+                    "gate_results_path": gate_results_path.as_posix(),
+                    "failed_gates": sorted(set(failed_gates)),
+                }
+                out_dir = paths.outputs_dir / "agents" / "diagnostics_agent"
+                agent_in_path = out_dir / "agent_input.json"
+                agent_in_path.parent.mkdir(parents=True, exist_ok=True)
+                agent_in_path.write_text(json.dumps(agent_in, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                try:
+                    res = run_agent(agent_id="diagnostics_agent_v1", input_path=agent_in_path, out_dir=out_dir, provider="mock")
+                except Exception as e:  # noqa: BLE001
+                    err_p = out_dir / "error_summary.json"
+                    append_event(
+                        job_id=job_id,
+                        event_type="ERROR",
+                        message="STOPPED_LLM_ERROR",
+                        outputs={
+                            "reason": "STOPPED_LLM_ERROR",
+                            "step": "diagnostics_agent_v1",
+                            "error": str(e),
+                            "error_summary_path": err_p.as_posix() if err_p.is_file() else None,
+                        },
+                    )
+                    append_event(job_id=job_id, event_type="DONE", outputs={"status": "stopped_llm_error"})
+                    return {"job_id": job_id, "status": "stopped", "state": "ERROR", "reason": "STOPPED_LLM_ERROR"}
+
+                plan_path = out_dir / "diagnostics_plan.json"
+                write_outputs_index(
+                    job_id=job_id,
+                    updates={
+                        "diagnostics_agent_run_path": res.agent_run_path.as_posix(),
+                        "diagnostics_plan_path": plan_path.as_posix(),
+                    },
+                )
+                append_event(
+                    job_id=job_id,
+                    event_type="REGISTRY_UPDATED",
+                    message="DIAGNOSTICS_AGENT_PROPOSED",
+                    outputs={
+                        "action": "diagnostics_agent_proposed",
+                        "diagnostics_plan_path": plan_path.as_posix(),
+                        "diagnostics_agent_run_path": res.agent_run_path.as_posix(),
+                    },
+                )
+                continue
+
+            idx = json.loads((paths.outputs_dir / "outputs.json").read_text(encoding="utf-8"))
+            curator_run_existing = Path(str(idx.get("registry_curator_agent_run_path", "")))
+            if not curator_run_existing.is_file():
+                from quant_eam.agents.harness import run_agent
+
+                agent_in = {
+                    "job_id": job_id,
+                    "run_id": str(idx.get("run_id", "")).strip(),
+                    "card_id": str(idx.get("card_id", "")).strip(),
+                    "overall_pass": bool(idx.get("overall_pass")),
+                    "trial_recorded": bool(idx.get("trial_recorded")),
+                }
+                out_dir = paths.outputs_dir / "agents" / "registry_curator"
+                agent_in_path = out_dir / "agent_input.json"
+                agent_in_path.parent.mkdir(parents=True, exist_ok=True)
+                agent_in_path.write_text(json.dumps(agent_in, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                try:
+                    res = run_agent(agent_id="registry_curator_v1", input_path=agent_in_path, out_dir=out_dir, provider="mock")
+                except Exception as e:  # noqa: BLE001
+                    err_p = out_dir / "error_summary.json"
+                    append_event(
+                        job_id=job_id,
+                        event_type="ERROR",
+                        message="STOPPED_LLM_ERROR",
+                        outputs={
+                            "reason": "STOPPED_LLM_ERROR",
+                            "step": "registry_curator_v1",
+                            "error": str(e),
+                            "error_summary_path": err_p.as_posix() if err_p.is_file() else None,
+                        },
+                    )
+                    append_event(job_id=job_id, event_type="DONE", outputs={"status": "stopped_llm_error"})
+                    return {"job_id": job_id, "status": "stopped", "state": "ERROR", "reason": "STOPPED_LLM_ERROR"}
+
+                summary_path = out_dir / "registry_curator_summary.json"
+                write_outputs_index(
+                    job_id=job_id,
+                    updates={
+                        "registry_curator_agent_run_path": res.agent_run_path.as_posix(),
+                        "registry_curator_summary_path": summary_path.as_posix(),
+                    },
+                )
+                append_event(
+                    job_id=job_id,
+                    event_type="REGISTRY_UPDATED",
+                    message="REGISTRY_CURATOR_PROPOSED",
+                    outputs={
+                        "action": "registry_curator_proposed",
+                        "registry_curator_summary_path": summary_path.as_posix(),
+                        "registry_curator_agent_run_path": res.agent_run_path.as_posix(),
+                    },
+                )
+                continue
+
+            idx = json.loads((paths.outputs_dir / "outputs.json").read_text(encoding="utf-8"))
+            composer_run_existing = Path(str(idx.get("composer_agent_run_path", "")))
+            if not composer_run_existing.is_file():
+                from quant_eam.agents.harness import run_agent
+
+                agent_in = {
+                    "job_id": job_id,
+                    "run_id": str(idx.get("run_id", "")).strip(),
+                    "card_id": str(idx.get("card_id", "")).strip(),
+                    "overall_pass": bool(idx.get("overall_pass")),
+                }
+                out_dir = paths.outputs_dir / "agents" / "composer_agent"
+                agent_in_path = out_dir / "agent_input.json"
+                agent_in_path.parent.mkdir(parents=True, exist_ok=True)
+                agent_in_path.write_text(json.dumps(agent_in, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+                try:
+                    res = run_agent(agent_id="composer_agent_v1", input_path=agent_in_path, out_dir=out_dir, provider="mock")
+                except Exception as e:  # noqa: BLE001
+                    err_p = out_dir / "error_summary.json"
+                    append_event(
+                        job_id=job_id,
+                        event_type="ERROR",
+                        message="STOPPED_LLM_ERROR",
+                        outputs={
+                            "reason": "STOPPED_LLM_ERROR",
+                            "step": "composer_agent_v1",
+                            "error": str(e),
+                            "error_summary_path": err_p.as_posix() if err_p.is_file() else None,
+                        },
+                    )
+                    append_event(job_id=job_id, event_type="DONE", outputs={"status": "stopped_llm_error"})
+                    return {"job_id": job_id, "status": "stopped", "state": "ERROR", "reason": "STOPPED_LLM_ERROR"}
+
+                plan_path = out_dir / "composer_agent_plan.json"
+                write_outputs_index(
+                    job_id=job_id,
+                    updates={
+                        "composer_agent_run_path": res.agent_run_path.as_posix(),
+                        "composer_agent_plan_path": plan_path.as_posix(),
+                    },
+                )
+                append_event(
+                    job_id=job_id,
+                    event_type="REGISTRY_UPDATED",
+                    message="COMPOSER_AGENT_PROPOSED",
+                    outputs={
+                        "action": "composer_agent_proposed",
+                        "composer_agent_plan_path": plan_path.as_posix(),
+                        "composer_agent_run_path": res.agent_run_path.as_posix(),
+                    },
+                )
                 continue
 
             # 7) ReportAgent (deterministic, references artifacts).

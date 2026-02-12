@@ -1,0 +1,30 @@
+{
+  "candidate_gates": [
+    {
+      "description": "Fail when max drawdown exceeds diagnostic threshold.",
+      "evidence_refs": [
+        "diagnostics/diag_drawdown_v1/diagnostic_report.json#/checks/max_drawdown_guard",
+        "metrics.json#/max_drawdown"
+      ],
+      "expression": "metrics.max_drawdown <= 0.25",
+      "gate_id": "diag_max_drawdown_guard",
+      "severity": "fail",
+      "threshold": 0.25
+    },
+    {
+      "description": "Warn when sharpe drops below floor.",
+      "evidence_refs": [
+        "diagnostics/diag_drawdown_v1/diagnostic_report.json#/checks/sharpe_floor",
+        "metrics.json#/sharpe"
+      ],
+      "expression": "metrics.sharpe >= 0.7",
+      "gate_id": "diag_sharpe_floor",
+      "severity": "warn",
+      "threshold": 0.7
+    }
+  ],
+  "gate_spec_id": "gate_spec_diag_drawdown_v1",
+  "schema_version": "gate_spec_v1",
+  "source_diagnostic_id": "diag_drawdown_v1",
+  "source_run_id": "abc123def456"
+}

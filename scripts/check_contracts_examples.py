@@ -4,6 +4,11 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
 from quant_eam.contracts import validate as contracts_validate
 
 
@@ -15,6 +20,8 @@ REQUIRED_SCHEMA_FILES = [
     "variable_dictionary_v1.json",
     "calc_trace_plan_v1.json",
     "signal_dsl_v1.json",
+    "diagnostic_spec_v1.json",
+    "gate_spec_v1.json",
 ]
 
 
@@ -73,4 +80,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

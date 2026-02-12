@@ -1,0 +1,1408 @@
+{
+  "function_count": 77,
+  "functions": [
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_bondInformation",
+      "dataset_id": "bond_reference",
+      "default_kwargs": {
+        "symbol": "240011.IB"
+      },
+      "domain": "bond",
+      "function": "fetch_bondInformation",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_bond_date_list",
+      "dataset_id": "bond_date_list",
+      "default_kwargs": {},
+      "domain": "bond",
+      "function": "fetch_bond_date_list",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_bond_day",
+      "dataset_id": "bond_day",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01",
+        "symbol": "240011.IB"
+      },
+      "domain": "bond",
+      "function": "fetch_bond_day",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_bond_industry_settlement",
+      "dataset_id": "bond_industry_settlement",
+      "default_kwargs": {},
+      "domain": "bond",
+      "function": "fetch_bond_industry_settlement",
+      "notes": "user rename override -> `fetch_bond_industry_cfets`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_bond_min",
+      "dataset_id": "bond_min",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01",
+        "symbol": "240011.IB"
+      },
+      "domain": "bond",
+      "function": "fetch_bond_min",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_bond_amount",
+      "dataset_id": "cfets_bond_amount",
+      "default_kwargs": {
+        "end": "2026-02-11",
+        "start": "2026-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_cfets_bond_amount",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_credit_item",
+      "dataset_id": "cfets_credit_item",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_cfets_credit_item",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_credit_side",
+      "dataset_id": "cfets_credit_side",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_cfets_credit_side",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_dfz_bond_day",
+      "dataset_id": "cfets_dfz_bond_day",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01",
+        "symbol": "240011.IB"
+      },
+      "domain": "bond",
+      "function": "fetch_cfets_dfz_bond_day",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_repo_buyback_item",
+      "dataset_id": "cfets_repo_buyback_item",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_cfets_repo_buyback_item",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_repo_buyout_item",
+      "dataset_id": "cfets_repo_buyout_item",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_cfets_repo_buyout_item",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_repo_item",
+      "dataset_id": "cfets_repo_item",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_cfets_repo_item",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_cfets_repo_side",
+      "dataset_id": "cfets_repo_side",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_cfets_repo_side",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_clean_quote",
+      "dataset_id": "clean_quote",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01",
+        "symbol": "240011.IB"
+      },
+      "domain": "bond",
+      "function": "fetch_clean_quote",
+      "notes": "user rename override -> `fetch_bond_quote`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_clean_transaction",
+      "dataset_id": "clean_transaction",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01",
+        "symbol": "240011.IB"
+      },
+      "domain": "generic",
+      "function": "fetch_clean_transaction",
+      "notes": "user rename override -> `fetch_bond_transaction`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_realtime_bid",
+      "dataset_id": "realtime_bid",
+      "default_kwargs": {},
+      "domain": "bond",
+      "function": "fetch_realtime_bid",
+      "notes": "user rename override -> `fetch_realtime_bond_quote`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_realtime_min",
+      "dataset_id": "realtime_min",
+      "default_kwargs": {
+        "symbol": "240011.IB"
+      },
+      "domain": "generic",
+      "function": "fetch_realtime_min",
+      "notes": "user rename override -> `fetch_realtime_bond_min`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_realtime_transaction",
+      "dataset_id": "realtime_transaction",
+      "default_kwargs": {
+        "symbol": "240011.IB"
+      },
+      "domain": "generic",
+      "function": "fetch_realtime_transaction",
+      "notes": "user rename override -> `fetch_realtime_bond_transaction`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_settlement_bond_day",
+      "dataset_id": "settlement_bond_day",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01",
+        "symbol": "240011.IB"
+      },
+      "domain": "bond",
+      "function": "fetch_settlement_bond_day",
+      "notes": "user rename override -> `fetch_bond_day_cfets`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_wind_indicators",
+      "dataset_id": "wind_indicators",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "indicators": "all",
+        "start": "2010-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_wind_indicators",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_yc_valuation",
+      "dataset_id": "yc_valuation",
+      "default_kwargs": {
+        "end": "2026-02-11",
+        "start": "2026-01-01",
+        "symbol": "国开"
+      },
+      "domain": "bond",
+      "function": "fetch_yc_valuation",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_zz_bond_valuation",
+      "dataset_id": "zz_bond_valuation",
+      "default_kwargs": {
+        "end": "2026-02-11",
+        "start": "2026-01-01",
+        "symbol": "240011.IB"
+      },
+      "domain": "bond",
+      "function": "fetch_zz_bond_valuation",
+      "notes": "user rename override -> `fetch_bond_valuation`; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_zz_index",
+      "dataset_id": "zz_index",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01",
+        "symbol": "all"
+      },
+      "domain": "index",
+      "function": "fetch_zz_index",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_zz_valuation",
+      "dataset_id": "zz_valuation",
+      "default_kwargs": {
+        "end": "2030-01-01",
+        "start": "2010-01-01",
+        "symbol": "国开"
+      },
+      "domain": "bond",
+      "function": "fetch_zz_valuation",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wbdata_local/bond_fetch.py`",
+      "provider": "wbdata_local",
+      "smoke_timeout_sec": 30,
+      "source": "wbdata",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_ctp_future_list",
+      "dataset_id": "ctp_future_list",
+      "default_kwargs": {},
+      "domain": "future",
+      "function": "fetch_ctp_future_list",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_ctp_tick",
+      "dataset_id": "ctp_tick",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2024-01-31",
+        "frequence": "day",
+        "start": "2024-01-01"
+      },
+      "domain": "generic",
+      "function": "fetch_ctp_tick",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_dk_data",
+      "dataset_id": "dk_data",
+      "default_kwargs": {
+        "code": "588000",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "dk",
+      "function": "fetch_dk_data",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_etf_dk",
+      "dataset_id": "etf_dk",
+      "default_kwargs": {
+        "code": "588000",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "dk",
+      "function": "fetch_etf_dk",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_etf_list",
+      "dataset_id": "etf_list",
+      "default_kwargs": {},
+      "domain": "etf",
+      "function": "fetch_etf_list",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_etf_name",
+      "dataset_id": "etf_name",
+      "default_kwargs": {
+        "code": "000001"
+      },
+      "domain": "etf",
+      "function": "fetch_etf_name",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_financial_report",
+      "dataset_id": "financial_report",
+      "default_kwargs": {
+        "code": "000001",
+        "report_date": "2024-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_financial_report",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_financial_report_adv",
+      "dataset_id": "financial_report_adv",
+      "default_kwargs": {
+        "code": "000001",
+        "start": "2024-01-01"
+      },
+      "domain": "bond",
+      "function": "fetch_financial_report_adv",
+      "notes": "adv removed by naming rule -> `fetch_financial_report`; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_future_day",
+      "dataset_id": "future_day",
+      "default_kwargs": {
+        "code": "TL8",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "future",
+      "function": "fetch_future_day",
+      "notes": "wequant priority for fetch_* (collision with wbdata); source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_future_dk",
+      "dataset_id": "future_dk",
+      "default_kwargs": {
+        "code": "TL8",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "dk",
+      "function": "fetch_future_dk",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_future_list",
+      "dataset_id": "future_list",
+      "default_kwargs": {},
+      "domain": "future",
+      "function": "fetch_future_list",
+      "notes": "wequant priority for fetch_* (collision with wbdata); source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_future_min",
+      "dataset_id": "future_min",
+      "default_kwargs": {
+        "code": "TL8",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "future",
+      "function": "fetch_future_min",
+      "notes": "wequant priority for fetch_* (collision with wbdata); source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_future_tick",
+      "dataset_id": "future_tick",
+      "default_kwargs": {},
+      "domain": "future",
+      "function": "fetch_future_tick",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_get_hkstock_list",
+      "dataset_id": "get_hkstock_list",
+      "default_kwargs": {},
+      "domain": "stock",
+      "function": "fetch_get_hkstock_list",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_hkstock_day",
+      "dataset_id": "hkstock_day",
+      "default_kwargs": {
+        "code": "09988",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "stock",
+      "function": "fetch_hkstock_day",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_hkstock_dk",
+      "dataset_id": "hkstock_dk",
+      "default_kwargs": {
+        "code": "09988",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "dk",
+      "function": "fetch_hkstock_dk",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_day",
+      "dataset_id": "index_day",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "index",
+      "function": "fetch_index_day",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_day_adv",
+      "dataset_id": "index_day_adv",
+      "default_kwargs": {
+        "code": "000001",
+        "start": "2024-01-01"
+      },
+      "domain": "index",
+      "function": "fetch_index_day_adv",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_dk",
+      "dataset_id": "index_dk",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "dk",
+      "function": "fetch_index_dk",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_list",
+      "dataset_id": "index_list",
+      "default_kwargs": {},
+      "domain": "index",
+      "function": "fetch_index_list",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_min",
+      "dataset_id": "index_min",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2024-01-31",
+        "start": "2020-01-01"
+      },
+      "domain": "index",
+      "function": "fetch_index_min",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_name",
+      "dataset_id": "index_name",
+      "default_kwargs": {
+        "code": "000001"
+      },
+      "domain": "index",
+      "function": "fetch_index_name",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_transaction",
+      "dataset_id": "index_transaction",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "index",
+      "function": "fetch_index_transaction",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_index_transaction_adv",
+      "dataset_id": "index_transaction_adv",
+      "default_kwargs": {
+        "code": "000001",
+        "start": "2024-01-01"
+      },
+      "domain": "index",
+      "function": "fetch_index_transaction_adv",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_lhb",
+      "dataset_id": "generic_reference",
+      "default_kwargs": {
+        "date": "2024-01-01"
+      },
+      "domain": "generic",
+      "function": "fetch_lhb",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_lof_dk",
+      "dataset_id": "lof_dk",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "dk",
+      "function": "fetch_lof_dk",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_quotation",
+      "dataset_id": "generic_reference",
+      "default_kwargs": {
+        "code": "000001"
+      },
+      "domain": "generic",
+      "function": "fetch_quotation",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_quotations",
+      "dataset_id": "generic_reference",
+      "default_kwargs": {},
+      "domain": "generic",
+      "function": "fetch_quotations",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_reits_dk",
+      "dataset_id": "reits_dk",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "dk",
+      "function": "fetch_reits_dk",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_adj",
+      "dataset_id": "stock_adj",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_adj",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_block",
+      "dataset_id": "stock_block",
+      "default_kwargs": {},
+      "domain": "stock",
+      "function": "fetch_stock_block",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_block_history",
+      "dataset_id": "stock_block_history",
+      "default_kwargs": {
+        "code": "600010",
+        "end": "2022-08-02",
+        "format": "pd",
+        "start": "2022-08-01"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_block_history",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_block_slice_history",
+      "dataset_id": "stock_block_slice_history",
+      "default_kwargs": {},
+      "domain": "stock",
+      "function": "fetch_stock_block_slice_history",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_day",
+      "dataset_id": "stock_day",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_day",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_day_adv",
+      "dataset_id": "stock_day_adv",
+      "default_kwargs": {
+        "code": "000001"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_day_adv",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_divyield",
+      "dataset_id": "stock_divyield",
+      "default_kwargs": {
+        "code": "000001",
+        "start": "2024-01-01"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_divyield",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_dk",
+      "dataset_id": "stock_dk",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "dk",
+      "function": "fetch_stock_dk",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_dk_adv",
+      "dataset_id": "stock_dk_adv",
+      "default_kwargs": {
+        "code": "000001"
+      },
+      "domain": "dk",
+      "function": "fetch_stock_dk_adv",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_financial_calendar",
+      "dataset_id": "stock_financial_calendar",
+      "default_kwargs": {
+        "code": "000001",
+        "start": "2024-01-01"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_financial_calendar",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_full",
+      "dataset_id": "stock_full",
+      "default_kwargs": {},
+      "domain": "stock",
+      "function": "fetch_stock_full",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_info",
+      "dataset_id": "stock_info",
+      "default_kwargs": {
+        "code": "000001"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_info",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_list",
+      "dataset_id": "stock_list",
+      "default_kwargs": {},
+      "domain": "stock",
+      "function": "fetch_stock_list",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_min",
+      "dataset_id": "stock_min",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_min",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_min_adv",
+      "dataset_id": "stock_min_adv",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2026-01-01",
+        "start": "2024-01-01"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_min_adv",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_name",
+      "dataset_id": "stock_name",
+      "default_kwargs": {
+        "code": "000001"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_name",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_realtime_adv",
+      "dataset_id": "stock_realtime_adv",
+      "default_kwargs": {},
+      "domain": "stock",
+      "function": "fetch_stock_realtime_adv",
+      "notes": "adv removed by naming rule -> `fetch_stock_realtime`; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_realtime_min",
+      "dataset_id": "stock_realtime_min",
+      "default_kwargs": {
+        "code": "000001"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_realtime_min",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_terminated",
+      "dataset_id": "stock_terminated",
+      "default_kwargs": {},
+      "domain": "stock",
+      "function": "fetch_stock_terminated",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_to_market_date",
+      "dataset_id": "stock_to_market_date",
+      "default_kwargs": {
+        "stock_code": null
+      },
+      "domain": "stock",
+      "function": "fetch_stock_to_market_date",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_transaction",
+      "dataset_id": "stock_transaction",
+      "default_kwargs": {
+        "code": "000001",
+        "end": "2024-01-31",
+        "start": "2024-01-01"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_transaction",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_transaction_adv",
+      "dataset_id": "stock_transaction_adv",
+      "default_kwargs": {
+        "code": "000001",
+        "start": "2024-01-01"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_transaction_adv",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query_advance.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_stock_xdxr",
+      "dataset_id": "stock_xdxr",
+      "default_kwargs": {
+        "code": "000001"
+      },
+      "domain": "stock",
+      "function": "fetch_stock_xdxr",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    },
+    {
+      "callable_path": "quant_eam.qa_fetch.providers.function_impl.fetch_trade_date",
+      "dataset_id": "trade_date",
+      "default_kwargs": {},
+      "domain": "generic",
+      "function": "fetch_trade_date",
+      "notes": "standard mapping; source=`src/quant_eam/qa_fetch/providers/wequant_local/wefetch/query.py`",
+      "provider": "wequant_local",
+      "smoke_timeout_sec": 30,
+      "source": "wequant",
+      "status": "active",
+      "supports_adjust": [
+        "raw"
+      ]
+    }
+  ],
+  "generated_at_utc": "2026-02-12T03:40:23.140742+00:00",
+  "schema_version": "qa_fetch_function_registry_v1"
+}

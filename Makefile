@@ -1,4 +1,4 @@
-.PHONY: init-env doctor up down logs test lint fmt shell
+.PHONY: init-env doctor up down logs test lint fmt shell qa-fetch-matrix qa-fetch-registry qa-fetch-probe-v3 qa-fetch-probe-v3-notebook
 
 init-env:
 	@test -f .env || (cp .env.example .env && echo "Created .env from .env.example; please edit paths/UID/GID")
@@ -42,3 +42,18 @@ shell:
 
 docs-check:
 	python3 scripts/check_docs_tree.py
+
+qa-fetch-matrix:
+	python3 scripts/generate_qa_fetch_rename_matrix.py
+
+qa-fetch-registry:
+	python3 scripts/generate_qa_fetch_registry_json.py
+
+qa-fetch-probe-v3:
+	python3 scripts/run_qa_fetch_probe_v3.py
+
+qa-fetch-probe-v3-notebook:
+	docker compose run --rm api bash -lc 'python -m pip install --no-cache-dir jupyter nbconvert ipykernel && jupyter nbconvert --to notebook --execute notebooks/qa_fetch_probe_v3.ipynb --output qa_fetch_probe_v3.executed.ipynb --output-dir notebooks --ExecutePreprocessor.timeout=0'
+
+subagent-check:
+	@python3 scripts/check_subagent_packet.py --phase-id "$${PHASE_ID:?PHASE_ID is required}"

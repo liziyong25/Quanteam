@@ -68,6 +68,12 @@ Expression AST must have a single source of truth:
   - Docs: `docs/09_registry/experience_cards_v1.md`
   - Producer: Registry (create-card)
   - Consumer: UI / composer (future)
+- Diagnostic Spec: `contracts/diagnostic_spec_v1.json`
+  - Docs: `docs/03_contracts/diagnostic_spec_v1.md`
+  - Examples: `contracts/examples/diagnostic_spec_ok.json`, `contracts/examples/diagnostic_spec_bad.json`
+- Gate Spec: `contracts/gate_spec_v1.json`
+  - Docs: `docs/03_contracts/gate_spec_v1.md`
+  - Examples: `contracts/examples/gate_spec_ok.json`, `contracts/examples/gate_spec_bad.json`
 
 ## Validator
 

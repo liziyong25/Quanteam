@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Prompt Studio</h1>
+    <p class="page-subtitle">Browse canonical + overlay prompt versions and jump into per-agent publish/pin controls.</p>
+  </div>
+
+  <div class="card">
+    <h2>Agents</h2>
+    {% if agents and agents|length > 0 %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>agent_id</th>
+              <th>versions</th>
+              <th>latest</th>
+              <th>source</th>
+              <th>output_schema_version</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in agents %}
+              <tr>
+                <td><a href="/ui/prompts/{{ a.agent_id }}">{{ a.agent_id }}</a></td>
+                <td>{{ a.versions | join(", ") }}</td>
+                <td>{{ a.latest_version }}</td>
+                <td><span class="pill">{{ a.latest_source }}</span></td>
+                <td><code>{{ a.latest_output_schema_version }}</code></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No prompt agents found under canonical/overlay roots.</div>
+    {% endif %}
+  </div>
+{% endblock %}

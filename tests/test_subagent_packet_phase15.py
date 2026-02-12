@@ -1,0 +1,295 @@
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+import yaml
+
+
+REQUIRED_CHECKS = [
+    "task_card_published",
+    "executor_is_codex_cli",
+    "allowed_paths_only",
+    "acceptance_commands_executed",
+    "ssot_updated",
+]
+
+
+def _checker_script() -> Path:
+    return Path(__file__).resolve().parents[1] / "scripts" / "check_subagent_packet.py"
+
+
+def _write_yaml(path: Path, doc: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(yaml.safe_dump(doc, sort_keys=False), encoding="utf-8")
+
+
+def _base_packet_docs(
+    *,
+    phase_id: str,
+    hardened: bool,
+    external_noise_paths: list[str] | None = None,
+) -> tuple[dict, dict, dict]:
+    task: dict = {
+        "schema_version": "subagent_task_card_v1",
+        "phase_id": phase_id,
+        "goal_ids": ["G15"],
+        "published_at": "2026-02-11T12:00:00+08:00",
+        "published_by": "orchestrator_codex",
+        "executor_required": "codex_cli_subagent",
+        "allowed_paths": [
+            "src/**",
+            "docs/**",
+            f"artifacts/subagent_control/{phase_id}/**",
+        ],
+        "acceptance_commands": [
+            "python3 -m pytest -q tests/test_subagent_packet_phase15.py",
+            "python3 scripts/check_docs_tree.py",
+        ],
+    }
+    if hardened:
+        task["evidence_policy"] = "hardened"
+        task["evidence_files"] = {
+            "workspace_before": f"artifacts/subagent_control/{phase_id}/workspace_before.json",
+            "workspace_after": f"artifacts/subagent_control/{phase_id}/workspace_after.json",
+            "acceptance_log": f"artifacts/subagent_control/{phase_id}/acceptance_run_log.jsonl",
+        }
+    if external_noise_paths is not None:
+        task["external_noise_paths"] = external_noise_paths
+
+    exe = {
+        "schema_version": "subagent_executor_report_v1",
+        "phase_id": phase_id,
+        "reported_at": "2026-02-11T12:01:00+08:00",
+        "executor": {
+            "role": "codex_cli_subagent",
+            "runtime": "codex_cli",
+        },
+        "status": "completed",
+        "changed_files": ["src/app.py"],
+        "commands_run": [
+            "python3 -m pytest -q tests/test_subagent_packet_phase15.py",
+            "python3 scripts/check_docs_tree.py",
+        ],
+    }
+
+    val = {
+        "schema_version": "subagent_validator_report_v1",
+        "phase_id": phase_id,
+        "reported_at": "2026-02-11T12:02:00+08:00",
+        "validator": {"role": "orchestrator_codex"},
+        "status": "pass",
+        "checks": [{"name": name, "pass": True, "detail": "ok"} for name in REQUIRED_CHECKS],
+    }
+    return task, exe, val
+
+
+def _write_snapshots(
+    packet_dir: Path,
+    *,
+    before_files: dict[str, str],
+    after_files: dict[str, str],
+) -> None:
+    before = {
+        "schema_version": "subagent_workspace_snapshot_v1",
+        "captured_at": "2026-02-11T12:00:00+08:00",
+        "files": before_files,
+    }
+    after = {
+        "schema_version": "subagent_workspace_snapshot_v1",
+        "captured_at": "2026-02-11T12:03:00+08:00",
+        "files": after_files,
+    }
+    (packet_dir / "workspace_before.json").write_text(
+        json.dumps(before, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    (packet_dir / "workspace_after.json").write_text(
+        json.dumps(after, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _write_acceptance_log(packet_dir: Path, rows: list[dict]) -> None:
+    lines = [json.dumps(row, ensure_ascii=False, sort_keys=True) for row in rows]
+    (packet_dir / "acceptance_run_log.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _run_checker(repo_root: Path, phase_id: str) -> subprocess.CompletedProcess[str]:
+    cmd = [
+        sys.executable,
+        str(_checker_script()),
+        "--phase-id",
+        phase_id,
+        "--packet-root",
+        "artifacts/subagent_control",
+    ]
+    return subprocess.run(cmd, cwd=repo_root, text=True, capture_output=True, check=False)
+
+
+def _mk_repo(
+    tmp_path: Path,
+    *,
+    phase_id: str,
+    hardened: bool,
+    external_noise_paths: list[str] | None = None,
+) -> tuple[Path, Path]:
+    repo = tmp_path / "repo"
+    packet = repo / "artifacts" / "subagent_control" / phase_id
+    packet.mkdir(parents=True)
+    task, exe, val = _base_packet_docs(
+        phase_id=phase_id,
+        hardened=hardened,
+        external_noise_paths=external_noise_paths,
+    )
+    _write_yaml(packet / "task_card.yaml", task)
+    _write_yaml(packet / "executor_report.yaml", exe)
+    _write_yaml(packet / "validator_report.yaml", val)
+    return repo, packet
+
+
+def test_phase15_legacy_packet_still_passes(tmp_path: Path) -> None:
+    phase_id = "phase_34"
+    repo, _packet = _mk_repo(tmp_path, phase_id=phase_id, hardened=False)
+    r = _run_checker(repo, phase_id)
+    assert r.returncode == 0, r.stderr
+    assert "subagent packet: OK" in r.stdout
+
+
+def test_phase15_hardened_missing_evidence_fails(tmp_path: Path) -> None:
+    phase_id = "phase_34"
+    repo, _packet = _mk_repo(tmp_path, phase_id=phase_id, hardened=True)
+    r = _run_checker(repo, phase_id)
+    assert r.returncode != 0
+    assert "missing hardened evidence file" in r.stderr
+
+
+def test_phase15_hardened_changed_files_mismatch_fails(tmp_path: Path) -> None:
+    phase_id = "phase_34"
+    repo, packet = _mk_repo(tmp_path, phase_id=phase_id, hardened=True)
+    _write_snapshots(
+        packet,
+        before_files={"src/app.py": "1" * 64, "src/removed.py": "2" * 64},
+        after_files={"src/app.py": "3" * 64},
+    )
+    _write_acceptance_log(
+        packet,
+        rows=[
+            {
+                "command": "python3 -m pytest -q tests/test_subagent_packet_phase15.py",
+                "exit_code": 0,
+                "started_at": "2026-02-11T12:03:01+08:00",
+                "ended_at": "2026-02-11T12:03:02+08:00",
+            },
+            {
+                "command": "python3 scripts/check_docs_tree.py",
+                "exit_code": 0,
+                "started_at": "2026-02-11T12:03:03+08:00",
+                "ended_at": "2026-02-11T12:03:04+08:00",
+            },
+        ],
+    )
+
+    r = _run_checker(repo, phase_id)
+    assert r.returncode != 0
+    assert "hardened changed_files mismatch" in r.stderr
+
+
+def test_phase15_hardened_acceptance_not_successful_fails(tmp_path: Path) -> None:
+    phase_id = "phase_34"
+    repo, packet = _mk_repo(tmp_path, phase_id=phase_id, hardened=True)
+    _write_snapshots(
+        packet,
+        before_files={"src/app.py": "1" * 64},
+        after_files={"src/app.py": "2" * 64},
+    )
+    _write_acceptance_log(
+        packet,
+        rows=[
+            {
+                "command": "python3 -m pytest -q tests/test_subagent_packet_phase15.py",
+                "exit_code": 1,
+                "started_at": "2026-02-11T12:03:01+08:00",
+                "ended_at": "2026-02-11T12:03:02+08:00",
+            },
+            {
+                "command": "python3 scripts/check_docs_tree.py",
+                "exit_code": 0,
+                "started_at": "2026-02-11T12:03:03+08:00",
+                "ended_at": "2026-02-11T12:03:04+08:00",
+            },
+        ],
+    )
+
+    r = _run_checker(repo, phase_id)
+    assert r.returncode != 0
+    assert "required acceptance command missing successful log entry" in r.stderr
+
+
+def test_phase15_hardened_full_evidence_passes(tmp_path: Path) -> None:
+    phase_id = "phase_34"
+    repo, packet = _mk_repo(tmp_path, phase_id=phase_id, hardened=True)
+    _write_snapshots(
+        packet,
+        before_files={"src/app.py": "1" * 64},
+        after_files={"src/app.py": "4" * 64},
+    )
+    _write_acceptance_log(
+        packet,
+        rows=[
+            {
+                "command": "python3 -m pytest -q tests/test_subagent_packet_phase15.py",
+                "exit_code": 0,
+                "started_at": "2026-02-11T12:03:01+08:00",
+                "ended_at": "2026-02-11T12:03:02+08:00",
+                "stdout_tail": "ok",
+            },
+            {
+                "command": "python3 scripts/check_docs_tree.py",
+                "exit_code": 0,
+                "started_at": "2026-02-11T12:03:03+08:00",
+                "ended_at": "2026-02-11T12:03:04+08:00",
+            },
+        ],
+    )
+
+    r = _run_checker(repo, phase_id)
+    assert r.returncode == 0, r.stderr
+    assert "subagent packet: OK" in r.stdout
+
+
+def test_phase15_hardened_external_noise_paths_ignored(tmp_path: Path) -> None:
+    phase_id = "phase_34"
+    repo, packet = _mk_repo(
+        tmp_path,
+        phase_id=phase_id,
+        hardened=True,
+        external_noise_paths=["external_data/**"],
+    )
+    _write_snapshots(
+        packet,
+        before_files={"src/app.py": "1" * 64, "external_data/noise.txt": "2" * 64},
+        after_files={"src/app.py": "4" * 64, "external_data/noise.txt": "3" * 64},
+    )
+    _write_acceptance_log(
+        packet,
+        rows=[
+            {
+                "command": "python3 -m pytest -q tests/test_subagent_packet_phase15.py",
+                "exit_code": 0,
+                "started_at": "2026-02-11T12:03:01+08:00",
+                "ended_at": "2026-02-11T12:03:02+08:00",
+            },
+            {
+                "command": "python3 scripts/check_docs_tree.py",
+                "exit_code": 0,
+                "started_at": "2026-02-11T12:03:03+08:00",
+                "ended_at": "2026-02-11T12:03:04+08:00",
+            },
+        ],
+    )
+    r = _run_checker(repo, phase_id)
+    assert r.returncode == 0, r.stderr
+    assert "subagent packet: OK" in r.stdout

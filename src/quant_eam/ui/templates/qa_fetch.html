@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">QA Fetch Explorer</h1>
+    <p class="page-subtitle">Read-only evidence for qa_fetch registry/resolver/probe artifacts under <code>docs/05_data_plane</code>.</p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is strictly read-only (GET/HEAD only). It renders existing docs evidence and exposes no write actions.</div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Evidence Files</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>status</th></tr></thead>
+          <tbody>
+          {% for f in evidence_files %}
+            <tr>
+              <td><code>{{ f.path }}</code></td>
+              <td>{% if f.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Registry Summary</h2>
+      <div class="kv">
+        <div class="k">registry_json</div><div class="v"><code>{{ registry.path }}</code></div>
+        <div class="k">status</div><div class="v">{% if registry.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</div>
+        <div class="k">schema_version</div><div class="v"><span class="pill">{{ registry.schema_version if registry.schema_version else "unknown" }}</span></div>
+        <div class="k">generated_at_utc</div><div class="v">{{ registry.generated_at_utc if registry.generated_at_utc else "n/a" }}</div>
+        <div class="k">functions</div><div class="v"><span data-testid="registry-functions-count">{{ registry.function_count }}</span></div>
+        <div class="k">resolver_entries</div><div class="v"><span data-testid="registry-resolver-count">{{ registry.resolver_entry_count }}</span></div>
+      </div>
+      {% if registry.function_source_rows %}
+      <div class="section">
+        <h2>Function Sources</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>source</th><th>count</th></tr></thead>
+            <tbody>
+            {% for row in registry.function_source_rows %}
+              <tr><td>{{ row.key }}</td><td>{{ row.count }}</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+      {% if registry.function_status_rows %}
+      <div class="section">
+        <h2>Function Status</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>status</th><th>count</th></tr></thead>
+            <tbody>
+            {% for row in registry.function_status_rows %}
+              <tr><td>{{ row.key }}</td><td>{{ row.count }}</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+      {% if registry.resolver_source_rows %}
+      <div class="section">
+        <h2>Resolver Sources</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>source</th><th>count</th></tr></thead>
+            <tbody>
+            {% for row in registry.resolver_source_rows %}
+              <tr><td>{{ row.key }}</td><td>{{ row.count }}</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Probe Summary</h2>
+      <div class="kv">
+        <div class="k">summary_json</div><div class="v"><code>{{ probe.summary_path }}</code></div>
+        <div class="k">results_json</div><div class="v"><code>{{ probe.results_path }}</code></div>
+        <div class="k">results_csv</div><div class="v"><code>{{ probe.results_csv_path }}</code></div>
+        <div class="k">total</div><div class="v"><span data-testid="probe-total">{{ probe.total }}</span></div>
+        <div class="k">pass_has_data</div><div class="v"><span data-testid="probe-pass-has-data">{{ probe.pass_has_data if probe.pass_has_data is not none else "n/a" }}</span></div>
+        <div class="k">pass_has_data_or_empty</div><div class="v"><span data-testid="probe-pass-has-data-or-empty">{{ probe.pass_has_data_or_empty if probe.pass_has_data_or_empty is not none else "n/a" }}</span></div>
+      </div>
+      {% if probe.status_rows %}
+      <div class="section">
+        <h2>Probe Status Counts</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>status</th><th>count</th></tr></thead>
+            <tbody>
+            {% for row in probe.status_rows %}
+              <tr><td>{{ row.key }}</td><td>{{ row.count }}</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+      {% if probe.source_rows %}
+      <div class="section">
+        <h2>Probe Source Counts</h2>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>source</th><th>count</th></tr></thead>
+            <tbody>
+            {% for row in probe.source_rows %}
+              <tr><td>{{ row.key }}</td><td>{{ row.count }}</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Probe Example Rows</h2>
+      {% if probe.example_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>source</th><th>function</th><th>status</th><th>len</th><th>reason</th></tr></thead>
+          <tbody>
+          {% for row in probe.example_rows %}
+            <tr>
+              <td>{{ row.source }}</td>
+              <td>{{ row.function }}</td>
+              <td><span class="pill">{{ row.status }}</span></td>
+              <td>{{ row.len }}</td>
+              <td>{{ row.reason }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="plot-fallback">No probe results found.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Resolver Contract Markdown</h2>
+      <div class="muted"><code>{{ resolver_doc.path }}</code></div>
+      {% if resolver_doc.exists and resolver_doc.preview %}
+      <details>
+        <summary>Preview</summary>
+        <pre class="code">{{ resolver_doc.preview }}</pre>
+      </details>
+      {% else %}
+        <div class="plot-fallback">Resolver markdown is missing.</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Smoke Evidence Markdown</h2>
+      <div class="muted"><code>{{ smoke_doc.path }}</code></div>
+      <div class="kv section">
+        <div class="k">date</div><div class="v">{{ smoke_doc.date if smoke_doc.date else "n/a" }}</div>
+      </div>
+      {% if smoke_doc.exists and smoke_doc.preview %}
+      <details>
+        <summary>Preview</summary>
+        <pre class="code">{{ smoke_doc.preview }}</pre>
+      </details>
+      {% else %}
+        <div class="plot-fallback">Smoke evidence markdown is missing.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

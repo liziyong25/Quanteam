@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">UI Information Architecture Coverage</h1>
+    <p class="page-subtitle">
+      Read-only evidence for Whole View section <code>{{ source_file.section }}</code> checklist mapping to current UI routes and views.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">no holdout expansion</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Section</h2>
+      <div class="kv">
+        <div class="k">path</div>
+        <div class="v"><code>{{ source_file.path }}</code></div>
+        <div class="k">status</div>
+        <div class="v">{% if source_file.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</div>
+        <div class="k">section</div>
+        <div class="v"><span class="pill">{{ source_file.section }}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Coverage Summary</h2>
+      <div class="kv">
+        <div class="k">checklist_total</div>
+        <div class="v"><span data-testid="ia-checklist-total">{{ summary.checklist_total }}</span></div>
+        <div class="k">mapped_item_total</div>
+        <div class="v"><span data-testid="ia-mapped-total">{{ summary.mapped_item_total }}</span></div>
+        <div class="k">covered_item_total</div>
+        <div class="v"><span data-testid="ia-covered-total">{{ summary.covered_item_total }}</span></div>
+        <div class="k">partial_item_total</div>
+        <div class="v"><span data-testid="ia-partial-total">{{ summary.partial_item_total }}</span></div>
+        <div class="k">missing_item_total</div>
+        <div class="v"><span data-testid="ia-missing-total">{{ summary.missing_item_total }}</span></div>
+        <div class="k">route_total</div>
+        <div class="v"><span data-testid="ia-route-total">{{ summary.route_total }}</span></div>
+        <div class="k">present_route_total</div>
+        <div class="v"><span data-testid="ia-route-present-total">{{ summary.present_route_total }}</span></div>
+        <div class="k">read_only_route_total</div>
+        <div class="v"><span data-testid="ia-route-readonly-total">{{ summary.read_only_route_total }}</span></div>
+        <div class="k">coverage_ratio</div>
+        <div class="v"><span class="pill">{{ summary.coverage_ratio }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Whole View IA Checklist Mapping</h2>
+    {% if checklist_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>ia_checklist_item</th><th>mapping_note</th><th>mapped_routes</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in checklist_rows %}
+            <tr data-testid="ia-row-{{ loop.index }}">
+              <td>{{ row.index }}</td>
+              <td>{{ row.item }}</td>
+              <td>{{ row.mapping_note if row.mapping_note else "n/a" }}</td>
+              <td>
+                {% if row.route_rows %}
+                  {% for route in row.route_rows %}
+                    <div>
+                      <code>{{ route.path }}</code> -> <code>{{ route.template }}</code>
+                      <span class="pill">{{ route.methods_label }}</span>
+                      {% if route.is_read_only %}
+                        <span class="pill good">read-only</span>
+                      {% elif route.route_exists %}
+                        <span class="pill">present</span>
+                      {% else %}
+                        <span class="pill bad">missing</span>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                {% else %}
+                  <span class="muted">n/a</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.status == "covered" %}
+                  <span class="pill good">covered</span>
+                {% elif row.status == "partial" %}
+                  <span class="pill">partial</span>
+                {% else %}
+                  <span class="pill bad">missing</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No section-8 IA checklist entries were extracted from Whole View.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Route/View Evidence</h2>
+    {% if route_evidence_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>route</th><th>view_name</th><th>template</th><th>methods</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in route_evidence_rows %}
+            <tr data-testid="ia-route-row-{{ loop.index }}">
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.view_name }}</td>
+              <td><code>{{ row.template }}</code></td>
+              <td><span class="pill">{{ row.methods_label }}</span></td>
+              <td>
+                {% if row.is_read_only %}
+                  <span class="pill good">read-only</span>
+                {% elif row.route_exists %}
+                  <span class="pill">present</span>
+                {% else %}
+                  <span class="pill bad">missing</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No IA route/view evidence rows were assembled.</div>
+    {% endif %}
+  </div>
+{% endblock %}

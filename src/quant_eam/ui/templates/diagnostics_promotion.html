@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Codex Diagnostics Promotion Chain Read-Only Evidence</h1>
+    <p class="page-subtitle">
+      Read-only governance evidence sourced from Whole View section <code>7</code>,
+      Playbook <code>Phase-12</code>, and SSOT references for <code>G42</code>.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">no holdout expansion</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Sections</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>G42 Goal Snapshot</h2>
+      <div class="kv">
+        <div class="k">goal_id</div>
+        <div class="v"><span class="pill">{{ g42.id if g42.id else "G42" }}</span></div>
+        <div class="k">title</div>
+        <div class="v">{{ g42.title if g42.title else "n/a" }}</div>
+        <div class="k">status_now</div>
+        <div class="v"><span class="pill">{{ g42.status_now if g42.status_now else "unknown" }}</span></div>
+        <div class="k">ui_path</div>
+        <div class="v"><code>{{ g42.ui_path if g42.ui_path else "/ui/diagnostics-promotion" }}</code></div>
+        <div class="k">depends_on</div>
+        <div class="v">{{ g42.depends_on|join(", ") if g42.depends_on else "n/a" }}</div>
+        <div class="k">expected_state_change</div>
+        <div class="v">{{ g42.expected_state_change if g42.expected_state_change else "n/a" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Diagnostics Promotion Summary</h2>
+      <div class="kv">
+        <div class="k">whole_view_temporary_diagnostics</div>
+        <div class="v"><span data-testid="diagnostics-whole-view-temporary-total">{{ summary.whole_view_temporary_total }}</span></div>
+        <div class="k">whole_view_promotion_steps</div>
+        <div class="v"><span data-testid="diagnostics-whole-view-promotion-total">{{ summary.whole_view_promotion_total }}</span></div>
+        <div class="k">playbook_goal_rows</div>
+        <div class="v"><span data-testid="diagnostics-playbook-goal-total">{{ summary.playbook_goal_total }}</span></div>
+        <div class="k">playbook_code_rows</div>
+        <div class="v"><span data-testid="diagnostics-playbook-code-total">{{ summary.playbook_code_total }}</span></div>
+        <div class="k">playbook_acceptance_rows</div>
+        <div class="v"><span data-testid="diagnostics-playbook-acceptance-total">{{ summary.playbook_acceptance_total }}</span></div>
+        <div class="k">required_guards</div>
+        <div class="v"><span data-testid="diagnostics-required-guard-total">{{ summary.required_guard_total }}</span></div>
+        <div class="k">global_read_rules</div>
+        <div class="v"><span data-testid="diagnostics-global-read-rule-total">{{ summary.global_read_rule_total }}</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>SSOT Dispatch + Pipeline Meta</h2>
+      <div class="kv">
+        <div class="k">dispatch_table</div>
+        <div class="v"><code>phase_dispatch_plan_v2</code></div>
+        <div class="k">dispatch.status_now</div>
+        <div class="v"><span class="pill">{{ dispatch.status_now if dispatch.status_now else "n/a" }}</span></div>
+        <div class="k">dispatch.mode</div>
+        <div class="v"><span class="pill">{{ dispatch.mode if dispatch.mode else "n/a" }}</span></div>
+        <div class="k">phase_id</div>
+        <div class="v"><code>{{ dispatch.phase_id }}</code></div>
+        <div class="k">goal_id</div>
+        <div class="v"><code>{{ dispatch.goal_id }}</code></div>
+        <div class="k">dispatch_title</div>
+        <div class="v">{{ dispatch.title if dispatch.title else "n/a" }}</div>
+        <div class="k">exception_id</div>
+        <div class="v"><code>{{ g42_exception.exception_id if g42_exception.exception_id else "g42_diagnostics_promotion_ui_scope" }}</code></div>
+        <div class="k">pipeline</div>
+        <div class="v"><code>{{ pipeline.pipeline_id if pipeline.pipeline_id else "agents_pipeline_v1" }}</code></div>
+        <div class="k">execution_model</div>
+        <div class="v"><span class="pill">{{ pipeline.execution_model if pipeline.execution_model else "n/a" }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Whole View Section 7 Diagnostics Promotion Chain</h2>
+
+    <div class="section">
+      <h2>{{ whole_view.temporary_section }}</h2>
+      {% if whole_view.temporary_rows %}
+        {% for row in whole_view.temporary_rows %}
+          <div data-testid="diagnostics-whole-view-temporary-{{ loop.index }}">
+            {{ row.item }}
+            <span class="muted">(line {{ row.source_line }})</span>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No temporary diagnostics rows extracted.</div>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <h2>{{ whole_view.promotion_section }}</h2>
+      {% if whole_view.promotion_rows %}
+        {% for row in whole_view.promotion_rows %}
+          <div data-testid="diagnostics-whole-view-promotion-{{ loop.index }}">
+            {{ row.item }}
+            <span class="muted">(line {{ row.source_line }})</span>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No promotion rows extracted.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Playbook Phase-12 Diagnostics Promote Evidence</h2>
+
+    <div class="section">
+      <h2>{{ phase12.section }}</h2>
+      <div class="muted">Goal and implementation boundaries extracted from phase-12 text.</div>
+    </div>
+
+    <div class="grid">
+      <div class="section">
+        <h2>Goals</h2>
+        {% if phase12.goal_rows %}
+          {% for row in phase12.goal_rows %}
+            <div data-testid="diagnostics-playbook-goal-{{ loop.index }}">{{ row.item }} <span class="muted">(line {{ row.source_line }})</span></div>
+          {% endfor %}
+        {% else %}
+          <div class="plot-fallback">No goal rows extracted.</div>
+        {% endif %}
+      </div>
+      <div class="section">
+        <h2>Background</h2>
+        {% if phase12.background_rows %}
+          {% for row in phase12.background_rows %}
+            <div data-testid="diagnostics-playbook-background-{{ loop.index }}">{{ row.item }} <span class="muted">(line {{ row.source_line }})</span></div>
+          {% endfor %}
+        {% else %}
+          <div class="plot-fallback">No background rows extracted.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="section">
+        <h2>Code Deliverables</h2>
+        {% if phase12.code_rows %}
+          {% for row in phase12.code_rows %}
+            <div data-testid="diagnostics-playbook-code-{{ loop.index }}"><code>{{ row.item }}</code> <span class="muted">(line {{ row.source_line }})</span></div>
+          {% endfor %}
+        {% else %}
+          <div class="plot-fallback">No code rows extracted.</div>
+        {% endif %}
+      </div>
+      <div class="section">
+        <h2>Acceptance Boundaries</h2>
+        {% if phase12.acceptance_rows %}
+          {% for row in phase12.acceptance_rows %}
+            <div data-testid="diagnostics-playbook-acceptance-{{ loop.index }}">{{ row.item }} <span class="muted">(line {{ row.source_line }})</span></div>
+          {% endfor %}
+        {% else %}
+          <div class="plot-fallback">No acceptance rows extracted.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>SSOT Diagnostics Promotion Governance Evidence</h2>
+
+    <div class="section">
+      <h2>g42_diagnostics_promotion_ui_scope.required_guards</h2>
+      {% if g42_exception.required_guards %}
+        {% for row in g42_exception.required_guards %}
+          <div data-testid="diagnostics-required-guard-{{ loop.index }}">{{ row }}</div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No required guards found in SSOT exception scope.</div>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <h2>g42_diagnostics_promotion_ui_scope.allowed_route_prefixes</h2>
+      {% if g42_exception.allowed_route_prefixes %}
+        {% for row in g42_exception.allowed_route_prefixes %}
+          <div><code>{{ row }}</code></div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No allowed route prefixes found.</div>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <h2>g42_diagnostics_promotion_ui_scope.still_forbidden</h2>
+      {% if g42_exception.still_forbidden %}
+        {% for row in g42_exception.still_forbidden %}
+          <div><code>{{ row }}</code></div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No still_forbidden rules found.</div>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <h2>agents_pipeline_v1.global_read_rules</h2>
+      {% if pipeline.global_read_rules %}
+        {% for row in pipeline.global_read_rules %}
+          <div data-testid="diagnostics-global-read-rule-{{ loop.index }}">{{ row }}</div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No global_read_rules found.</div>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <h2>goal_checklist(G42).expected_artifacts</h2>
+      {% if g42_expected_artifacts %}
+        {% for row in g42_expected_artifacts %}
+          <div><code>{{ row }}</code></div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No expected artifacts listed in G42.</div>
+      {% endif %}
+    </div>
+
+    <div class="section">
+      <h2>goal_checklist(G42).acceptance_commands</h2>
+      {% if g42_acceptance_commands %}
+        {% for row in g42_acceptance_commands %}
+          <div><code>{{ row }}</code></div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No acceptance commands listed in G42.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
