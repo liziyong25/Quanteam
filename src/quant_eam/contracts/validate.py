@@ -4,6 +4,7 @@ import argparse
 import json
 import os
 import sys
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -193,6 +194,124 @@ def validate_json(payload_path: Path, schema_path: Path | None = None) -> tuple[
     """Validate a JSON payload file and return (exit_code, schema_label)."""
     payload = _load_json(payload_path)
     return validate_payload(payload, schema_path=schema_path)
+
+
+def _fetch_schema_path(filename: str) -> Path:
+    schema_path = _contracts_dir() / filename
+    if not schema_path.is_file():
+        raise FileNotFoundError(f"missing schema: {schema_path.as_posix()}")
+    return schema_path
+
+
+def _extract_fetch_value(fetch_request: dict[str, Any], key: str) -> tuple[str | None, Any]:
+    if fetch_request.get(key) is not None:
+        return f"/{key}", fetch_request.get(key)
+    intent_obj = fetch_request.get("intent")
+    if isinstance(intent_obj, dict) and intent_obj.get(key) is not None:
+        return f"/intent/{key}", intent_obj.get(key)
+    kwargs_obj = fetch_request.get("kwargs")
+    if isinstance(kwargs_obj, dict) and kwargs_obj.get(key) is not None:
+        return f"/kwargs/{key}", kwargs_obj.get(key)
+    return None, None
+
+
+def _parse_iso_date(raw: str) -> date | None:
+    s = raw.strip()
+    if not s:
+        return None
+    try:
+        return date.fromisoformat(s)
+    except ValueError:
+        pass
+    try:
+        return datetime.fromisoformat(s.replace("Z", "+00:00")).date()
+    except ValueError:
+        return None
+
+
+def _has_symbol_value(v: Any) -> bool:
+    if isinstance(v, str):
+        return bool(v.strip())
+    if isinstance(v, list):
+        for item in v:
+            if isinstance(item, str) and item.strip():
+                return True
+        return False
+    if isinstance(v, tuple):
+        return _has_symbol_value(list(v))
+    return v is not None
+
+
+def _fetch_request_has_symbols(fetch_request: dict[str, Any]) -> bool:
+    intent_obj = fetch_request.get("intent")
+    kwargs_obj = fetch_request.get("kwargs")
+    candidates: list[Any] = [fetch_request.get("symbols")]
+    if isinstance(intent_obj, dict):
+        candidates.append(intent_obj.get("symbols"))
+    if isinstance(kwargs_obj, dict):
+        candidates.append(kwargs_obj.get("symbols"))
+        candidates.append(kwargs_obj.get("symbol"))
+    return any(_has_symbol_value(v) for v in candidates)
+
+
+def validate_fetch_request(fetch_request: Any) -> tuple[int, str]:
+    """Validate fetch_request against schema + logical constraints."""
+    schema_path = _fetch_schema_path("fetch_request_schema_v1.json")
+    code, msg = validate_payload(fetch_request, schema_path=schema_path)
+    if code != EXIT_OK:
+        return code, msg
+
+    if not isinstance(fetch_request, dict):
+        return EXIT_INVALID, "INVALID: fetch_request must be an object"
+
+    has_symbols = _fetch_request_has_symbols(fetch_request)
+    auto_symbols = bool(fetch_request.get("auto_symbols", False))
+    if not has_symbols and not auto_symbols:
+        return (
+            EXIT_INVALID,
+            "INVALID: fetch_request at /: symbols (or kwargs.symbol) is required unless auto_symbols=true",
+        )
+    if has_symbols and auto_symbols:
+        return (
+            EXIT_INVALID,
+            "INVALID: fetch_request at /auto_symbols: auto_symbols=true cannot be combined with explicit symbols",
+        )
+
+    start_path, start_raw = _extract_fetch_value(fetch_request, "start")
+    end_path, end_raw = _extract_fetch_value(fetch_request, "end")
+    start_date: date | None = None
+    end_date: date | None = None
+    if start_raw is not None:
+        if not isinstance(start_raw, str):
+            return EXIT_INVALID, f"INVALID: fetch_request at {start_path}: start must be string"
+        start_date = _parse_iso_date(start_raw)
+        if start_date is None:
+            return (
+                EXIT_INVALID,
+                f"INVALID: fetch_request at {start_path}: start must be ISO date/datetime string",
+            )
+    if end_raw is not None:
+        if not isinstance(end_raw, str):
+            return EXIT_INVALID, f"INVALID: fetch_request at {end_path}: end must be string"
+        end_date = _parse_iso_date(end_raw)
+        if end_date is None:
+            return (
+                EXIT_INVALID,
+                f"INVALID: fetch_request at {end_path}: end must be ISO date/datetime string",
+            )
+    if start_date is not None and end_date is not None and start_date > end_date:
+        return (
+            EXIT_INVALID,
+            f"INVALID: fetch_request at {start_path}: start must be <= end ({start_date.isoformat()} > {end_date.isoformat()})",
+        )
+
+    return EXIT_OK, f"OK: {schema_path.name}"
+
+
+def validate_fetch_result_meta(fetch_result_meta: Any) -> tuple[int, str]:
+    """Validate fetch_result_meta payload against the versioned contract."""
+    schema_path = _fetch_schema_path("fetch_result_meta_schema_v1.json")
+    return validate_payload(fetch_result_meta, schema_path=schema_path)
 
 
 def main(argv: list[str] | None = None) -> int:

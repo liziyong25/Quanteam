@@ -66,7 +66,7 @@ def _extract_whole_view_section8_checklist(path: Path) -> list[str]:
 
 
 def _ssot_ui_coverage_meta() -> dict[str, object]:
-    ssot_path = Path("docs/12_workflows/agents_ui_ssot_v1.yaml")
+    ssot_path = Path("docs/12_workflows/skeleton_ssot_v1.yaml")
     assert ssot_path.is_file(), "SSOT yaml is required for G43 UI coverage matrix validation"
     loaded = yaml.safe_load(ssot_path.read_text(encoding="utf-8"))
     assert isinstance(loaded, dict), "SSOT yaml root must be map"

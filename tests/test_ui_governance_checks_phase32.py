@@ -27,7 +27,7 @@ def test_governance_checks_page_renders_readonly_checklist() -> None:
     assert "docs/00_overview/" in text
     assert "Whole View Framework.md" in text
     assert "Implementation Phases Playbook.md" in text
-    assert "docs/12_workflows/agents_ui_ssot_v1.yaml" in text
+    assert "docs/12_workflows/skeleton_ssot_v1.yaml" in text
 
     assert "python3 scripts/check_docs_tree.py" in text
     assert "python3 scripts/check_subagent_packet.py --phase-id" in text

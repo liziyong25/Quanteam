@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from quant_eam.contracts import validate as contracts_validate
 from quant_eam.compiler.compile import compile_blueprint_to_runspec
 from quant_eam.gaterunner.run import EXIT_OK as GATE_OK
 from quant_eam.gaterunner.run import run_once as gaterunner_run_once
@@ -109,6 +110,71 @@ def _parse_json_maybe(s: str) -> dict[str, Any]:
         return doc if isinstance(doc, dict) else {}
     except Exception:
         return {}
+
+
+def _extract_fetch_request(spec: dict[str, Any], runspec: dict[str, Any]) -> tuple[dict[str, Any] | None, str | None]:
+    if isinstance(spec.get("fetch_request"), dict):
+        return spec.get("fetch_request"), "job_spec.fetch_request"
+    spec_ext = spec.get("extensions") if isinstance(spec, dict) else None
+    if isinstance(spec_ext, dict) and isinstance(spec_ext.get("fetch_request"), dict):
+        return spec_ext.get("fetch_request"), "job_spec.extensions.fetch_request"
+    rs_ext = runspec.get("extensions") if isinstance(runspec, dict) else None
+    if isinstance(rs_ext, dict) and isinstance(rs_ext.get("fetch_request"), dict):
+        return rs_ext.get("fetch_request"), "runspec.extensions.fetch_request"
+    return None, None
+
+
+def _stop_on_invalid_fetch_request(
+    *,
+    job_id: str,
+    paths: Any,
+    fetch_request: dict[str, Any],
+    fetch_request_source: str | None,
+    message: str,
+) -> dict[str, Any]:
+    fetch_out = paths.outputs_dir / "fetch"
+    fetch_out.mkdir(parents=True, exist_ok=True)
+    err_path = fetch_out / "fetch_request_validation_error.json"
+    err_doc = {
+        "schema_version": "fetch_request_validation_error_v1",
+        "job_id": job_id,
+        "reason": "FETCH_REQUEST_INVALID",
+        "message": str(message),
+        "fetch_request_source": fetch_request_source or "unknown",
+        "fetch_request": fetch_request,
+        "recorded_at": _utc_now_iso(),
+    }
+    err_path.write_text(json.dumps(err_doc, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_outputs_index(
+        job_id=job_id,
+        updates={
+            "fetch_request_validation_error_path": err_path.as_posix(),
+            "fetch_request_source": fetch_request_source or "unknown",
+        },
+    )
+    append_event(
+        job_id=job_id,
+        event_type="ERROR",
+        message="FETCH_REQUEST_INVALID",
+        outputs={
+            "reason": "FETCH_REQUEST_INVALID",
+            "step": "fetch_request_validation",
+            "fetch_request_source": fetch_request_source or "unknown",
+            "fetch_request_validation_error_path": err_path.as_posix(),
+            "validation_message": str(message),
+        },
+    )
+    append_event(
+        job_id=job_id,
+        event_type="DONE",
+        outputs={"status": "stopped_invalid_fetch_request"},
+    )
+    return {
+        "job_id": job_id,
+        "status": "stopped",
+        "state": "ERROR",
+        "reason": "FETCH_REQUEST_INVALID",
+    }
 
 
 def _extract_sweep_spec(spec: dict[str, Any]) -> dict[str, Any] | None:
@@ -466,19 +532,20 @@ def advance_job_once(*, job_id: str) -> dict[str, Any]:
                 syms = runspec.get("extensions", {}).get("symbols", []) if isinstance(runspec, dict) else []
                 symbols = [str(s) for s in syms] if isinstance(syms, list) else []
 
+                fetch_request, fetch_request_source = _extract_fetch_request(spec, runspec)
+                if isinstance(fetch_request, dict):
+                    code_fetch, msg_fetch = contracts_validate.validate_fetch_request(fetch_request)
+                    if code_fetch != contracts_validate.EXIT_OK:
+                        return _stop_on_invalid_fetch_request(
+                            job_id=job_id,
+                            paths=paths,
+                            fetch_request=fetch_request,
+                            fetch_request_source=fetch_request_source,
+                            message=msg_fetch,
+                        )
+
                 backtest_run_path = Path(str(idx.get("backtest_agent_run_path", "")))
                 if not backtest_run_path.is_file():
-                    fetch_request = None
-                    if isinstance(spec.get("fetch_request"), dict):
-                        fetch_request = spec.get("fetch_request")
-                    else:
-                        spec_ext = spec.get("extensions") if isinstance(spec, dict) else None
-                        if isinstance(spec_ext, dict) and isinstance(spec_ext.get("fetch_request"), dict):
-                            fetch_request = spec_ext.get("fetch_request")
-                    if not isinstance(fetch_request, dict):
-                        rs_ext = runspec.get("extensions") if isinstance(runspec, dict) else None
-                        if isinstance(rs_ext, dict) and isinstance(rs_ext.get("fetch_request"), dict):
-                            fetch_request = rs_ext.get("fetch_request")
                     backtest_in = {
                         "job_id": job_id,
                         "runspec_path": (paths.outputs_dir / "runspec.json").as_posix(),
@@ -525,17 +592,6 @@ def advance_job_once(*, job_id: str) -> dict[str, Any]:
 
                 demo_run_path = Path(str(idx.get("demo_agent_run_path", "")))
                 if not demo_run_path.is_file():
-                    fetch_request = None
-                    if isinstance(spec.get("fetch_request"), dict):
-                        fetch_request = spec.get("fetch_request")
-                    else:
-                        spec_ext = spec.get("extensions") if isinstance(spec, dict) else None
-                        if isinstance(spec_ext, dict) and isinstance(spec_ext.get("fetch_request"), dict):
-                            fetch_request = spec_ext.get("fetch_request")
-                    if not isinstance(fetch_request, dict):
-                        rs_ext = runspec.get("extensions") if isinstance(runspec, dict) else None
-                        if isinstance(rs_ext, dict) and isinstance(rs_ext.get("fetch_request"), dict):
-                            fetch_request = rs_ext.get("fetch_request")
                     demo_in = {
                         "snapshot_id": str(runspec.get("data_snapshot_id", snapshot_id)),
                         "start": start,

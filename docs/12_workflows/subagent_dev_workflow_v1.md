@@ -11,8 +11,9 @@ Define how development runs in subagent mode with minimal user intervention:
 
 This workflow is driven by:
 
-- `docs/12_workflows/agents_ui_ssot_v1.yaml`
-- `docs/08_phases/*.md`
+- `docs/12_workflows/skeleton_ssot_v1.yaml`
+- `docs/08_phases/00_skeleton/phase_*.md`
+- `docs/08_phases/10_impl_fetchdata/phase_*.md` (when impl track is used)
 - `docs/12_workflows/subagent_control_packet_v1.md`
 - repository state (code/tests/contracts/policies)
 
@@ -22,7 +23,7 @@ The following policies are long-term defaults and do not require repeating in ev
 
 1. G11 Prompt Studio exception is pre-authorized within strict scope.
 
-- Source of truth: `autopilot_stop_condition_exceptions_v1` in `docs/12_workflows/agents_ui_ssot_v1.yaml`
+- Source of truth: `autopilot_stop_condition_exceptions_v1` in `docs/12_workflows/skeleton_ssot_v1.yaml`
 - Meaning: `Any API schema or route behavior change` stop condition is waived only for G11 and only for `/ui/prompts` scoped work.
 - Redlines still apply: no edits under `contracts/**` or `policies/**`, no holdout visibility expansion.
 
@@ -65,8 +66,8 @@ The following policies are long-term defaults and do not require repeating in ev
 
 Task input sources:
 
-- SSOT goals/checkpoints in `docs/12_workflows/agents_ui_ssot_v1.yaml`
-- Current phase logs in `docs/08_phases/`
+- SSOT goals/checkpoints in `docs/12_workflows/skeleton_ssot_v1.yaml`
+- Current phase logs in `docs/08_phases/00_skeleton/` (and `docs/08_phases/10_impl_fetchdata/` when used)
 - Current implementation gaps in code/tests
 
 Task Card must include:
@@ -120,9 +121,11 @@ Validator must write:
 
 Minimum records per completed task:
 
-- Phase log update in `docs/08_phases/phase_XX_*.md` (or patch log section)
+- Phase log update in track path:
+  - `docs/08_phases/00_skeleton/phase_XX_*.md`
+  - or `docs/08_phases/10_impl_fetchdata/phase_XX_*.md`
 - Workflow note update in `docs/12_workflows/subagent_dev_workflow_v1.md` if process changed
-- SSOT progress/status update in `docs/12_workflows/agents_ui_ssot_v1.yaml`
+- SSOT progress/status update in `docs/12_workflows/skeleton_ssot_v1.yaml`
 - File change summary and acceptance evidence in final report
 - Subagent packet must pass:
   - `python3 scripts/check_subagent_packet.py --phase-id <phase_id>`

@@ -82,8 +82,11 @@ def test_phase13_budget_proposals_and_spawn(tmp_path: Path, monkeypatch) -> None
     assert r.status_code == 200
     assert worker_main(["--run-jobs", "--once"]) == 0
 
-    # Approve strategy_spec -> runspec -> trace_preview
+    # Approve strategy_spec -> spec_qa -> runspec -> trace_preview
     r = client.post(f"/jobs/{job_id}/approve", params={"step": "strategy_spec"})
+    assert r.status_code == 200
+    assert worker_main(["--run-jobs", "--once"]) == 0
+    r = client.post(f"/jobs/{job_id}/approve", params={"step": "spec_qa"})
     assert r.status_code == 200
     assert worker_main(["--run-jobs", "--once"]) == 0
     r = client.post(f"/jobs/{job_id}/approve", params={"step": "runspec"})
@@ -202,6 +205,8 @@ def test_phase13r_max_total_iterations_stops_improvements(tmp_path: Path, monkey
     assert client.post(f"/jobs/{job_id}/approve", params={"step": "blueprint"}).status_code == 200
     assert worker_main(["--run-jobs", "--once"]) == 0
     assert client.post(f"/jobs/{job_id}/approve", params={"step": "strategy_spec"}).status_code == 200
+    assert worker_main(["--run-jobs", "--once"]) == 0
+    assert client.post(f"/jobs/{job_id}/approve", params={"step": "spec_qa"}).status_code == 200
     assert worker_main(["--run-jobs", "--once"]) == 0
     assert client.post(f"/jobs/{job_id}/approve", params={"step": "runspec"}).status_code == 200
     assert worker_main(["--run-jobs", "--once"]) == 0

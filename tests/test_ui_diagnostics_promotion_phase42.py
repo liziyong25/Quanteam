@@ -120,7 +120,7 @@ def _extract_playbook_phase12_rows(path: Path) -> dict[str, list[str]]:
 
 
 def _ssot_diagnostics_promotion_meta() -> dict[str, object]:
-    ssot_path = Path("docs/12_workflows/agents_ui_ssot_v1.yaml")
+    ssot_path = Path("docs/12_workflows/skeleton_ssot_v1.yaml")
     assert ssot_path.is_file(), "SSOT yaml is required for G42 diagnostics-promotion evidence validation"
     loaded = yaml.safe_load(ssot_path.read_text(encoding="utf-8"))
     assert isinstance(loaded, dict), "SSOT yaml root must be map"

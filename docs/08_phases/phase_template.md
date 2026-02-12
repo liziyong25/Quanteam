@@ -35,7 +35,7 @@
 
 ## 6) 文档编写（Docs Deliverables）
 - 必须更新的 docs：
-  - `docs/08_phases/phase_XX_*.md`（本文件）
+  - `docs/08_phases/<track>/phase_XX_*.md`（本文件，`<track>`=`00_skeleton` 或 `10_impl`）
   - （如涉及契约）`docs/03_contracts/...`
   - （如涉及 policy）`docs/04_policies/...`
 - 若影响协议/边界：新增 ADR（`docs/09_adr/`）

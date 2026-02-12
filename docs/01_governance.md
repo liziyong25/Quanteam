@@ -48,7 +48,7 @@ Docs SSOT entry is `docs/README.md`. Do not add a second docs entry file that ca
 - tests 全绿（pytest）
 - schema 校验通过（若本 Phase 涉及 contracts）
 - 产物落盘符合 dossier 规范（若本 Phase 涉及 runner/ui）
-- docs 更新：`docs/08_phases/phase_XX_*.md` +（必要时）ADR
+- docs 更新：`docs/08_phases/<track>/phase_XX_*.md`（`00_skeleton` 或 `10_impl`）+（必要时）ADR
 
 ## 6. Contracts/Policies Boundary (Do Not Drift)
 

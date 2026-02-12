@@ -1619,7 +1619,7 @@ def _object_model_playbook_matches(
 
 
 def _object_model_context() -> dict[str, Any]:
-    ssot_path = _repo_root() / "docs" / "12_workflows" / "agents_ui_ssot_v1.yaml"
+    ssot_path = _repo_root() / "docs" / "12_workflows" / "skeleton_ssot_v1.yaml"
     whole_view_path = _find_overview_doc("Whole View Framework.md")
     playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
 
@@ -1864,7 +1864,7 @@ def _module_boundary_playbook_matches(
 
 
 def _module_boundaries_context() -> dict[str, Any]:
-    ssot_path = _repo_root() / "docs" / "12_workflows" / "agents_ui_ssot_v1.yaml"
+    ssot_path = _repo_root() / "docs" / "12_workflows" / "skeleton_ssot_v1.yaml"
     whole_view_path = _find_overview_doc("Whole View Framework.md")
     playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
 
@@ -2223,7 +2223,7 @@ def _extract_playbook_phase12_evidence(path: Path) -> dict[str, Any]:
 
 
 def _diagnostics_promotion_context() -> dict[str, Any]:
-    ssot_path = _repo_root() / "docs" / "12_workflows" / "agents_ui_ssot_v1.yaml"
+    ssot_path = _repo_root() / "docs" / "12_workflows" / "skeleton_ssot_v1.yaml"
     whole_view_path = _find_overview_doc("Whole View Framework.md")
     playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
 
@@ -2362,7 +2362,7 @@ def _codex_role_boundary_context() -> dict[str, Any]:
 
 
 def _workflow_checkpoints_context() -> dict[str, Any]:
-    ssot_path = _repo_root() / "docs" / "12_workflows" / "agents_ui_ssot_v1.yaml"
+    ssot_path = _repo_root() / "docs" / "12_workflows" / "skeleton_ssot_v1.yaml"
     whole_view_path = _find_overview_doc("Whole View Framework.md")
     playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
 
@@ -2682,7 +2682,7 @@ def _ia_coverage_context() -> dict[str, Any]:
 
 
 def _ui_coverage_matrix_context() -> dict[str, Any]:
-    ssot_path = _repo_root() / "docs" / "12_workflows" / "agents_ui_ssot_v1.yaml"
+    ssot_path = _repo_root() / "docs" / "12_workflows" / "skeleton_ssot_v1.yaml"
     ui_routes_path = _repo_root() / "src" / "quant_eam" / "api" / "ui_routes.py"
     whole_view_path = _find_overview_doc("Whole View Framework.md")
     whole_view_section, checklist = _extract_whole_view_ia_checklist(whole_view_path)
@@ -3053,7 +3053,7 @@ def _extract_playbook_runtime_phase_context(path: Path) -> tuple[str, list[dict[
 
 
 def _runtime_topology_context() -> dict[str, Any]:
-    ssot_path = _repo_root() / "docs" / "12_workflows" / "agents_ui_ssot_v1.yaml"
+    ssot_path = _repo_root() / "docs" / "12_workflows" / "skeleton_ssot_v1.yaml"
     whole_view_path = _find_overview_doc("Whole View Framework.md")
     playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
 
@@ -3722,7 +3722,7 @@ def _extract_playbook_phase8_evidence(path: Path) -> dict[str, Any]:
 def _agent_roles_context() -> dict[str, Any]:
     whole_view_path = _find_overview_doc("Whole View Framework.md")
     playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
-    ssot_path = _repo_root() / "docs" / "12_workflows" / "agents_ui_ssot_v1.yaml"
+    ssot_path = _repo_root() / "docs" / "12_workflows" / "skeleton_ssot_v1.yaml"
 
     whole_view_section, whole_view_roles = _extract_whole_view_agent_roles(whole_view_path)
     phase8 = _extract_playbook_phase8_evidence(playbook_path)
@@ -3922,7 +3922,7 @@ def _infer_playbook_phase_no(*, dispatch_title: str, goal_title: str, goal_ui_pa
 
 
 def _playbook_phases_context() -> dict[str, Any]:
-    ssot_path = _repo_root() / "docs" / "12_workflows" / "agents_ui_ssot_v1.yaml"
+    ssot_path = _repo_root() / "docs" / "12_workflows" / "skeleton_ssot_v1.yaml"
     playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
     ssot_doc = _load_yaml_map(ssot_path)
 
@@ -4569,7 +4569,7 @@ def _whole_view_framework_root_doc() -> Path:
 
 
 def _governance_checks_context() -> dict[str, Any]:
-    ssot_path = _repo_root() / "docs" / "12_workflows" / "agents_ui_ssot_v1.yaml"
+    ssot_path = _repo_root() / "docs" / "12_workflows" / "skeleton_ssot_v1.yaml"
     whole_view_path = _find_overview_doc("Whole View Framework.md")
     playbook_path = _find_overview_doc("Implementation Phases Playbook.md")
 

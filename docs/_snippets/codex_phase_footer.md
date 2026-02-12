@@ -4,13 +4,13 @@
 
 - `docs/01_governance.md`
 - `docs/02_protocols.md`
-- The current phase log under `docs/08_phases/` (create/update it)
+- The current phase log under `docs/08_phases/<track>/` (create/update it)
 
 ## Required Deliverables
 
 - Code (only within allowed change scope for this phase)
 - Tests (if code changes impact behavior)
-- Docs: update `docs/08_phases/phase_XX_*.md` with execution log and acceptance evidence
+- Docs: update `docs/08_phases/<track>/phase_XX_*.md` with execution log and acceptance evidence
 - ADR: required when changing any boundary/protocol of contracts/policies/dossier/gates/holdout/determinism
 
 ## Hard No (Non-Negotiables)
@@ -34,4 +34,3 @@
 - `docker compose up -d` works (if this phase includes runtime changes)
 - `pytest -q` passes
 - Artifacts path list (host + container mapping) is stated and verified
-

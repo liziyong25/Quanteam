@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/fetch_result_meta_schema_v1.json",
+  "title": "fetch_result_meta_schema_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "status",
+    "reason",
+    "elapsed_sec",
+    "row_count",
+    "columns",
+    "dtypes",
+    "final_kwargs",
+    "mode"
+  ],
+  "properties": {
+    "status": {
+      "type": "string",
+      "enum": [
+        "pass_has_data",
+        "pass_empty",
+        "blocked_source_missing",
+        "error_runtime"
+      ]
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "source_internal": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "engine": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "provider_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "provider_internal": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "resolved_function": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "public_function": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "elapsed_sec": {
+      "type": "number",
+      "minimum": 0
+    },
+    "row_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "columns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "dtypes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "preview": {},
+    "final_kwargs": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["smoke", "research", "backtest"]
+    }
+  }
+}

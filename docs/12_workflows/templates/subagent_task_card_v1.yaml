@@ -15,8 +15,8 @@ external_noise_paths: []
 allowed_paths:
   - src/quant_eam/example_module/
   - tests/test_example.py
-  - docs/08_phases/phase_xx_example.md
-  - docs/12_workflows/agents_ui_ssot_v1.yaml
+  - docs/08_phases/00_skeleton/phase_xx_example.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
 
 acceptance_commands:
   - pytest -q tests/test_example.py

@@ -16,7 +16,11 @@ def _read_flag(path: Path) -> int | None:
     raw = path.read_text(encoding="utf-8").strip()
     if not raw:
         return 0
-    return int(raw)
+    try:
+        return int(raw)
+    except ValueError:
+        # Backward-compatible: some evidence files now store candidate names (one per line).
+        return len([ln for ln in raw.splitlines() if ln.strip()])
 
 
 def test_qa_fetch_ui_renders_registry_resolver_probe_evidence() -> None:

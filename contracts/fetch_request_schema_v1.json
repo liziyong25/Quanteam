@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/fetch_request_schema_v1.json",
+  "title": "fetch_request_schema_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["smoke", "research", "backtest"]
+    },
+    "auto_symbols": {
+      "type": "boolean"
+    },
+    "function": {
+      "type": "string",
+      "minLength": 1
+    },
+    "public_function": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_hint": {
+      "type": "string",
+      "minLength": 1
+    },
+    "window_profile_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "exception_decisions_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kwargs": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "intent": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "asset": {
+          "type": "string",
+          "minLength": 1
+        },
+        "freq": {
+          "type": "string",
+          "minLength": 1
+        },
+        "venue": {
+          "type": "string",
+          "minLength": 1
+        },
+        "adjust": {
+          "type": "string",
+          "minLength": 1
+        },
+        "symbols": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1
+            }
+          ]
+        },
+        "start": {
+          "type": "string",
+          "minLength": 1
+        },
+        "end": {
+          "type": "string",
+          "minLength": 1
+        },
+        "function_override": {
+          "type": "string",
+          "minLength": 1
+        },
+        "extra_kwargs": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "asset": {
+      "type": "string",
+      "minLength": 1
+    },
+    "freq": {
+      "type": "string",
+      "minLength": 1
+    },
+    "venue": {
+      "type": "string",
+      "minLength": 1
+    },
+    "adjust": {
+      "type": "string",
+      "minLength": 1
+    },
+    "symbols": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      ]
+    },
+    "start": {
+      "type": "string",
+      "minLength": 1
+    },
+    "end": {
+      "type": "string",
+      "minLength": 1
+    },
+    "function_override": {
+      "type": "string",
+      "minLength": 1
+    },
+    "extra_kwargs": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "policy": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["smoke", "research", "backtest"]
+        },
+        "timeout_sec": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "on_no_data": {
+          "type": "string",
+          "enum": ["pass_empty", "error"]
+        }
+      }
+    }
+  },
+  "anyOf": [
+    {
+      "required": ["function"]
+    },
+    {
+      "required": ["intent"]
+    },
+    {
+      "required": ["asset", "freq"]
+    },
+    {
+      "required": ["function_override"]
+    }
+  ]
+}

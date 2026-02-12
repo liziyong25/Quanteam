@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import pytest
+
 from quant_eam.qa_fetch import runtime
 
 
@@ -160,3 +162,103 @@ def test_runtime_blocks_function_outside_frozen_baseline(monkeypatch) -> None:
     assert out.status == runtime.STATUS_BLOCKED_SOURCE_MISSING
     assert out.reason == "not_in_baseline"
     assert out.source == "fetch"
+
+
+def _dummy_result() -> runtime.FetchExecutionResult:
+    return runtime.FetchExecutionResult(
+        status=runtime.STATUS_PASS_HAS_DATA,
+        reason="ok",
+        source="fetch",
+        source_internal="mysql_fetch",
+        engine="mysql",
+        provider_id="fetch",
+        provider_internal="mysql_fetch",
+        resolved_function="fetch_demo",
+        public_function="fetch_demo",
+        elapsed_sec=0.0,
+        row_count=1,
+        columns=["x"],
+        dtypes={"x": "int64"},
+        preview=[{"x": 1}],
+        final_kwargs={"x": 1},
+        mode="backtest",
+        data=[{"x": 1}],
+    )
+
+
+def test_execute_fetch_by_intent_accepts_fetch_request_wrapper(monkeypatch) -> None:
+    captured: dict[str, Any] = {}
+
+    class _Resolution:
+        source = "mysql_fetch"
+        public_name = "fetch_stock_day"
+
+    def _fake_execute_fetch_by_name(**kwargs):
+        captured.update(kwargs)
+        return _dummy_result()
+
+    monkeypatch.setattr(runtime, "resolve_fetch", lambda **_: _Resolution())
+    monkeypatch.setattr(runtime, "execute_fetch_by_name", _fake_execute_fetch_by_name)
+
+    payload = {
+        "intent": {
+            "asset": "stock",
+            "freq": "day",
+            "extra_kwargs": {"bar": 2},
+        },
+        "symbols": ["000001"],
+        "start": "2024-01-01",
+        "end": "2024-01-31",
+        "kwargs": {"foo": 1, "bar": 9},
+        "policy": {"mode": "backtest", "on_no_data": "error"},
+    }
+    _ = runtime.execute_fetch_by_intent(payload)
+
+    assert captured["function"] == "fetch_stock_day"
+    assert captured["source_hint"] == "mysql_fetch"
+    assert isinstance(captured["policy"], runtime.FetchExecutionPolicy)
+    assert captured["policy"].mode == "backtest"
+    assert captured["policy"].on_no_data == "error"
+    assert captured["kwargs"]["symbols"] == ["000001"]
+    assert captured["kwargs"]["start"] == "2024-01-01"
+    assert captured["kwargs"]["end"] == "2024-01-31"
+    assert captured["kwargs"]["foo"] == 1
+    # intent.extra_kwargs should have higher priority than top-level kwargs on collisions.
+    assert captured["kwargs"]["bar"] == 2
+
+
+def test_execute_fetch_by_intent_accepts_function_wrapper(monkeypatch) -> None:
+    captured: dict[str, Any] = {}
+
+    def _fake_execute_fetch_by_name(**kwargs):
+        captured.update(kwargs)
+        return _dummy_result()
+
+    monkeypatch.setattr(runtime, "execute_fetch_by_name", _fake_execute_fetch_by_name)
+    monkeypatch.setattr(
+        runtime,
+        "resolve_fetch",
+        lambda **_: (_ for _ in ()).throw(AssertionError("resolve_fetch should not be called")),
+    )
+
+    payload = {
+        "function": "fetch_stock_day",
+        "kwargs": {"code": "000001", "start": "2024-01-01", "end": "2024-01-31"},
+        "policy": {"mode": "research"},
+    }
+    _ = runtime.execute_fetch_by_intent(payload)
+
+    assert captured["function"] == "fetch_stock_day"
+    assert captured["kwargs"] == {"code": "000001", "start": "2024-01-01", "end": "2024-01-31"}
+    assert isinstance(captured["policy"], runtime.FetchExecutionPolicy)
+    assert captured["policy"].mode == "research"
+
+
+def test_execute_fetch_by_intent_rejects_invalid_fetch_request_kwargs() -> None:
+    with pytest.raises(ValueError, match=r"fetch_request.kwargs must be an object when provided"):
+        runtime.execute_fetch_by_intent(
+            {
+                "intent": {"asset": "stock", "freq": "day"},
+                "kwargs": "bad",
+            }
+        )

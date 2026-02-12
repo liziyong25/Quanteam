@@ -26,26 +26,25 @@ Canonical entry file is `docs/README.md`. Do not add a second docs entry (e.g. a
 - Workflows:
   - Orchestrator v1: `12_workflows/orchestrator_v1.md`
   - Param Sweep v1: `12_workflows/param_sweep_v1.md`
-  - Agents UI SSOT v1: `12_workflows/agents_ui_ssot_v1.yaml`
+  - Skeleton SSOT v1: `12_workflows/skeleton_ssot_v1.yaml`
   - Subagent Dev Workflow v1: `12_workflows/subagent_dev_workflow_v1.md`
   - Subagent Control Packet v1: `12_workflows/subagent_control_packet_v1.md`
 - Runbooks:
   - Local dev (Linux + Docker + /data/quanteam): `07_runbooks/local_dev.md`
   - Troubleshooting: `07_runbooks/troubleshooting.md`
 - Phases:
+  - Phases tracks index: `08_phases/README.md`
   - Template: `08_phases/phase_template.md`
-  - Phase-00A execution log: `08_phases/phase_00a_repo_bootstrap.md`
-  - Phase-00D execution log: `08_phases/phase_00d_docs_governance.md`
-  - Phase-06 execution log: `08_phases/phase_06_gaterunner_holdout_v1.md`
-  - Phase-07 execution log: `08_phases/phase_07_registry_v1.md`
-  - Phase-08 execution log: `08_phases/phase_08_ui_mvp.md`
-  - Phase-09 execution log: `08_phases/phase_09_composer_mvp.md`
+  - Skeleton track (current): `08_phases/00_skeleton/phase_XX_*.md`
+  - Impl fetch-data track: `08_phases/10_impl_fetchdata/`
 - ADRs (architecture decisions): `09_adr/`
 - Codex prompt footer snippet (append to every phase task card): `_snippets/codex_phase_footer.md`
 
 ## Update Rules (Executable)
 
-- Every phase must add or update its phase log: `08_phases/phase_XX_*.md`.
+- Every phase must add or update its phase log under one track:
+  - `08_phases/00_skeleton/phase_XX_*.md`
+  - or `08_phases/10_impl_fetchdata/phase_XX_*.md`
 - If a change affects boundary/protocol of `contracts/`, `policies/`, `dossier/`, `gates/`, `holdout`, or determinism, you must add an ADR in `09_adr/` and reference it from the phase log.
 - Dossiers are append-only. If a change would rewrite past runs, it is blocked unless approved by ADR and accompanied by a migration plan.
 

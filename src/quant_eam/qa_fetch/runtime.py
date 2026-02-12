@@ -73,8 +73,9 @@ def execute_fetch_by_intent(
     window_profile_path: str | Path = DEFAULT_WINDOW_PROFILE_PATH,
     exception_decisions_path: str | Path = DEFAULT_EXCEPTION_DECISIONS_PATH,
 ) -> FetchExecutionResult:
-    it = _coerce_intent(intent)
-    pl = _coerce_policy(policy)
+    normalized_intent, normalized_policy = _unwrap_fetch_request_payload(intent, policy)
+    it = _coerce_intent(normalized_intent)
+    pl = _coerce_policy(normalized_policy)
 
     if it.function_override:
         kwargs = dict(it.extra_kwargs)
@@ -404,6 +405,67 @@ def _coerce_intent(intent: FetchIntent | dict[str, Any]) -> FetchIntent:
         function_override=intent.get("function_override"),
         extra_kwargs=extra_kwargs,
     )
+
+
+def _unwrap_fetch_request_payload(
+    intent: FetchIntent | dict[str, Any],
+    policy: FetchExecutionPolicy | dict[str, Any] | None,
+) -> tuple[FetchIntent | dict[str, Any], FetchExecutionPolicy | dict[str, Any] | None]:
+    if isinstance(intent, FetchIntent) or not isinstance(intent, dict):
+        return intent, policy
+
+    wrapper_policy = policy if policy is not None else intent.get("policy")
+    intent_obj = intent.get("intent")
+
+    if intent_obj is not None:
+        if not isinstance(intent_obj, dict):
+            raise ValueError("fetch_request.intent must be an object when provided")
+        merged_intent: dict[str, Any] = dict(intent_obj)
+        for key in ("asset", "freq", "venue", "adjust", "symbols", "start", "end", "function_override"):
+            if merged_intent.get(key) is None and intent.get(key) is not None:
+                merged_intent[key] = intent.get(key)
+
+        function_name = intent.get("function")
+        if merged_intent.get("function_override") is None and isinstance(function_name, str) and function_name.strip():
+            merged_intent["function_override"] = function_name.strip()
+
+        kwargs_obj = intent.get("kwargs")
+        if kwargs_obj is not None and not isinstance(kwargs_obj, dict):
+            raise ValueError("fetch_request.kwargs must be an object when provided")
+
+        extra_kwargs = merged_intent.get("extra_kwargs")
+        if extra_kwargs is not None and not isinstance(extra_kwargs, dict):
+            raise ValueError("intent.extra_kwargs must be an object when provided")
+
+        merged_kwargs: dict[str, Any] = {}
+        if isinstance(kwargs_obj, dict):
+            merged_kwargs.update(kwargs_obj)
+        if isinstance(extra_kwargs, dict):
+            merged_kwargs.update(extra_kwargs)
+        if merged_kwargs:
+            merged_intent["extra_kwargs"] = merged_kwargs
+        return merged_intent, wrapper_policy
+
+    # Compatibility with function+kwargs shaped fetch_request without an explicit intent block.
+    kwargs_obj = intent.get("kwargs")
+    function_name = intent.get("function")
+    if kwargs_obj is not None or function_name is not None or "policy" in intent:
+        if kwargs_obj is not None and not isinstance(kwargs_obj, dict):
+            raise ValueError("fetch_request.kwargs must be an object when provided")
+        merged_intent = {
+            "asset": intent.get("asset"),
+            "freq": intent.get("freq"),
+            "venue": intent.get("venue"),
+            "adjust": intent.get("adjust", "raw"),
+            "symbols": intent.get("symbols"),
+            "start": intent.get("start"),
+            "end": intent.get("end"),
+            "function_override": function_name,
+            "extra_kwargs": dict(kwargs_obj or {}),
+        }
+        return merged_intent, wrapper_policy
+
+    return intent, policy
 
 
 def _coerce_policy(policy: FetchExecutionPolicy | dict[str, Any] | None) -> FetchExecutionPolicy:

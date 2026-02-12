@@ -94,7 +94,7 @@ def _extract_playbook_phase_labels(path: Path) -> list[str]:
 
 
 def _ssot_workflow_meta() -> dict[str, object]:
-    ssot_path = Path("docs/12_workflows/agents_ui_ssot_v1.yaml")
+    ssot_path = Path("docs/12_workflows/skeleton_ssot_v1.yaml")
     assert ssot_path.is_file(), "SSOT yaml is required for G39 workflow mapping validation"
     loaded = yaml.safe_load(ssot_path.read_text(encoding="utf-8"))
     assert isinstance(loaded, dict), "SSOT yaml root must be map"
