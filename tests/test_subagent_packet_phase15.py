@@ -293,3 +293,33 @@ def test_phase15_hardened_external_noise_paths_ignored(tmp_path: Path) -> None:
     r = _run_checker(repo, phase_id)
     assert r.returncode == 0, r.stderr
     assert "subagent packet: OK" in r.stdout
+
+
+def test_phase15_validator_milestone_eval_optional_passes(tmp_path: Path) -> None:
+    phase_id = "phase_34"
+    repo, packet = _mk_repo(tmp_path, phase_id=phase_id, hardened=False)
+    val = yaml.safe_load((packet / "validator_report.yaml").read_text(encoding="utf-8"))
+    assert isinstance(val, dict)
+    val["milestone_eval"] = {
+        "milestone_id": "cl_fetch_081-20260213095103",
+        "cluster_id": "CL_FETCH_081",
+        "gate_ok": True,
+        "push_mode": "direct_master",
+        "recorded_at": "2026-02-13T09:51:03Z",
+    }
+    _write_yaml(packet / "validator_report.yaml", val)
+    r = _run_checker(repo, phase_id)
+    assert r.returncode == 0, r.stderr
+    assert "subagent packet: OK" in r.stdout
+
+
+def test_phase15_validator_milestone_eval_invalid_fails(tmp_path: Path) -> None:
+    phase_id = "phase_34"
+    repo, packet = _mk_repo(tmp_path, phase_id=phase_id, hardened=False)
+    val = yaml.safe_load((packet / "validator_report.yaml").read_text(encoding="utf-8"))
+    assert isinstance(val, dict)
+    val["milestone_eval"] = "invalid"
+    _write_yaml(packet / "validator_report.yaml", val)
+    r = _run_checker(repo, phase_id)
+    assert r.returncode != 0
+    assert "milestone_eval" in r.stderr

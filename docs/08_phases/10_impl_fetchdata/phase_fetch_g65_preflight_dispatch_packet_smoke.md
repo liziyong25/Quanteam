@@ -19,4 +19,15 @@
 - Implementation Plan section is fixed to TBD text.
 
 ## Implementation Plan
-TBD by controller at execution time.
+### 1. Scope Lock
+- Keep this goal focused on dispatch/packet smoke for impl track readiness.
+- Do not introduce business/runtime behavior change in fetch execution code.
+
+### 2. Execution Record
+- Reused existing hardened packet workflow (`task_card -> executor_report -> validator_report -> check_subagent_packet`).
+- Verified acceptance command set remains docs/SSOT based and deterministic.
+- Kept allowed_paths disjoint from skeleton preflight guard scope.
+
+### 3. Acceptance Record
+- `python3 scripts/check_docs_tree.py` passed.
+- `rg -n "G65|phase_fetch_g65|track: impl_fetchdata" docs/12_workflows/skeleton_ssot_v1.yaml` passed.

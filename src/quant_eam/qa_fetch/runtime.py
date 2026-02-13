@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import hashlib
 import inspect
 import json
 import signal
+import shutil
 import time
 from dataclasses import asdict, dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -40,9 +42,9 @@ class FetchIntent:
 
 @dataclass(frozen=True)
 class FetchExecutionPolicy:
-    mode: str = "smoke"  # smoke | research | backtest
+    mode: str = "smoke"  # demo | smoke | research | backtest
     timeout_sec: int | None = None
-    on_no_data: str = "pass_empty"  # pass_empty | error
+    on_no_data: str = "pass_empty"  # pass_empty | error | retry
 
 
 @dataclass
@@ -265,6 +267,7 @@ def write_fetch_evidence(
     request_payload: dict[str, Any],
     result: FetchExecutionResult,
     out_dir: str | Path,
+    step_records: list[dict[str, Any]] | None = None,
 ) -> dict[str, str]:
     out_path = Path(out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
@@ -273,44 +276,376 @@ def write_fetch_evidence(
     meta_path = out_path / "fetch_result_meta.json"
     preview_path = out_path / "fetch_preview.csv"
     error_path = out_path / "fetch_error.json"
+    steps_index_path = out_path / "fetch_steps_index.json"
 
-    request_path.write_text(
-        json.dumps(_json_safe(request_payload), ensure_ascii=False, indent=2) + "\n",
+    normalized_steps: list[tuple[str, dict[str, Any], FetchExecutionResult]] = []
+    if isinstance(step_records, list):
+        for row in step_records:
+            if not isinstance(row, dict):
+                continue
+            step_kind = str(row.get("step_kind") or "").strip() or "step"
+            req = row.get("request_payload")
+            res = row.get("result")
+            if isinstance(req, dict) and isinstance(res, FetchExecutionResult):
+                normalized_steps.append((step_kind, req, res))
+    if not normalized_steps:
+        normalized_steps = [("single_fetch", request_payload, result)]
+
+    multi_step = len(normalized_steps) > 1
+    step_entries: list[dict[str, Any]] = []
+    step_written_paths: list[tuple[Path, Path, Path, Path | None]] = []
+
+    for idx, (step_kind, step_request, step_result) in enumerate(normalized_steps, start=1):
+        if multi_step:
+            prefix = f"step_{idx:03d}"
+            req_file = out_path / f"{prefix}_fetch_request.json"
+            meta_file = out_path / f"{prefix}_fetch_result_meta.json"
+            preview_file = out_path / f"{prefix}_fetch_preview.csv"
+            err_file = out_path / f"{prefix}_fetch_error.json"
+        else:
+            req_file = request_path
+            meta_file = meta_path
+            preview_file = preview_path
+            err_file = error_path
+
+        req_file.write_text(
+            json.dumps(_json_safe(step_request), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        step_meta = _build_fetch_meta_doc(step_request, step_result)
+        meta_file.write_text(json.dumps(_json_safe(step_meta), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        _write_preview_csv(preview_file, step_result)
+
+        wrote_error = None
+        if step_result.status in {STATUS_BLOCKED_SOURCE_MISSING, STATUS_ERROR_RUNTIME}:
+            err_obj = {
+                "status": step_result.status,
+                "reason": step_result.reason,
+                "source": step_result.source,
+                "source_internal": step_result.source_internal,
+                "engine": step_result.engine,
+                "provider_id": step_result.provider_id,
+                "provider_internal": step_result.provider_internal,
+                "resolved_function": step_result.resolved_function,
+                "public_function": step_result.public_function,
+                "mode": step_result.mode,
+                "final_kwargs": _json_safe(step_result.final_kwargs),
+            }
+            err_file.write_text(json.dumps(err_obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            wrote_error = err_file
+        elif err_file.exists():
+            err_file.unlink()
+
+        step_entry = {
+            "step_index": idx,
+            "step_kind": step_kind,
+            "status": step_result.status,
+            "request_path": req_file.as_posix(),
+            "result_meta_path": meta_file.as_posix(),
+            "preview_path": preview_file.as_posix(),
+        }
+        if wrote_error is not None:
+            step_entry["error_path"] = wrote_error.as_posix()
+        step_entries.append(step_entry)
+        step_written_paths.append((req_file, meta_file, preview_file, wrote_error))
+
+    if multi_step and step_written_paths:
+        final_req, final_meta, final_preview, final_err = step_written_paths[-1]
+        shutil.copy2(final_req, request_path)
+        shutil.copy2(final_meta, meta_path)
+        shutil.copy2(final_preview, preview_path)
+        if final_err is not None and final_err.is_file():
+            shutil.copy2(final_err, error_path)
+        elif error_path.exists():
+            error_path.unlink()
+
+    steps_index = {
+        "schema_version": "qa_fetch_steps_index_v1",
+        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "steps": step_entries,
+    }
+    steps_index_path.write_text(
+        json.dumps(_json_safe(steps_index), ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
-
-    meta = asdict(result)
-    meta.pop("data", None)
-    meta_path.write_text(json.dumps(_json_safe(meta), ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-
-    _write_preview_csv(preview_path, result)
-
-    if result.status in {STATUS_BLOCKED_SOURCE_MISSING, STATUS_ERROR_RUNTIME}:
-        err_obj = {
-            "status": result.status,
-            "reason": result.reason,
-            "source": result.source,
-            "source_internal": result.source_internal,
-            "engine": result.engine,
-            "provider_id": result.provider_id,
-            "provider_internal": result.provider_internal,
-            "resolved_function": result.resolved_function,
-            "public_function": result.public_function,
-            "mode": result.mode,
-            "final_kwargs": _json_safe(result.final_kwargs),
-        }
-        error_path.write_text(json.dumps(err_obj, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    elif error_path.exists():
-        error_path.unlink()
 
     paths = {
         "fetch_request_path": request_path.as_posix(),
         "fetch_result_meta_path": meta_path.as_posix(),
         "fetch_preview_path": preview_path.as_posix(),
+        "fetch_steps_index_path": steps_index_path.as_posix(),
     }
     if error_path.exists():
         paths["fetch_error_path"] = error_path.as_posix()
     return paths
+
+
+def _build_fetch_meta_doc(request_payload: dict[str, Any], result: FetchExecutionResult) -> dict[str, Any]:
+    meta = asdict(result)
+    meta.pop("data", None)
+    min_ts, max_ts = _extract_time_bounds_from_preview(result.preview)
+    as_of = _extract_request_as_of(request_payload)
+    meta["selected_function"] = result.resolved_function
+    meta["col_count"] = len(result.columns)
+    meta["request_hash"] = _canonical_request_hash(request_payload)
+    meta["coverage"] = _build_coverage_summary(request_payload, result.preview)
+    meta["min_ts"] = min_ts
+    meta["max_ts"] = max_ts
+    meta["as_of"] = as_of
+    meta["availability_summary"] = _build_availability_summary(preview=result.preview, as_of=as_of)
+    meta["probe_status"] = result.status
+    meta["sanity_checks"] = _build_preview_sanity_checks(result.preview)
+    warnings: list[str] = []
+    if result.status in {STATUS_BLOCKED_SOURCE_MISSING, STATUS_ERROR_RUNTIME} and result.reason:
+        warnings.append(str(result.reason))
+    elif result.status == STATUS_PASS_EMPTY:
+        warnings.append("no_data")
+    meta["warnings"] = warnings
+    return meta
+
+
+def _canonical_request_hash(request_payload: dict[str, Any]) -> str:
+    canonical = _json_safe(request_payload)
+    encoded = json.dumps(canonical, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _normalize_symbols(value: Any) -> list[str]:
+    if isinstance(value, str):
+        s = value.strip()
+        return [s] if s else []
+    if isinstance(value, list):
+        out: list[str] = []
+        for item in value:
+            if isinstance(item, str):
+                s = item.strip()
+                if s:
+                    out.append(s)
+        return out
+    return []
+
+
+def _extract_request_symbols(request_payload: dict[str, Any]) -> list[str]:
+    intent_obj = request_payload.get("intent")
+    kwargs_obj = request_payload.get("kwargs")
+    values: list[str] = []
+    values.extend(_normalize_symbols(request_payload.get("symbols")))
+    if isinstance(intent_obj, dict):
+        values.extend(_normalize_symbols(intent_obj.get("symbols")))
+    if isinstance(kwargs_obj, dict):
+        values.extend(_normalize_symbols(kwargs_obj.get("symbol")))
+        values.extend(_normalize_symbols(kwargs_obj.get("symbols")))
+    deduped = sorted({x for x in values if x})
+    return deduped
+
+
+def _extract_observed_symbols(preview: Any) -> list[str]:
+    if not isinstance(preview, list):
+        return []
+    out: set[str] = set()
+    for row in preview:
+        if not isinstance(row, dict):
+            continue
+        for key in ("code", "symbol", "symbols", "ticker"):
+            if key in row:
+                out.update(_normalize_symbols(row.get(key)))
+    return sorted(out)
+
+
+def _extract_time_bounds_from_preview(preview: Any) -> tuple[str | None, str | None]:
+    if not isinstance(preview, list):
+        return None, None
+    stamps: list[str] = []
+    for row in preview:
+        if not isinstance(row, dict):
+            continue
+        for key in ("date", "datetime", "trade_date", "dt", "timestamp"):
+            raw = row.get(key)
+            if raw is None:
+                continue
+            val = _json_safe(raw)
+            sval = str(val).strip()
+            if sval:
+                stamps.append(sval)
+    if not stamps:
+        return None, None
+    ordered = sorted(stamps)
+    return ordered[0], ordered[-1]
+
+
+def _build_coverage_summary(request_payload: dict[str, Any], preview: Any) -> dict[str, Any]:
+    requested = _extract_request_symbols(request_payload)
+    observed = _extract_observed_symbols(preview)
+    return {
+        "requested_symbol_count": len(requested),
+        "requested_symbols": requested,
+        "observed_symbol_count": len(observed),
+        "observed_symbols": observed,
+    }
+
+
+def _pick_timestamp_field(preview: Any) -> str:
+    if not isinstance(preview, list):
+        return ""
+    candidates = ("date", "datetime", "trade_date", "dt", "timestamp")
+    for key in candidates:
+        for row in preview:
+            if isinstance(row, dict) and key in row:
+                return key
+    return ""
+
+
+def _build_preview_sanity_checks(preview: Any) -> dict[str, Any]:
+    if not isinstance(preview, list):
+        return {
+            "timestamp_field": "",
+            "timestamp_monotonic_non_decreasing": True,
+            "timestamp_duplicate_count": 0,
+            "missing_ratio_by_column": {},
+            "preview_row_count": 0,
+        }
+
+    rows = [row for row in preview if isinstance(row, dict)]
+    row_count = len(rows)
+    if row_count == 0:
+        return {
+            "timestamp_field": "",
+            "timestamp_monotonic_non_decreasing": True,
+            "timestamp_duplicate_count": 0,
+            "missing_ratio_by_column": {},
+            "preview_row_count": 0,
+        }
+
+    ts_field = _pick_timestamp_field(rows)
+    ts_values: list[str] = []
+    if ts_field:
+        for row in rows:
+            if ts_field not in row:
+                continue
+            val = row.get(ts_field)
+            if val is None:
+                continue
+            sval = str(_json_safe(val)).strip()
+            if sval:
+                ts_values.append(sval)
+
+    monotonic = True
+    for idx in range(1, len(ts_values)):
+        if ts_values[idx] < ts_values[idx - 1]:
+            monotonic = False
+            break
+    duplicate_count = len(ts_values) - len(set(ts_values))
+
+    all_cols: set[str] = set()
+    for row in rows:
+        all_cols.update(str(k) for k in row.keys())
+
+    missing_ratio: dict[str, float] = {}
+    for col in sorted(all_cols):
+        miss = 0
+        for row in rows:
+            val = row.get(col) if col in row else None
+            if val is None:
+                miss += 1
+                continue
+            if isinstance(val, str) and not val.strip():
+                miss += 1
+        missing_ratio[col] = round(miss / row_count, 6)
+
+    return {
+        "timestamp_field": ts_field,
+        "timestamp_monotonic_non_decreasing": monotonic,
+        "timestamp_duplicate_count": int(duplicate_count),
+        "missing_ratio_by_column": missing_ratio,
+        "preview_row_count": row_count,
+    }
+
+
+def _extract_request_as_of(request_payload: dict[str, Any]) -> str | None:
+    candidates: list[Any] = [request_payload.get("as_of")]
+    intent_obj = request_payload.get("intent")
+    if isinstance(intent_obj, dict):
+        candidates.append(intent_obj.get("as_of"))
+    kwargs_obj = request_payload.get("kwargs")
+    if isinstance(kwargs_obj, dict):
+        candidates.append(kwargs_obj.get("as_of"))
+    for raw in candidates:
+        if raw is None:
+            continue
+        sval = str(_json_safe(raw)).strip()
+        if sval:
+            return sval
+    return None
+
+
+def _parse_dt_for_compare(raw: str) -> datetime | None:
+    text = str(raw or "").strip()
+    if not text:
+        return None
+    normalized = text.replace("Z", "+00:00")
+    try:
+        dt = datetime.fromisoformat(normalized)
+    except Exception:
+        if len(text) == 10 and text.count("-") == 2:
+            try:
+                return datetime.strptime(text, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            except Exception:
+                return None
+        return None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _build_availability_summary(*, preview: Any, as_of: str | None) -> dict[str, Any]:
+    out = {
+        "has_as_of": as_of is not None,
+        "as_of": as_of,
+        "available_at_field_present": False,
+        "available_at_min": None,
+        "available_at_max": None,
+        "available_at_violation_count": 0,
+        "rule": "available_at<=as_of",
+    }
+    if not isinstance(preview, list):
+        return out
+
+    rows = [row for row in preview if isinstance(row, dict)]
+    if not rows:
+        return out
+
+    if not any("available_at" in row for row in rows):
+        return out
+
+    out["available_at_field_present"] = True
+    available_rows: list[str] = []
+    for row in rows:
+        val = row.get("available_at")
+        if val is None:
+            continue
+        sval = str(_json_safe(val)).strip()
+        if sval:
+            available_rows.append(sval)
+    if not available_rows:
+        return out
+
+    ordered = sorted(available_rows)
+    out["available_at_min"] = ordered[0]
+    out["available_at_max"] = ordered[-1]
+
+    as_of_dt = _parse_dt_for_compare(as_of or "")
+    if as_of_dt is None:
+        return out
+
+    violations = 0
+    for row_val in available_rows:
+        av_dt = _parse_dt_for_compare(row_val)
+        if av_dt is None:
+            continue
+        if av_dt > as_of_dt:
+            violations += 1
+    out["available_at_violation_count"] = violations
+    return out
 
 
 def load_smoke_window_profile(path: str | Path = DEFAULT_WINDOW_PROFILE_PATH) -> dict[str, dict[str, Any]]:
