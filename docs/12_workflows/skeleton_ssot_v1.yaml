@@ -9042,9 +9042,9 @@ milestone_history_v1:
   status_now: implemented
   recorded_at: '2026-02-13T03:06:40Z'
   latest_phase_id: G65
-  push_mode: pending
-  branch: ''
-  commit_sha: ''
+  push_mode: direct_master
+  branch: master
+  commit_sha: 0a37e79
   artifact_paths:
     milestone_summary: artifacts/autopilot/milestones/cl_fetch_065-20260213030640/milestone_summary.md
     commit_manifest: artifacts/autopilot/milestones/cl_fetch_065-20260213030640/commit_manifest.json
@@ -9055,9 +9055,9 @@ milestone_history_v1:
   status_now: implemented
   recorded_at: '2026-02-13T03:13:12Z'
   latest_phase_id: G81
-  push_mode: pending
-  branch: ''
-  commit_sha: ''
+  push_mode: direct_master
+  branch: master
+  commit_sha: 0a37e79
   artifact_paths:
     milestone_summary: artifacts/autopilot/milestones/cl_fetch_081-20260213031312/milestone_summary.md
     commit_manifest: artifacts/autopilot/milestones/cl_fetch_081-20260213031312/commit_manifest.json
