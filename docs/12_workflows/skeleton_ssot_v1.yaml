@@ -19402,7 +19402,7 @@ goal_checklist:
     G349 validated.
 - id: G350
   title: Impl workbench requirement bundle execution for WB-002/WB-003/WB-004/WB-005
-  status_now: planned
+  status_now: implemented
   depends_on:
   - G338
   track: impl_workbench
@@ -19491,6 +19491,8 @@ goal_checklist:
     allowed_paths_ok=True stop_conditions_ok=True acceptance_ok=True packet_ok=True'
   - Marked blocked after 2 attempts on 2026-02-17T07:18:22Z.
   - manual reset for rerun on 2026-02-17T08:18:45Z.
+  - Implemented by controller lifecycle on 2026-02-17T10:35:00Z after attempt 3; packet
+    G350 validated.
 agents_pipeline_v1:
   pipeline_id: agents_pipeline_v1
   execution_model: serial_pipeline_with_checkpoints
@@ -23704,11 +23706,14 @@ requirements_trace_v1:
   clause: 在不破坏现有 review UI 的前提下新增 用户工作台 UI。
   depends_on_req_ids:
   - WB-001
-  status_now: planned
+  status_now: implemented
   mapped_goal_ids:
   - G350
-  acceptance_commands: []
-  acceptance_verified: false
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py
+  - rg -n "G350|WB-002|WB-003|WB-004|WB-005" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
   capability_cluster_id: CL_FETCH_350
 - req_id: WB-003
   source_document: docs/00_overview/workbench_ui_productization_v1.md
@@ -23717,11 +23722,14 @@ requirements_trace_v1:
   clause: 用户可在一个入口完成 Phase‑0 到 Phase‑4 的串联操作与结果查看。
   depends_on_req_ids:
   - WB-001
-  status_now: planned
+  status_now: implemented
   mapped_goal_ids:
   - G350
-  acceptance_commands: []
-  acceptance_verified: false
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py
+  - rg -n "G350|WB-002|WB-003|WB-004|WB-005" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
   capability_cluster_id: CL_FETCH_350
 - req_id: WB-004
   source_document: docs/00_overview/workbench_ui_productization_v1.md
@@ -23730,11 +23738,14 @@ requirements_trace_v1:
   clause: 每一步都返回“用户可读结果卡片”，默认隐藏底层证据细节。
   depends_on_req_ids:
   - WB-001
-  status_now: planned
+  status_now: implemented
   mapped_goal_ids:
   - G350
-  acceptance_commands: []
-  acceptance_verified: false
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py
+  - rg -n "G350|WB-002|WB-003|WB-004|WB-005" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
   capability_cluster_id: CL_FETCH_350
 - req_id: WB-005
   source_document: docs/00_overview/workbench_ui_productization_v1.md
@@ -23743,11 +23754,14 @@ requirements_trace_v1:
   clause: '仍保留治理边界: 证据落盘、可追溯、可审批、可重放。'
   depends_on_req_ids:
   - WB-001
-  status_now: planned
+  status_now: implemented
   mapped_goal_ids:
   - G350
-  acceptance_commands: []
-  acceptance_verified: false
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py
+  - rg -n "G350|WB-002|WB-003|WB-004|WB-005" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
   capability_cluster_id: CL_FETCH_350
 - req_id: WB-006
   source_document: docs/00_overview/workbench_ui_productization_v1.md
@@ -27610,7 +27624,7 @@ capability_clusters_v1:
   - auto-clustered from goal dependency graph
 - cluster_id: CL_FETCH_350
   title: Fetch capability cluster for G350
-  status_now: partial
+  status_now: implemented
   goal_ids:
   - G295
   - G350
