@@ -19491,8 +19491,176 @@ goal_checklist:
     allowed_paths_ok=True stop_conditions_ok=True acceptance_ok=True packet_ok=True'
   - Marked blocked after 2 attempts on 2026-02-17T07:18:22Z.
   - manual reset for rerun on 2026-02-17T08:18:45Z.
-  - Implemented by controller lifecycle on 2026-02-17T10:35:00Z after attempt 3; packet
+  - 'Attempt 1 failed on 2026-02-17T09:57:02Z: codex_invoked=True codex_ok=False changed_files_non_empty=True
+    allowed_paths_ok=False stop_conditions_ok=False acceptance_ok=True packet_ok=False'
+  - Implemented by controller lifecycle on 2026-02-17T10:28:58Z after attempt 2; packet
     G350 validated.
+- id: G351
+  title: Impl fetch requirement bundle execution for QF-115/QF-116/QF-117/QF-118
+  status_now: implemented
+  depends_on:
+  - G349
+  track: impl_fetchdata
+  requirement_ids:
+  - QF-115
+  - QF-116
+  - QF-117
+  - QF-118
+  phase_doc_path: docs/08_phases/10_impl_fetchdata/phase_fetch_g351_g344_acceptance_verified_true_git_baseline_commit_no.md
+  required_skills:
+  - requirement-splitter
+  - ssot-goal-planner
+  - phase-authoring
+  - packet-evidence-guard
+  difficulty_score: 65
+  reasoning_tier: medium
+  todo_checklist:
+  - Verify dependency gates: G349 complete and G344 implemented with acceptance_verified=true.
+  - Record baseline commit as NO_HEAD_COMMIT (no resolvable HEAD) in execution notes.
+  - Confirm runtime context matches QF-116/117/118: cwd=/data/quanteam, shell=/bin/bash, process=bash.
+  - Implement G351 items in track impl_fetchdata and update related workflow/doc references.
+  - Run acceptance commands: check_docs_tree, targeted pytest suite, and rg marker check.
+  - Capture command outputs and mark G351 done only if all checks pass.
+  risk_notes:
+  - G349 or G344 status not actually verified, causing invalid downstream acceptance.
+  - NO_HEAD_COMMIT weakens traceability for code/doc delta auditing.
+  - Targeted pytest cases may fail due fetch contract/resolver/probe regressions.
+  - docs tree checker may fail from unrelated doc structure drift.
+  - rg validation can fail on exact token mismatch (G351/QF-115..118).
+  parallel_hints:
+  - Run `python3 scripts/check_docs_tree.py` and `rg -n "G351|QF-115|QF-116|QF-117|QF-118" docs/12_workflows/skeleton_ssot_v1.yaml` in parallel.
+  - Execute dependency/status verification while preparing G351 doc/workflow edits.
+  - After edits are stable, run pytest separately; use its runtime to draft evidence notes.
+  - If pytest is long-running, re-run the fast rg check concurrently before final sign-off.
+  todo_planner:
+    mode: codex_assisted
+    source: codex_cli_planner
+    generated_at: '2026-02-17T10:38:12Z'
+    goal_id: G351
+    artifact_path: artifacts/autopilot/planner/G351/todo_planner_last_message.txt
+  ui_path: /qa-fetch/req/qf-115
+  expected_state_change: Requirement bundle `QF-115/QF-116/QF-117/QF-118` transitions
+    to implemented after acceptance.
+  expected_artifacts:
+  - docs/08_phases/10_impl_fetchdata/phase_fetch_g351_g344_acceptance_verified_true_git_baseline_commit_no.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  allowed_paths:
+  - docs/08_phases/10_impl_fetchdata/phase_fetch_g351_g344_acceptance_verified_true_git_baseline_commit_no.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  - docs/05_data_plane/**
+  - src/quant_eam/qa_fetch/**
+  - tests/test_qa_fetch_*.py
+  - artifacts/subagent_control/G351/**
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_fetch_contracts_phase77.py tests/test_qa_fetch_probe.py
+    tests/test_qa_fetch_resolver.py
+  - rg -n "G351|QF-115|QF-116|QF-117|QF-118" docs/12_workflows/skeleton_ssot_v1.yaml
+  stop_condition_exception_scope:
+    exception_id: g351_requirement_gap_scope
+    rationale: requirement-gap driven goal
+    preauthorized_scope:
+      allowed_route_prefixes:
+      - /qa-fetch/req/qf-115
+      allowed_code_paths:
+      - docs/08_phases/10_impl_fetchdata/phase_fetch_g351_g344_acceptance_verified_true_git_baseline_commit_no.md
+      - docs/12_workflows/skeleton_ssot_v1.yaml
+      - docs/05_data_plane/**
+      - src/quant_eam/qa_fetch/**
+      - tests/test_qa_fetch_*.py
+      - artifacts/subagent_control/G351/**
+      still_forbidden:
+      - contracts/**
+      - policies/**
+      - Holdout visibility expansion
+  capability_cluster_id: CL_FETCH_351
+  allow_noop: false
+  acceptance_verified: true
+  notes:
+  - Auto-generated from unmet requirement bundle QF-115/QF-116/QF-117/QF-118 at 2026-02-17T10:38:12Z.
+  - Implemented by controller lifecycle on 2026-02-17T10:42:00Z after attempt 1; packet
+    G351 validated.
+- id: G352
+  title: Impl workbench requirement execution for WB-006
+  status_now: implemented
+  depends_on:
+  - G350
+  track: impl_workbench
+  requirement_ids:
+  - WB-006
+  phase_doc_path: docs/08_phases/10_impl_workbench/phase_workbench_g352_ui_subagent_2_2.md
+  required_skills:
+  - requirement-splitter
+  - ssot-goal-planner
+  - phase-authoring
+  - packet-evidence-guard
+  difficulty_score: 77
+  reasoning_tier: medium
+  todo_checklist:
+  - 依赖门检查：确认 G350 在 docs/12_workflows/skeleton_ssot_v1.yaml 为 implemented，否则暂停 G352。
+  - 补全 docs/08_phases/10_impl_workbench/phase_workbench_g352_ui_subagent_2_2.md 的 Implementation Plan，明确仅覆盖 WB-006（2.2 非目标总述）。
+  - 在 docs/12_workflows/skeleton_ssot_v1.yaml 新增 G352 goal：track=impl_workbench、depends_on=G350、requirement_ids=WB-006、phase_doc_path 指向 G352 phase doc。
+  - 更新 requirements_trace_v1 的 WB-006：status_now=implemented、mapped_goal_ids=[G352]、写入本目标 acceptance commands。
+  - 保持 WB-007/WB-008/WB-009 仍为 planned 且依赖 WB-006，避免在 G352 提前落地子条款实现。
+  - 执行验收并留痕：python3 scripts/check_docs_tree.py、python3 -m pytest -q tests/test_ui_mvp.py、rg -n \"G352|WB-006\" docs/12_workflows/skeleton_ssot_v1.yaml。
+  risk_notes:
+  - rg -n \"G352|WB-006\" 是 OR 匹配，若只命中 WB-006 也会通过，可能漏掉 G352 写回。
+  - WB-006 为父级“非目标”条款，范围写不清会与 WB-007~WB-009 责任重叠。
+  - G352 goal 若缺少必填字段（如 allowed_paths/stop_condition）可能触发 packet validator 失败。
+  - tests/test_ui_mvp.py 覆盖面大，可能出现与本次文档/映射改动无关的失败。
+  - 误改 WB-007~WB-009 状态会破坏 requirement DAG 顺序，影响后续目标排程。
+  parallel_hints:
+  - 并行流A：补全文档 phase_workbench_g352_ui_subagent_2_2.md；并行流B：起草 skeleton_ssot_v1.yaml 的 G352 goal 块。
+  - 并行流C：同步 requirements_trace_v1/WB-006 映射与状态；与 A/B 合并前仅做结构校验。
+  - 可并行执行 python3 scripts/check_docs_tree.py 与 rg -n \"G352|WB-006\" ...，pytest 最后串行单跑。
+  - 提前并行准备 artifacts/subagent_control/G352/** 记录模板，减少收口阶段等待。
+  todo_planner:
+    mode: codex_assisted
+    source: codex_cli_planner
+    generated_at: '2026-02-17T10:50:01Z'
+    goal_id: G352
+    artifact_path: artifacts/autopilot/planner/G352/todo_planner_last_message.txt
+  ui_path: /ui/workbench/req/wb-006
+  expected_state_change: Requirement WB-006 transitions to implemented after acceptance.
+  expected_artifacts:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g352_ui_subagent_2_2.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  allowed_paths:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g352_ui_subagent_2_2.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  - docs/00_overview/workbench_ui_productization_v1.md
+  - src/quant_eam/ui/**
+  - src/quant_eam/api/**
+  - tests/test_ui_*.py
+  - artifacts/subagent_control/G352/**
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py
+  - rg -n "G352|WB-006" docs/12_workflows/skeleton_ssot_v1.yaml
+  stop_condition_exception_scope:
+    exception_id: g352_requirement_gap_scope
+    rationale: requirement-gap driven goal
+    preauthorized_scope:
+      allowed_route_prefixes:
+      - /ui/workbench/req/wb-006
+      allowed_code_paths:
+      - docs/08_phases/10_impl_workbench/phase_workbench_g352_ui_subagent_2_2.md
+      - docs/12_workflows/skeleton_ssot_v1.yaml
+      - docs/00_overview/workbench_ui_productization_v1.md
+      - src/quant_eam/ui/**
+      - src/quant_eam/api/**
+      - tests/test_ui_*.py
+      - artifacts/subagent_control/G352/**
+      still_forbidden:
+      - contracts/**
+      - policies/**
+      - Holdout visibility expansion
+  capability_cluster_id: CL_FETCH_352
+  allow_noop: false
+  acceptance_verified: true
+  notes:
+  - Auto-generated from unmet requirement WB-006 at 2026-02-17T10:50:01Z.
+  - Implemented by subagent execution on 2026-02-17T10:50:01Z; acceptance commands passed.
 agents_pipeline_v1:
   pipeline_id: agents_pipeline_v1
   execution_model: serial_pipeline_with_checkpoints
@@ -23618,11 +23786,16 @@ requirements_trace_v1:
     HEAD 提交）'
   depends_on_req_ids:
   - QF-114
-  status_now: planned
-  mapped_goal_ids: []
-  acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  status_now: implemented
+  mapped_goal_ids:
+  - G351
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_fetch_contracts_phase77.py tests/test_qa_fetch_probe.py
+    tests/test_qa_fetch_resolver.py
+  - rg -n "G351|QF-115|QF-116|QF-117|QF-118" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_351
 - req_id: QF-116
   source_document: docs/05_data_plane/QA_Fetch_FetchData_Impl_Spec_v1.md
   source_line: 220
@@ -23630,11 +23803,16 @@ requirements_trace_v1:
   clause: 'cwd: /data/quanteam'
   depends_on_req_ids:
   - QF-114
-  status_now: planned
-  mapped_goal_ids: []
-  acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  status_now: implemented
+  mapped_goal_ids:
+  - G351
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_fetch_contracts_phase77.py tests/test_qa_fetch_probe.py
+    tests/test_qa_fetch_resolver.py
+  - rg -n "G351|QF-115|QF-116|QF-117|QF-118" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_351
 - req_id: QF-117
   source_document: docs/05_data_plane/QA_Fetch_FetchData_Impl_Spec_v1.md
   source_line: 221
@@ -23642,11 +23820,16 @@ requirements_trace_v1:
   clause: 'shell binary: /bin/bash'
   depends_on_req_ids:
   - QF-114
-  status_now: planned
-  mapped_goal_ids: []
-  acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  status_now: implemented
+  mapped_goal_ids:
+  - G351
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_fetch_contracts_phase77.py tests/test_qa_fetch_probe.py
+    tests/test_qa_fetch_resolver.py
+  - rg -n "G351|QF-115|QF-116|QF-117|QF-118" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_351
 - req_id: QF-118
   source_document: docs/05_data_plane/QA_Fetch_FetchData_Impl_Spec_v1.md
   source_line: 222
@@ -23654,11 +23837,16 @@ requirements_trace_v1:
   clause: 'shell process: bash'
   depends_on_req_ids:
   - QF-114
-  status_now: planned
-  mapped_goal_ids: []
-  acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  status_now: implemented
+  mapped_goal_ids:
+  - G351
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_fetch_contracts_phase77.py tests/test_qa_fetch_probe.py
+    tests/test_qa_fetch_resolver.py
+  - rg -n "G351|QF-115|QF-116|QF-117|QF-118" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_351
 - req_id: QF-119
   source_document: docs/05_data_plane/QA_Fetch_FetchData_Impl_Spec_v1.md
   source_line: 223
@@ -23709,10 +23897,7 @@ requirements_trace_v1:
   status_now: implemented
   mapped_goal_ids:
   - G350
-  acceptance_commands:
-  - python3 scripts/check_docs_tree.py
-  - python3 -m pytest -q tests/test_ui_mvp.py
-  - rg -n "G350|WB-002|WB-003|WB-004|WB-005" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_commands: []
   acceptance_verified: true
   capability_cluster_id: CL_FETCH_350
 - req_id: WB-003
@@ -23725,10 +23910,7 @@ requirements_trace_v1:
   status_now: implemented
   mapped_goal_ids:
   - G350
-  acceptance_commands:
-  - python3 scripts/check_docs_tree.py
-  - python3 -m pytest -q tests/test_ui_mvp.py
-  - rg -n "G350|WB-002|WB-003|WB-004|WB-005" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_commands: []
   acceptance_verified: true
   capability_cluster_id: CL_FETCH_350
 - req_id: WB-004
@@ -23741,10 +23923,7 @@ requirements_trace_v1:
   status_now: implemented
   mapped_goal_ids:
   - G350
-  acceptance_commands:
-  - python3 scripts/check_docs_tree.py
-  - python3 -m pytest -q tests/test_ui_mvp.py
-  - rg -n "G350|WB-002|WB-003|WB-004|WB-005" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_commands: []
   acceptance_verified: true
   capability_cluster_id: CL_FETCH_350
 - req_id: WB-005
@@ -23757,10 +23936,7 @@ requirements_trace_v1:
   status_now: implemented
   mapped_goal_ids:
   - G350
-  acceptance_commands:
-  - python3 scripts/check_docs_tree.py
-  - python3 -m pytest -q tests/test_ui_mvp.py
-  - rg -n "G350|WB-002|WB-003|WB-004|WB-005" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_commands: []
   acceptance_verified: true
   capability_cluster_id: CL_FETCH_350
 - req_id: WB-006
@@ -23770,11 +23946,15 @@ requirements_trace_v1:
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 2.2 非目标
   depends_on_req_ids:
   - WB-005
-  status_now: planned
-  mapped_goal_ids: []
-  acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  status_now: implemented
+  mapped_goal_ids:
+  - G352
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py
+  - rg -n "G352|WB-006" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_352
 - req_id: WB-007
   source_document: docs/00_overview/workbench_ui_productization_v1.md
   source_line: 23
@@ -27642,6 +27822,28 @@ capability_clusters_v1:
   - python3 -m pytest -q tests/test_ui_mvp.py
   notes:
   - auto-clustered from goal dependency graph
+- cluster_id: CL_FETCH_351
+  title: Fetch capability cluster for G351
+  status_now: implemented
+  goal_ids:
+  - G295
+  - G351
+  requirement_ids:
+  - QF-115
+  - QF-116
+  - QF-117
+  - QF-118
+  latest_phase_id: G351
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_fetch_contracts_phase77.py tests/test_qa_fetch_probe.py
+    tests/test_qa_fetch_resolver.py
+  - rg -n "G351|QF-115|QF-116|QF-117|QF-118" docs/12_workflows/skeleton_ssot_v1.yaml
+  required_tests:
+  - python3 -m pytest -q tests/test_fetch_contracts_phase77.py tests/test_qa_fetch_probe.py
+    tests/test_qa_fetch_resolver.py
+  notes:
+  - auto-clustered from goal dependency graph
 - cluster_id: CL_LEGACY_CORE
   title: Legacy/core goal cluster
   status_now: partial
@@ -27940,15 +28142,12 @@ capability_clusters_v1:
   - G348
   - G349
   - G350
+  - G351
   requirement_ids:
   - QF-098
   - QF-099
   - QF-100
   - QF-101
-  - QF-115
-  - QF-116
-  - QF-117
-  - QF-118
   - QF-119
   - WB-006
   - WB-007
@@ -28019,7 +28218,7 @@ capability_clusters_v1:
   - WV-036
   - WV-037
   - WV-038
-  latest_phase_id: G350
+  latest_phase_id: G351
   acceptance_commands:
   - python3 scripts/check_docs_tree.py
   required_tests:
@@ -28061,6 +28260,7 @@ milestone_policy_v1:
   blocked_conditions:
   - milestone_gate_failed_retry_exhausted
   - push_master_and_fallback_failed
+  retry_blocked_clusters: false
 milestone_history_v1:
 - milestone_id: cl_fetch_057-20260213025503
   cluster_id: CL_FETCH_057
@@ -80153,6 +80353,19 @@ milestone_history_v1:
     commit_manifest: artifacts/autopilot/milestones/cl_fetch_345-20260217090431/commit_manifest.json
   notes:
   - auto-recorded by whole_view_autopilot milestone evaluator
+- milestone_id: cl_fetch_350-20260217103320
+  cluster_id: CL_FETCH_350
+  status_now: implemented
+  recorded_at: '2026-02-17T10:33:28Z'
+  latest_phase_id: G350
+  push_mode: fallback_branch
+  branch: autopilot/milestone-cl_fetch_350-20260217103320
+  commit_sha: 73f0a449aa28089d68c592c76b8e35d4dfc3a145
+  artifact_paths:
+    milestone_summary: artifacts/autopilot/milestones/cl_fetch_350-20260217103320/milestone_summary.md
+    commit_manifest: artifacts/autopilot/milestones/cl_fetch_350-20260217103320/commit_manifest.json
+  notes:
+  - auto-recorded by whole_view_autopilot milestone evaluator
 queue_empty_generation_protocol_v1:
   status_now: active
   enabled: false
@@ -82395,10 +82608,9 @@ planning_policy_v2:
     latest_plan:
       mode: codex_assisted
       source: codex_cli_architect_planner
-      generated_at: '2026-02-17T06:31:44Z'
-      signature: 82ec79a05bd276d63fa1
+      generated_at: '2026-02-17T09:24:39Z'
+      signature: ac25219ce7534e2db900
       requirement_priority:
-      - QF-114
       - QF-115
       - QF-116
       - QF-117
@@ -82450,21 +82662,21 @@ planning_policy_v2:
       - WB-044
       - WB-045
       - WB-046
-      - WB-047
       - WB-048
+      - WB-047
       - WB-049
-      - WB-050
       - WB-051
+      - WB-050
       - WB-052
-      - WB-053
       - WB-054
+      - WB-053
       - WB-055
-      - WB-056
       - WB-057
+      - WB-056
       - WB-058
+      - WB-061
       - WB-059
       - WB-060
-      - WB-061
       - WB-062
       - WB-063
       - WB-064
@@ -82474,19 +82686,17 @@ planning_policy_v2:
       - WB-068
       - WB-069
       goal_priority:
-      - G349
       - G350
       bundle_hints:
       - track: impl_fetchdata
         requirement_ids:
-        - QF-114
         - QF-115
         - QF-116
         - QF-117
         - QF-118
         - QF-119
         - QF-120
-        reason: 先完成宿主终端基线与环境样例闭环，提供后续 Workbench fetch-probe 的可复现前提。
+        reason: 环境与基线元信息一次性补齐，彼此独立且低耦合。
       - track: impl_workbench
         requirement_ids:
         - WB-002
@@ -82498,7 +82708,7 @@ planning_policy_v2:
         - WB-008
         - WB-009
         - WB-010
-        reason: 先锁定目标/非目标与治理边界，再进入功能实现，避免后续返工。
+        reason: 先锁定目标、非目标与治理边界，作为后续实现约束。
       - track: impl_workbench
         requirement_ids:
         - WB-011
@@ -82517,11 +82727,13 @@ planning_policy_v2:
         - WB-024
         - WB-025
         - WB-026
-        reason: 完成核心交互 FR 与 NFR（含审计、幂等、错误可解释）作为接口实现验收标准。
+        reason: 核心用户流程与NFR一并落地，减少后续返工。
       - track: impl_workbench
         requirement_ids:
         - WB-027
         - WB-028
+        - WB-037
+        - WB-038
         - WB-029
         - WB-030
         - WB-031
@@ -82530,15 +82742,16 @@ planning_policy_v2:
         - WB-034
         - WB-035
         - WB-036
-        - WB-037
-        - WB-038
+        reason: 接口骨架优先（store/route先于具体handler），满足skeleton-first。
+      - track: impl_workbench
+        requirement_ids:
         - WB-039
         - WB-040
         - WB-041
         - WB-042
         - WB-043
         - WB-044
-        reason: 按“Store/Route skeleton -> 落盘结构”顺序推进，确保接口骨架先于依赖实现。
+        reason: 统一落盘与审计数据面，支撑可追溯、审批、重放。
       - track: impl_workbench
         requirement_ids:
         - WB-045
@@ -82557,7 +82770,7 @@ planning_policy_v2:
         - WB-058
         - WB-059
         - WB-060
-        reason: 按 Phase-0 到 Phase-4 的用户结果卡链路实现，保持可回退/可继续的流程一致性。
+        reason: 按Phase 0-4连续交付结果卡与可操作能力，形成用户闭环。
       - track: impl_workbench
         requirement_ids:
         - WB-061
@@ -82569,24 +82782,23 @@ planning_policy_v2:
         - WB-067
         - WB-068
         - WB-069
-        reason: 最后收敛到 Subagent API 对接与 DoD/测试回归，验证全链路可交付。
+        reason: Subagent接口完成后集中执行DoD与回归验收。
       parallel_hints:
-      - QF-114 完成后，QF-116~QF-120 可并行采集；QF-115 作为基线一致性单独校验。
-      - WB-006 完成后，WB-007/WB-008/WB-009 可并行落实为约束检查。
-      - WB-010 完成后，WB-011~WB-019 可并行开发；WB-020 审计日志通路可独立推进。
-      - WB-028 完成后，后端接口（WB-029~WB-036）与前端路由页面（WB-037/WB-038）可并行实现。
-      - WB-039 完成后，session/events 落盘（WB-040/WB-041）与 cards/drafts 落盘（WB-042~WB-044）可并行。
+      - WB-028接口契约冻结后，可并行推进后端API实现（WB-029~WB-036）与前端路由页骨架（WB-037~WB-038）。
+      - WB-039~WB-044的数据落盘实现可与WB-029~WB-034业务处理并行，只需统一session_id/job_id命名约定。
+      - Phase卡片开发可按子流并行：Phase-0/1（WB-046~WB-051）、Phase-2/3（WB-052~WB-057）、Phase-4（WB-058~WB-060）。
+      - 测试可并行：API测试与UI E2E先分开推进，最后汇总全链路集成与回归（WB-066~WB-067）。
       rationale:
-      - 优先 G349 以先固化 fetchdata 基线与环境证据，降低后续联调不确定性。
-      - WB 需求按依赖拓扑排序，并显式保证接口骨架（WB-027~WB-038）先于其依赖实现（WB-039+）。
-      - 治理与审计相关要求前置，确保不绕过 contracts/policies/gates 且保持 append-only 语义。
-      - Phase 需求严格按 0->4 顺序，匹配用户单入口串联推进与失败恢复路径。
-      - 同层需求采用稳定的 ID 升序，保证优先级列表可复现、确定且有限。
+      - 优先级遵循依赖拓扑，所有父需求均先于子需求，确保顺序可执行且有限。
+      - 接口骨架需求（WB-028）已排在其依赖实现需求（WB-029~WB-038）之前，符合skeleton-first规则。
+      - 将治理与审计链路（WB-005、WB-020、WB-039~WB-044、WB-068）置于功能扩展前，避免后补治理。
+      - 关键路径优先（WB-048→WB-049→WB-051→WB-052→WB-054→WB-055→WB-057→WB-058→WB-061→WB-062），可最早打通端到端。
+      - 仅有活跃目标G350，且其直接需求WB-002~WB-005位于序列前段，可尽早达成目标基线。
       skills_used:
       - architect-planner
       - requirement-splitter
       - ssot-goal-planner
-      artifact_path: artifacts/autopilot/preplan/architect_preplan_20260217T063144Z.json
+      artifact_path: artifacts/autopilot/preplan/architect_preplan_20260217T092439Z.json
 skill_registry_v1:
   status_now: active
   skills:
@@ -83104,3 +83316,125 @@ architect_preplan_history_v1:
   blocked: false
   fallback_reason: ''
   artifact_path: artifacts/autopilot/preplan/82ec79a05bd276d63fa1/architect_preplan_last_message.txt
+- generated_at: '2026-02-17T09:24:39Z'
+  signature: ac25219ce7534e2db900
+  mode: codex_assisted
+  source: codex_cli_architect_planner
+  requirement_priority_count: 74
+  goal_priority_count: 1
+  blocked: false
+  fallback_reason: ''
+  artifact_path: artifacts/autopilot/preplan/ac25219ce7534e2db900/architect_preplan_last_message.txt
+autopilot_decision_log_v1:
+- recorded_at: '2026-02-17T09:54:42Z'
+  decision_type: stop_condition_blocked
+  condition: Any change touching contracts/**
+  files:
+  - contracts/agent_run_schema_v1.json
+  - contracts/attribution_report_schema_v1.json
+  - contracts/blueprint_schema_v1.json
+  - contracts/calc_trace_plan_v1.json
+  - contracts/data_snapshot_manifest_schema_v1.json
+  - contracts/defs/expression_ast_v1.json
+  - contracts/diagnostic_spec_v1.json
+  - contracts/dossier_schema_v1.json
+  - contracts/examples/blueprint_bad.json
+  - contracts/examples/blueprint_buyhold_demo_ok.json
+  - contracts/examples/blueprint_ok.json
+  - contracts/examples/blueprint_policy_mismatch_semantic.json
+  - contracts/examples/calc_trace_plan_bad.json
+  - contracts/examples/calc_trace_plan_ok.json
+  - contracts/examples/diagnostic_spec_bad.json
+  - contracts/examples/diagnostic_spec_ok.json
+  - contracts/examples/dossier_bad.json
+  - contracts/examples/dossier_missing_data_snapshot_id_bad.json
+  - contracts/examples/dossier_ok.json
+  - contracts/examples/gate_results_v2_bad.json
+  - contracts/examples/gate_results_v2_ok.json
+  - contracts/examples/gate_spec_bad.json
+  - contracts/examples/gate_spec_ok.json
+  - contracts/examples/run_spec_bad.json
+  - contracts/examples/run_spec_missing_as_of_bad.json
+  - contracts/examples/run_spec_ok.json
+  - contracts/examples/run_spec_v2_missing_list_bad.json
+  - contracts/examples/run_spec_v2_ok.json
+  - contracts/examples/signal_dsl_bad.json
+  - contracts/examples/signal_dsl_ok.json
+  - contracts/examples/signal_dsl_version_bad.json
+  - contracts/examples/variable_dictionary_bad.json
+  - contracts/examples/variable_dictionary_ok.json
+  - contracts/experience_card_schema_v1.json
+  - contracts/experience_pack_schema_v1.json
+  - contracts/fetch_request_schema_v1.json
+  - contracts/fetch_result_meta_schema_v1.json
+  - contracts/gate_results_schema_v1.json
+  - contracts/gate_results_schema_v2.json
+  - contracts/gate_spec_v1.json
+  - contracts/idea_spec_schema_v1.json
+  - contracts/improvement_proposals_schema_v1.json
+  - contracts/ingest_manifest_schema_v1.json
+  - contracts/job_event_schema_v1.json
+  - contracts/job_event_schema_v2.json
+  - contracts/job_spec_schema_v1.json
+  - contracts/leaderboard_schema_v1.json
+  - contracts/llm_call_schema_v1.json
+  - contracts/llm_session_schema_v1.json
+  - contracts/llm_usage_report_schema_v1.json
+  - contracts/output_guard_report_schema_v1.json
+  - contracts/quality_report_schema_v1.json
+  - contracts/run_spec_schema_v1.json
+  - contracts/run_spec_schema_v2.json
+  - contracts/signal_dsl_v1.json
+  - contracts/sweep_trial_schema_v1.json
+  - contracts/trial_event_schema_v1.json
+  - contracts/variable_dictionary_v1.json
+  context: &id001
+    phase_id: G350
+    attempt: 1
+    stage: dispatch
+- recorded_at: '2026-02-17T09:54:42Z'
+  decision_type: stop_condition_blocked
+  condition: Any holdout visibility rule change
+  files:
+  - docs/08_gates/holdout_leak_guard_v1.md
+  - docs/08_gates/holdout_vault_v1.md
+  - docs/08_phases/00_skeleton/phase_06_gaterunner_holdout_v1.md
+  - docs/08_phases/00_skeleton/phase_skel_g122_final_holdout.md
+  - docs/08_phases/00_skeleton/phase_skel_g124_holdout_pass_fail.md
+  - docs/08_phases/00_skeleton/phase_skel_g258_final_holdout.md
+  - docs/08_phases/00_skeleton/phase_skel_g260_holdout_pass_fail.md
+  - docs/09_adr/0002_gaterunner_gate_results_and_holdout_v1.md
+  - policies/examples/gate_suite_holdout_output_bad.yaml
+  - policies/gate_suite_v2_holdout_guard.yaml
+  - policies/policy_bundle_v2_holdout_guard.yaml
+  - src/quant_eam/gates/holdout_leak_guard.py
+  - src/quant_eam/gates/holdout_passfail.py
+  - src/quant_eam/holdout/__init__.py
+  - src/quant_eam/holdout/vault.py
+  context: *id001
+- recorded_at: '2026-02-17T09:54:42Z'
+  decision_type: stop_condition_blocked
+  condition: Any change touching policies/**
+  files:
+  - policies/asof_latency_policy_v1.yaml
+  - policies/budget_policy_v1.yaml
+  - policies/cost_policy_v1.yaml
+  - policies/examples/asof_rule_bad.yaml
+  - policies/examples/execution_policy_version_bad.yaml
+  - policies/examples/gate_suite_holdout_output_bad.yaml
+  - policies/examples/policy_bundle_missing_ref_bad.yaml
+  - policies/execution_policy_v1.yaml
+  - policies/gate_suite_curve_composer_v1.yaml
+  - policies/gate_suite_curve_composer_v2.yaml
+  - policies/gate_suite_v1.yaml
+  - policies/gate_suite_v2_holdout_guard.yaml
+  - policies/gate_suite_v2_snapshot_integrity.yaml
+  - policies/llm_budget_policy_v1.yaml
+  - policies/policy_bundle_curve_composer_v1.yaml
+  - policies/policy_bundle_curve_composer_v2.yaml
+  - policies/policy_bundle_v1.yaml
+  - policies/policy_bundle_v2_holdout_guard.yaml
+  - policies/policy_bundle_v2_snapshot_integrity.yaml
+  - policies/policy_lock_v1.json
+  - policies/risk_policy_v1.yaml
+  context: *id001
