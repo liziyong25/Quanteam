@@ -1,0 +1,9 @@
+policy_bundle_id: policy_bundle_v1_missing_ref_bad
+policy_version: "v1"
+title: "Policy Bundle v1 (bad example: missing referenced policy)"
+description: This bundle references a non-existent policy id; validator must fail.
+execution_policy_id: execution_policy_v1_default
+cost_policy_id: cost_policy_v1_default
+asof_latency_policy_id: asof_latency_policy_v1_default
+risk_policy_id: risk_policy_v1_default
+gate_suite_id: gate_suite_v1_DOES_NOT_EXIST

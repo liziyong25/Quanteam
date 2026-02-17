@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Playbook Technical Stack Baseline Read-Only Evidence</h1>
+    <p class="page-subtitle">
+      Read-only governance evidence sourced from Playbook sections <code>1/1.1/1.2</code>
+      in <code>Quant‑EAM Implementation Phases Playbook.md</code>.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">section 1/1.1/1.2 evidence only</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Sections</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Evidence Summary</h2>
+      <div class="kv">
+        <div class="k">ui_route</div>
+        <div class="v"><code>/ui/playbook-tech-stack</code></div>
+        <div class="k">foundation_rows</div>
+        <div class="v"><span data-testid="playbook-tech-stack-foundation-total">{{ summary.foundation_total }}</span></div>
+        <div class="k">service_rows</div>
+        <div class="v"><span data-testid="playbook-tech-stack-service-total">{{ summary.service_total }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Playbook Section 1 Technical Stack Baseline</h2>
+    <div class="section"><span class="pill">{{ playbook.section }}</span></div>
+    <div class="grid">
+      <div class="section">
+        <h2>Playbook Section 1.1 Foundation Stack</h2>
+        <div class="section"><span class="pill">{{ playbook.foundation_section }}</span></div>
+        {% if playbook.foundation_rows %}
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>#</th><th>item</th><th>source_line</th></tr></thead>
+              <tbody>
+              {% for row in playbook.foundation_rows %}
+                <tr data-testid="playbook-tech-stack-foundation-row-{{ loop.index }}">
+                  <td>{{ loop.index }}</td>
+                  <td>{{ row.item }}</td>
+                  <td>{{ row.source_line }}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="plot-fallback">No foundation rows extracted from Playbook section 1.1.</div>
+        {% endif %}
+      </div>
+
+      <div class="section">
+        <h2>Playbook Section 1.2 Service Stack</h2>
+        <div class="section"><span class="pill">{{ playbook.service_section }}</span></div>
+        {% if playbook.service_rows %}
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>#</th><th>item</th><th>source_line</th></tr></thead>
+              <tbody>
+              {% for row in playbook.service_rows %}
+                <tr data-testid="playbook-tech-stack-service-row-{{ loop.index }}">
+                  <td>{{ loop.index }}</td>
+                  <td>{{ row.item }}</td>
+                  <td>{{ row.source_line }}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="plot-fallback">No service rows extracted from Playbook section 1.2.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock %}

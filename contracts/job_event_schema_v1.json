@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/job_event_schema_v1.json",
+  "title": "job_event_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "JobEvent is an append-only event for orchestrator workflow. It is auditable plumbing (not business arbitration).",
+  "required": ["schema_version", "job_id", "event_type"],
+  "properties": {
+    "schema_version": {
+      "const": "job_event_v1",
+      "description": "Schema discriminator. Must be exactly 'job_event_v1'."
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Forward-compatible extension area (timestamps, debug info)."
+    },
+    "job_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{12}$",
+      "description": "Deterministic id: sha256(canonical job_spec)[:12]."
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "BLUEPRINT_SUBMITTED",
+        "IDEA_SUBMITTED",
+        "BLUEPRINT_PROPOSED",
+        "STRATEGY_SPEC_PROPOSED",
+        "RUNSPEC_COMPILED",
+        "WAITING_APPROVAL",
+        "APPROVED",
+        "TRACE_PREVIEW_COMPLETED",
+        "RUN_COMPLETED",
+        "GATES_COMPLETED",
+        "REGISTRY_UPDATED",
+        "REPORT_COMPLETED",
+        "IMPROVEMENTS_PROPOSED",
+        "SPAWNED",
+        "DONE",
+        "ERROR"
+      ]
+    },
+    "message": { "type": "string" },
+    "outputs": { "type": "object", "additionalProperties": true }
+  }
+}

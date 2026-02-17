@@ -1,0 +1,14 @@
+policy_bundle_id: policy_bundle_curve_composer_v1_default_v2
+policy_version: "v1"
+title: Policy Bundle v1 (curve composer) v2
+description: >
+  v2 enables additional governance switches via bundle.extensions. Policies remain read-only references.
+extensions:
+  composer:
+    allow_negative_weights: false
+execution_policy_id: execution_policy_v1_default
+cost_policy_id: cost_policy_v1_default
+asof_latency_policy_id: asof_latency_policy_v1_default
+risk_policy_id: risk_policy_v1_default
+gate_suite_id: gate_suite_v1_curve_composer_default_v2
+

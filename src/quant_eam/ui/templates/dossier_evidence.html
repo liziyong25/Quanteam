@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Dossier Evidence Spec Coverage</h1>
+    <p class="page-subtitle">
+      Read-only evidence for Whole View section <code>{{ source_file.section }}</code> and current
+      <code>artifacts/dossiers</code> index coverage.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">no holdout expansion</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Section</h2>
+      <div class="kv">
+        <div class="k">path</div>
+        <div class="v"><code>{{ source_file.path }}</code></div>
+        <div class="k">status</div>
+        <div class="v">{% if source_file.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</div>
+        <div class="k">section</div>
+        <div class="v"><span class="pill">{{ source_file.section }}</span></div>
+        <div class="k">root_pattern</div>
+        <div class="v"><code>{{ source_file.root_entry }}</code></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Coverage Summary</h2>
+      <div class="kv">
+        <div class="k">structure_entry_total</div>
+        <div class="v"><span data-testid="structure-entry-count">{{ summary.structure_entry_total }}</span></div>
+        <div class="k">required_run_entry_total</div>
+        <div class="v"><span data-testid="required-run-entry-count">{{ summary.required_run_entry_total }}</span></div>
+        <div class="k">dossier_run_total</div>
+        <div class="v"><span data-testid="dossier-run-count">{{ summary.dossier_run_total }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Whole View 4.4 Dossier Structure</h2>
+    {% if structure_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>entry</th><th>kind</th></tr></thead>
+          <tbody>
+          {% for row in structure_rows %}
+            <tr data-testid="dossier-structure-row-{{ loop.index }}">
+              <td>{{ loop.index }}</td>
+              <td><code>{{ row.entry }}</code></td>
+              <td><span class="pill">{{ row.kind }}</span></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No dossier structure was extracted from Whole View section 4.4.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Artifacts Dossiers Evidence Index</h2>
+    <div class="section muted">
+      root: <code>{{ dossiers_root.path }}</code>
+      {% if dossiers_root.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}
+    </div>
+    {% if run_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>run_id</th><th>path</th><th>coverage</th><th>missing_entries</th><th>extra_entries</th></tr></thead>
+          <tbody>
+          {% for row in run_rows %}
+            <tr data-testid="dossier-run-row-{{ loop.index }}">
+              <td><code>{{ row.run_id }}</code></td>
+              <td><code>{{ row.path }}</code></td>
+              <td><span class="pill">{{ row.coverage_ratio }}</span></td>
+              <td>
+                {% if row.missing_count > 0 %}
+                  <span class="pill bad">{{ row.missing_count }}</span>
+                  {% for item in row.missing_entries %}
+                    <div><code>{{ item }}</code></div>
+                  {% endfor %}
+                {% else %}
+                  <span class="pill good">0</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if row.extra_count > 0 %}
+                  <span class="pill">{{ row.extra_count }}</span>
+                  {% for item in row.extra_entries %}
+                    <div><code>{{ item }}</code></div>
+                  {% endfor %}
+                {% else %}
+                  <span class="muted">0</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No dossier runs found under the configured artifacts root.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Required Entry Coverage Across Runs</h2>
+    {% if entry_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>entry</th><th>kind</th><th>present_runs</th><th>missing_runs</th><th>coverage</th></tr></thead>
+          <tbody>
+          {% for row in entry_rows %}
+            <tr data-testid="dossier-entry-row-{{ loop.index }}">
+              <td><code>{{ row.entry }}</code></td>
+              <td><span class="pill">{{ row.kind }}</span></td>
+              <td>{{ row.present_runs }}</td>
+              <td>{{ row.missing_runs }}</td>
+              <td><span class="pill">{{ row.coverage_ratio }}</span></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No required dossier entries could be extracted from section 4.4.</div>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phase Authoring"
+  short_description: "Generate consistent phase docs with DoD sections."
+  default_prompt: "Use this skill to write phase documents with Goal/Requirements/Architecture/DoD/Implementation Plan sections."

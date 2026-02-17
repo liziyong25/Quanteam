@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/improvement_proposals_schema_v1.json",
+  "title": "improvement_proposals_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "ImprovementProposals are candidate Blueprint drafts generated from existing structured evidence (GateResults + ReportSummary). Proposals are not arbitration and must not override policies; any changes must remain declarative.",
+  "required": ["schema_version", "base_job_id", "base_run_id", "budget_policy_id", "proposals"],
+  "properties": {
+    "schema_version": { "const": "improvement_proposals_v1" },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Forward-compatible metadata only."
+    },
+    "base_job_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{12}$",
+      "description": "Job id that produced the evidence base."
+    },
+    "base_run_id": { "type": "string", "minLength": 1 },
+    "budget_policy_id": { "type": "string", "minLength": 1 },
+    "proposals": {
+      "type": "array",
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["proposal_id", "title", "rationale_refs", "blueprint_draft_json"],
+        "properties": {
+          "proposal_id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "rationale_refs": {
+            "type": "array",
+            "items": { "type": "string", "minLength": 1 },
+            "description": "Machine-readable references to evidence paths/fields (e.g. gate_results.json:/results/0)."
+          },
+          "blueprint_draft_json": {
+            "$ref": "https://quant-eam.local/contracts/blueprint_schema_v1.json",
+            "description": "A Blueprint v1 JSON object (draft) for review; must validate against blueprint_schema_v1."
+          }
+        }
+      }
+    }
+  }
+}
+

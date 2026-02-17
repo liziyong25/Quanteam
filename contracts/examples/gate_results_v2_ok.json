@@ -1,0 +1,42 @@
+{
+  "schema_version": "gate_results_v2",
+  "run_id": "deadbeefcafe",
+  "gate_suite_id": "gate_suite_v1_default",
+  "overall_pass": true,
+  "results": [
+    {
+      "gate_id": "basic_sanity",
+      "gate_version": "v1",
+      "pass": true,
+      "metrics": { "ok": true },
+      "evidence": { "artifacts": ["metrics.json"], "notes": "minimal" }
+    }
+  ],
+  "segment_results": [
+    {
+      "segment_id": "test_000",
+      "kind": "test",
+      "holdout": false,
+      "overall_pass": true,
+      "gates": [
+        {
+          "gate_id": "gate_no_lookahead_v1",
+          "gate_version": "v1",
+          "pass": true,
+          "metrics": { "violations_count": 0 }
+        }
+      ],
+      "artifacts": {
+        "metrics": "segments/test_000/metrics.json",
+        "curve": "segments/test_000/curve.csv",
+        "trades": "segments/test_000/trades.csv"
+      }
+    }
+  ],
+  "holdout_summary": {
+    "pass": true,
+    "summary": "holdout pass (minimal summary only)",
+    "metrics_minimal": {}
+  }
+}
+

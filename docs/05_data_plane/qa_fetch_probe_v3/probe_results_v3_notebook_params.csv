@@ -1,0 +1,38 @@
+cell_index,source,function,status,reason,type,len,columns,dtypes,head_preview,args_preview
+4,mysql_fetch,fetch_bond_date_list,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {}}"
+5,mysql_fetch,fetch_bond_day,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""symbol"": ""240011.IB"", ""start"": ""2010-01-01"", ""end"": ""2030-01-01""}}"
+6,mysql_fetch,fetch_bond_industry_settlement,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {}}"
+7,mysql_fetch,fetch_bondInformation,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""symbol"": ""240011.IB""}}"
+8,mysql_fetch,fetch_bond_min,pass_empty,no_data,DataFrame,0,"[""symbol"", ""trade_date""]","{""symbol"": ""object"", ""trade_date"": ""object""}",[],"{""args"": [], ""kwargs"": {""symbol"": ""240011.IB"", ""start"": ""2010-01-01"", ""end"": ""2030-01-01""}}"
+9,mysql_fetch,fetch_cfets_bond_amount,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""start"": ""2026-01-01"", ""end"": ""2026-02-11""}}"
+10,mysql_fetch,fetch_cfets_credit_item,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""start"": ""2010-01-01"", ""end"": ""2030-01-01""}}"
+11,mysql_fetch,fetch_cfets_credit_side,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""start"": ""2010-01-01"", ""end"": ""2030-01-01""}}"
+12,mysql_fetch,fetch_cfets_dfz_bond_day,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""symbol"": ""240011.IB"", ""start"": ""2010-01-01"", ""end"": ""2030-01-01""}}"
+13,mysql_fetch,fetch_cfets_repo_buyback_item,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""start"": ""2010-01-01"", ""end"": ""2030-01-01""}}"
+14,mysql_fetch,fetch_cfets_repo_buyout_item,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""start"": ""2010-01-01"", ""end"": ""2030-01-01""}}"
+15,mysql_fetch,fetch_cfets_repo_item,pass_empty,no_data,DataFrame,0,"[""trade_date""]","{""trade_date"": ""object""}",[],"{""args"": [], ""kwargs"": {""start"": ""2010-01-01"", ""end"": ""2030-01-01""}}"
+16,mysql_fetch,fetch_cfets_repo_side,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""start"": ""2010-01-01"", ""end"": ""2030-01-01""}}"
+17,mysql_fetch,fetch_clean_quote,pass_empty,no_data,DataFrame,0,"[""symbol"", ""trade_date""]","{""symbol"": ""object"", ""trade_date"": ""object""}",[],"{""args"": [], ""kwargs"": {""symbol"": ""240011.IB"", ""start"": ""2010-01-01"", ""end"": ""2030-01-01""}}"
+18,mysql_fetch,fetch_clean_transaction,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""symbol"": ""240011.IB"", ""start"": ""2010-01-01"", ""end"": ""2030-01-01""}}"
+19,mysql_fetch,fetch_realtime_bid,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {}}"
+21,mysql_fetch,fetch_realtime_transaction,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""symbol"": ""240011.IB""}}"
+22,mysql_fetch,fetch_settlement_bond_day,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""symbol"": ""240011.IB"", ""start"": ""2010-01-01"", ""end"": ""2030-01-01""}}"
+23,mysql_fetch,fetch_wind_indicators,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""indicators"": ""all"", ""start"": ""2010-01-01"", ""end"": ""2030-01-01""}}"
+24,mysql_fetch,fetch_yc_valuation,blocked_source_missing,"OperationalError: (pymysql.err.OperationalError) (2003, ""Can't connect to MySQL server on '192.168.31.241' ([Errno 1] Operation not permitted)"")
+(Background on this error at: https://sqlalche.me/e/20/e3q8)",unknown,0,[],{},null,"{""args"": [], ""kwargs"": {""symbol"": ""国开"", ""start"": ""2026-01-01"", ""end"": ""2026-02-11""}}"

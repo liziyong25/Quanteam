@@ -1,0 +1,9 @@
+policy_id: asof_latency_policy_v1_asof_rule_bad
+policy_version: "v1"
+title: "As-Of / Latency Policy v1 (bad example: wrong asof_rule)"
+description: asof_rule must equal available_at<=as_of.
+params:
+  asof_rule: available_at<as_of
+  default_latency_seconds: 0
+  trade_lag_bars_default: 1
+

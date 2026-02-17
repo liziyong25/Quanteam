@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Run {{ run_id }}</h1>
+    <p class="page-subtitle">Dossier-backed review of gates, risk, attribution, and segment-scoped evidence.</p>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <h2>Run</h2>
+      <div class="kv">
+        <div class="k">run_id</div><div class="v"><span class="pill">{{ run_id }}</span></div>
+        <div class="k">snapshot</div>
+        <div class="v">
+          {% if snapshot_id %}
+            <a href="/ui/snapshots/{{ snapshot_id }}"><span class="pill">{{ snapshot_id }}</span></a>
+          {% else %}
+            <span class="pill warn">unknown</span>
+          {% endif %}
+        </div>
+        <div class="k">overall_pass</div>
+        <div class="v">
+          {% if overall_pass is not none %}
+            {% if overall_pass %}<span class="pill good">PASS</span>{% else %}<span class="pill bad">FAIL</span>{% endif %}
+          {% else %}
+            <span class="pill warn">unknown</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if segments and segments|length > 0 %}
+  <div class="section">
+    <div class="card">
+      <h2>Segments</h2>
+      <div class="muted">Phase-21: segment-level review. Holdout view is minimal-only.</div>
+      <div class="selector">
+        Segment:
+        <select onchange="location.href='?segment_id=' + encodeURIComponent(this.value) + '&symbol={{ symbol|urlencode }}'">
+          <option value="" {% if not segment_id %}selected{% endif %}>top-level</option>
+          {% for s in segments %}
+            <option value="{{ s.segment_id }}" {% if s.segment_id == segment_id %}selected{% endif %}>
+              {{ s.kind }} :: {{ s.segment_id }}
+            </option>
+          {% endfor %}
+        </select>
+        {% if segment_id %}
+          <span class="pill">{{ segment_kind }}</span>
+          <span class="pill">{{ segment_id }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="grid section">
+    <div class="card">
+      <h2>Metrics</h2>
+      <div class="kv">
+        {% for k, v in metrics.items() %}
+          <div class="k">{{ k }}</div><div class="v">{{ v }}</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Risk</h2>
+      {% if risk_report %}
+        <div class="kv">
+          <div class="k">risk_policy_id</div><div class="v"><span class="pill">{{ risk_report.risk_policy_id }}</span></div>
+          <div class="k">max_leverage_observed</div><div class="v">{{ risk_report.max_observed.max_leverage_observed }}</div>
+          <div class="k">max_positions_observed</div><div class="v">{{ risk_report.max_observed.max_positions_observed }}</div>
+          <div class="k">max_turnover_observed</div><div class="v">{{ risk_report.max_observed.max_turnover_observed }}</div>
+          <div class="k">violation_count_by_rule</div><div class="v">{{ risk_report.violation_count_by_rule }}</div>
+        </div>
+        <div class="section">
+          <details>
+            <summary>risk_report.json (raw)</summary>
+            <pre class="code">{{ risk_report | tojson(indent=2) }}</pre>
+          </details>
+        </div>
+      {% else %}
+        <div class="plot-fallback">No <code>risk_report.json</code> found for this run (run gaterunner to generate it via <code>risk_policy_compliance_v1</code>).</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2 id="attribution">Attribution</h2>
+      {% if attribution_report %}
+        <div class="kv">
+          <div class="k">net_return</div><div class="v">{{ attribution_report.returns.net_return }}</div>
+          <div class="k">gross_return</div><div class="v">{{ attribution_report.returns.gross_return }}</div>
+          <div class="k">cost_drag</div><div class="v">{{ attribution_report.returns.cost_drag }}</div>
+          <div class="k">max_drawdown</div><div class="v">{{ attribution_report.drawdown.max_drawdown }}</div>
+          <div class="k">trade_count</div><div class="v">{{ attribution_report.trades.trade_count }}</div>
+          <div class="k">win_rate</div><div class="v">{{ attribution_report.trades.win_rate }}</div>
+        </div>
+        <div class="section">
+          <details>
+            <summary>attribution_report.json (raw)</summary>
+            <pre class="code">{{ attribution_report | tojson(indent=2) }}</pre>
+          </details>
+        </div>
+        {% if attribution_md %}
+        <div class="section">
+          <details>
+            <summary>reports/attribution/report.md</summary>
+            <pre class="code">{{ attribution_md }}</pre>
+          </details>
+        </div>
+        {% endif %}
+      {% else %}
+        <div class="plot-fallback">No <code>attribution_report.json</code> found for this run (run ReportAgent or generate Phase-24 attribution evidence).</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Gate Results</h2>
+      <div class="muted">Need full gate evidence? Open <a href="/ui/runs/{{ run_id }}/gates">run gate detail</a>.</div>
+      {% if gate_rows and gate_rows|length > 0 %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>gate</th><th>pass</th><th>status</th></tr></thead>
+          <tbody>
+          {% for g in gate_rows %}
+            <tr>
+              <td>{{ g.gate_id }}</td>
+              <td>
+                {% if g.pass %}<span class="pill good">PASS</span>{% else %}<span class="pill bad">FAIL</span>{% endif %}
+              </td>
+              <td><span class="pill">{{ g.status if g.status else "" }}</span></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="plot-fallback">No gate_results.json found for this run.</div>
+      {% endif %}
+
+      {% if holdout_summary %}
+      <div class="section">
+        <h2>Holdout (Minimal Summary)</h2>
+        <div class="kv">
+          <div class="k">pass</div><div class="v">{{ holdout_summary.pass }}</div>
+          <div class="k">summary</div><div class="v">{{ holdout_summary.summary }}</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if diagnostics and diagnostics|length > 0 %}
+  <div class="section">
+    <div class="card">
+      <h2>Diagnostics</h2>
+      <div class="muted">Phase-43 deterministic diagnostics evidence and promotion candidates.</div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>diagnostic_id</th><th>overall</th><th>checks</th><th>candidate_gates</th></tr></thead>
+          <tbody>
+          {% for d in diagnostics %}
+            {% set sm = d.summary if d.summary else {} %}
+            <tr>
+              <td>
+                <a href="/ui/runs/{{ run_id }}?diagnostic_id={{ d.diagnostic_id|urlencode }}{% if symbol %}&symbol={{ symbol|urlencode }}{% endif %}{% if segment_id %}&segment_id={{ segment_id|urlencode }}{% endif %}">
+                  {{ d.diagnostic_id }}
+                </a>
+              </td>
+              <td><span class="pill">{{ sm.overall if sm and sm.overall else "unknown" }}</span></td>
+              <td>{{ sm.check_count if sm and sm.check_count is not none else 0 }}</td>
+              <td>{{ d.candidate_gate_count }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if selected_diagnostic_id %}
+      <div class="section">
+        <h2>Diagnostic {{ selected_diagnostic_id }}</h2>
+        {% if selected_diagnostic_report %}
+        <details>
+          <summary>diagnostic_report.json</summary>
+          <pre class="code">{{ selected_diagnostic_report | tojson(indent=2) }}</pre>
+        </details>
+        {% endif %}
+        {% if selected_promotion_gate_spec %}
+        <details>
+          <summary>promotion_candidate/gate_spec.json</summary>
+          <pre class="code">{{ selected_promotion_gate_spec | tojson(indent=2) }}</pre>
+        </details>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if is_holdout_view %}
+  <div class="section">
+    <div class="card">
+      <h2>Holdout View</h2>
+      <div class="muted">Holdout is restricted: no equity curve, no trades table, no candle markers. Only minimal summary is shown above.</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not is_holdout_view %}
+    <div class="grid section">
+      <div class="card">
+        <h2>Equity Curve</h2>
+        {{ equity_html | safe }}
+      </div>
+
+      <div class="card">
+        <h2>K‑line (Test Segment)</h2>
+        <div class="selector">
+          Symbol:
+          <select onchange="location.href='?symbol=' + encodeURIComponent(this.value){% if segment_id %} + '&segment_id={{ segment_id|urlencode }}'{% endif %}">
+            {% for s in symbols %}
+              <option value="{{ s }}" {% if s == symbol %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {{ candles_html | safe }}
+        <div class="plot-fallback">Candles are queried via DataCatalog (as_of enforced). Trades markers come from dossier trades.csv.</div>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

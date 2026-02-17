@@ -1,0 +1,94 @@
+{
+  "schema_version": "wv045_wv050_kernel_bundle_fixtures_v1",
+  "bundle_goal_id": "G291",
+  "fixtures": [
+    {
+      "id": "fx_blueprint_min_valid",
+      "kind": "blueprint",
+      "source_contract": "contracts/blueprint_schema_v1.json",
+      "entrypoint": "validate_blueprint",
+      "expected_validation": "pass",
+      "covers_requirements": [
+        "WV-045",
+        "WV-046"
+      ]
+    },
+    {
+      "id": "fx_blueprint_missing_policy_bundle",
+      "kind": "blueprint",
+      "source_contract": "contracts/blueprint_schema_v1.json",
+      "entrypoint": "validate_blueprint",
+      "expected_validation": "fail_missing_required_field",
+      "covers_requirements": [
+        "WV-045",
+        "WV-046"
+      ]
+    },
+    {
+      "id": "fx_runspec_min_valid",
+      "kind": "runspec",
+      "source_contract": "contracts/run_spec_schema_v1.json",
+      "entrypoint": "validate_runspec",
+      "expected_validation": "pass",
+      "covers_requirements": [
+        "WV-045",
+        "WV-047",
+        "WV-048"
+      ]
+    },
+    {
+      "id": "fx_runspec_missing_budget_envelope",
+      "kind": "runspec",
+      "source_contract": "contracts/run_spec_schema_v1.json",
+      "entrypoint": "validate_runspec",
+      "expected_validation": "fail_missing_required_field",
+      "covers_requirements": [
+        "WV-045",
+        "WV-046"
+      ]
+    },
+    {
+      "id": "fx_dossier_manifest_valid",
+      "kind": "dossier",
+      "source_contract": "contracts/dossier_schema_v1.json",
+      "entrypoint": "validate_dossier",
+      "expected_validation": "pass",
+      "covers_requirements": [
+        "WV-045",
+        "WV-047",
+        "WV-050"
+      ]
+    },
+    {
+      "id": "fx_gate_results_valid",
+      "kind": "gate_results",
+      "source_contract": "contracts/gate_results_schema_v2.json",
+      "entrypoint": "validate_gate_results",
+      "expected_validation": "pass",
+      "covers_requirements": [
+        "WV-045",
+        "WV-048"
+      ]
+    },
+    {
+      "id": "fx_holdout_summary_only",
+      "kind": "holdout_summary",
+      "source_contract": "docs/08_gates/holdout_vault_v1.md",
+      "entrypoint": "validate_holdout_isolation",
+      "expected_validation": "pass_summary_only",
+      "covers_requirements": [
+        "WV-049"
+      ]
+    },
+    {
+      "id": "fx_dossier_append_only_retry",
+      "kind": "dossier_append_only",
+      "source_contract": "docs/01_governance.md",
+      "entrypoint": "validate_dossier_append_only",
+      "expected_validation": "pass_new_attempt_written",
+      "covers_requirements": [
+        "WV-050"
+      ]
+    }
+  ]
+}

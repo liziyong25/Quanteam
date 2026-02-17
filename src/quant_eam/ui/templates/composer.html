@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Composer</h1>
+    <p class="page-subtitle">Compose multiple registry cards into a governed deterministic run.</p>
+  </div>
+
+  {% if compose_error %}
+  <div class="card">
+    <span class="pill bad">compose_error</span>
+    <pre class="code">{{ compose_error }}</pre>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Compose From Cards</h2>
+    <form method="post" action="/ui/composer/compose">
+      <div class="form-inline">
+        <label>
+          title
+          <input type="text" name="title" value="{{ compose_form.title }}">
+        </label>
+        <label>
+          policy_bundle_path
+          <input type="text" name="policy_bundle_path" value="{{ compose_form.policy_bundle_path }}">
+        </label>
+        <label>
+          register_card
+          <select name="register_card">
+            <option value="true" {% if compose_form.register_card != "false" %}selected{% endif %}>true</option>
+            <option value="false" {% if compose_form.register_card == "false" %}selected{% endif %}>false</option>
+          </select>
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>select</th><th>card_id</th><th>run_id</th><th>title</th><th>weight</th><th>status</th></tr>
+          </thead>
+          <tbody>
+            {% for c in cards %}
+            {% set cid = c.card_id %}
+            {% set selected = cid in compose_form.selected_card_ids %}
+            <tr>
+              <td><input type="checkbox" name="card_ids" value="{{ cid }}" {% if selected %}checked{% endif %}></td>
+              <td><a href="/ui/cards/{{ cid }}">{{ cid }}</a></td>
+              <td><a href="/ui/runs/{{ c.run_id }}">{{ c.run_id }}</a></td>
+              <td>{{ c.title }}</td>
+              <td>
+                <input type="text" name="weights" value="{{ compose_form.weights_by_card[cid] if compose_form.weights_by_card and compose_form.weights_by_card[cid] is defined else '' }}">
+              </td>
+              <td><span class="pill">{{ c.status }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <button type="submit" class="btn">Compose Run</button>
+    </form>
+    <div class="muted">Select at least two cards. If weights are empty, equal weights are used.</div>
+  </div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Whole View Hard Constraints Governance Evidence</h1>
+    <p class="page-subtitle">
+      Read-only governance evidence sourced from Whole View section <code>1</code>
+      in root file <code>Quant‑EAM Whole View Framework.md</code>.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">section 1 evidence only</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Section</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Evidence Summary</h2>
+      <div class="kv">
+        <div class="k">ui_route</div>
+        <div class="v"><code>/ui/hard-constraints</code></div>
+        <div class="k">constraint_total</div>
+        <div class="v"><span data-testid="hard-constraints-total">{{ summary.constraint_total }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Whole View Section 1 Hard Constraints</h2>
+    {% if whole_view_constraints %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>id</th><th>constraint</th><th>detail</th></tr></thead>
+          <tbody>
+          {% for row in whole_view_constraints %}
+            <tr data-testid="hard-constraint-row-{{ loop.index }}">
+              <td><span class="pill">{{ row.check_id }}</span></td>
+              <td>{{ row.item }}</td>
+              <td>{{ row.detail if row.detail else "n/a" }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No hard constraints extracted from Whole View section 1.</div>
+    {% endif %}
+  </div>
+{% endblock %}

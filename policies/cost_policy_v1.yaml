@@ -1,0 +1,12 @@
+policy_id: cost_policy_v1_default
+policy_version: "v1"
+title: Cost Policy v1 (default)
+description: >
+  Governance policy for transaction cost assumptions. Read-only; strategies must not inline cost models.
+params:
+  commission_bps: 1.0
+  slippage_bps: 2.0
+  tax_bps: 0.0
+  min_fee: 0.0
+  currency: USD
+

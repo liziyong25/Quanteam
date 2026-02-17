@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Prompt {{ agent_id }}</h1>
+    <p class="page-subtitle">Version detail + diff + publish/pin controls (append-only).</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Selected Version</h2>
+      <div class="kv">
+        <div class="k">version</div><div class="v"><code>{{ selected_version }}</code></div>
+        <div class="k">source</div><div class="v"><span class="pill">{{ selected_source }}</span></div>
+        <div class="k">output_schema_version</div><div class="v"><code>{{ selected_output_schema_version }}</code></div>
+        <div class="k">path</div><div class="v"><code>{{ selected_path }}</code></div>
+      </div>
+      <div class="section">
+        <h3 class="section-title">Body</h3>
+        <pre class="code">{{ selected_body }}</pre>
+      </div>
+      <div class="section">
+        <h3 class="section-title">Versions</h3>
+        <div class="selector">
+          {% for v in versions %}
+            {% if v.prompt_version == selected_version %}
+              <span class="pill good">{{ v.prompt_version }}</span>
+            {% else %}
+              <a class="pill" href="/ui/prompts/{{ agent_id }}?version={{ v.prompt_version }}">{{ v.prompt_version }}</a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Publish vN+1</h2>
+      <form method="post" action="/ui/prompts/{{ agent_id }}/publish" class="form-grid">
+        <label>
+          <span>base_version (optional)</span>
+          <input name="base_version" value="{{ selected_version }}" placeholder="v2"/>
+        </label>
+        <label>
+          <span>output_schema_version</span>
+          <input name="output_schema_version" value="{{ selected_output_schema_version }}" required/>
+        </label>
+        <label class="full">
+          <span>body</span>
+          <textarea name="body" rows="12" required>{{ selected_body }}</textarea>
+        </label>
+        <div class="full">
+          <button type="submit" class="btn">Publish Next Version</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Pin Per Job</h2>
+      <form method="post" action="/ui/prompts/{{ agent_id }}/pin" class="form-grid">
+        <label>
+          <span>job_id</span>
+          <input name="job_id" placeholder="12-hex job id" required/>
+        </label>
+        <label>
+          <span>prompt_version</span>
+          <input name="prompt_version" value="{{ selected_version }}" required/>
+        </label>
+        <div class="full">
+          <button type="submit" class="btn">Pin For Job</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Diff vs Previous</h2>
+      {% if previous_version %}
+        <div class="muted">Comparing <code>{{ previous_version }}</code> -> <code>{{ selected_version }}</code></div>
+        <pre class="code">{{ diff_text }}</pre>
+      {% else %}
+        <div class="plot-fallback">No previous version available for diff.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

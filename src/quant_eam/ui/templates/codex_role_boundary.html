@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Whole View Codex Role Boundary Read-Only Evidence</h1>
+    <p class="page-subtitle">
+      Read-only governance evidence sourced only from Whole View section <code>7</code>
+      in root file <code>Quant‑EAM Whole View Framework.md</code>.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">section 7 evidence only</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Section</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Boundary Summary</h2>
+      <div class="kv">
+        <div class="k">ui_route</div>
+        <div class="v"><code>/ui/codex-role-boundary</code></div>
+        <div class="k">role_positioning_present</div>
+        <div class="v"><span data-testid="codex-role-positioning-present">{{ summary.role_positioning_present }}</span></div>
+        <div class="k">temporary_boundary_total</div>
+        <div class="v"><span data-testid="codex-role-temporary-total">{{ summary.temporary_row_total }}</span></div>
+        <div class="k">promotion_boundary_total</div>
+        <div class="v"><span data-testid="codex-role-promotion-total">{{ summary.promotion_row_total }}</span></div>
+        <div class="k">governance_note_present</div>
+        <div class="v"><span data-testid="codex-role-governance-note-present">{{ summary.governance_note_present }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Codex Role Positioning (Explorer / Tool Worker, Not Arbitrator)</h2>
+    <div class="section"><span class="pill">{{ whole_view.section }}</span></div>
+    {% if whole_view.role_positioning %}
+      <p data-testid="codex-role-positioning">{{ whole_view.role_positioning }}</p>
+    {% else %}
+      <div class="plot-fallback">No role-positioning statement extracted from Whole View section 7.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Ephemeral Diagnostics Boundary</h2>
+    <div class="section"><span class="pill">{{ whole_view.temporary_section }}</span></div>
+    {% if whole_view.temporary_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>boundary evidence</th><th>source_line</th></tr></thead>
+          <tbody>
+          {% for row in whole_view.temporary_rows %}
+            <tr data-testid="codex-role-temporary-row-{{ loop.index }}">
+              <td>{{ loop.index }}</td>
+              <td>{{ row.item }}</td>
+              <td>{{ row.source_line }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No temporary diagnostics rows extracted from Whole View section 7.1.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Promote-to-Gate Governance Note</h2>
+    <div class="section"><span class="pill">{{ whole_view.promotion_section }}</span></div>
+    {% if whole_view.governance_note %}
+      <p data-testid="codex-role-governance-note">{{ whole_view.governance_note }}</p>
+    {% else %}
+      <div class="plot-fallback">No promote-to-gate governance note extracted from Whole View section 7.2.</div>
+    {% endif %}
+
+    {% if whole_view.promotion_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>promotion evidence</th><th>source_line</th></tr></thead>
+          <tbody>
+          {% for row in whole_view.promotion_rows %}
+            <tr data-testid="codex-role-promotion-row-{{ loop.index }}">
+              <td>{{ loop.index }}</td>
+              <td>{{ row.item }}</td>
+              <td>{{ row.source_line }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No promotion rows extracted from Whole View section 7.2.</div>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,2125 @@
+{
+  "dataset_count": 71,
+  "datasets": [
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "bond_date_list",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_date_list"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date",
+      "description_zh": "bond_date_list 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "bond_day",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_day"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date",
+      "description_zh": "bond_day 数据集",
+      "grain": "day",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "bond_day_cfets",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_day_cfets"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date",
+      "description_zh": "CFETS债券日线成交数据集",
+      "grain": "day",
+      "venue": "cfets",
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "bond_industry_settlement",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_industry_settlement"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date",
+      "description_zh": "债券分机构买入数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "bond_min",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_min"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date",
+      "description_zh": "bond_min 数据集",
+      "grain": "min",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "bond_quote",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_quote"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "债券逐笔报价数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "bond_quote_realtime",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_quote_realtime"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "债券实时报价数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "bond_reference",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_information"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date",
+      "description_zh": "债券基础信息数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "bond_transaction",
+      "default_adjust": "raw",
+      "domain": "generic",
+      "functions": [
+        "fetch_bond_transaction"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "债券逐笔成交数据集",
+      "grain": "transaction",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "bond_transaction_realtime",
+      "default_adjust": "raw",
+      "domain": "generic",
+      "functions": [
+        "fetch_bond_transaction_realtime"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "债券实时成交数据集",
+      "grain": "transaction",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "bond_valuation_zz",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_valuation_zz"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date",
+      "description_zh": "中债债券估值数据集",
+      "grain": "reference",
+      "venue": "zz",
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_bond_amount",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_bond_amount_cfets"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date",
+      "description_zh": "cfets_bond_amount 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_credit_item",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_credit_item_cfets"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "cfets_credit_item 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_credit_side",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_credit_side_cfets"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "cfets_credit_side 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "cfets_dfz_bond_day",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_dfz_bond_day_cfets"
+      ],
+      "primary_keys": [
+        "symbol",
+        "trade_date"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "trade_date",
+      "description_zh": "cfets_dfz_bond_day 数据集",
+      "grain": "day",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_repo_buyback_item",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_repo_buyback_item_cfets"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "cfets_repo_buyback_item 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_repo_buyout_item",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_repo_buyout_item_cfets"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "cfets_repo_buyout_item 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_repo_item",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_repo_item_cfets"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "cfets_repo_item 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "cfets_repo_side",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_repo_side_cfets"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "cfets_repo_side 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "ctp_future_list",
+      "default_adjust": "raw",
+      "domain": "future",
+      "functions": [
+        "fetch_ctp_future_list"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "ctp_future_list 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "dk_data",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_dk_data"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "dk_data 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "etf_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_etf_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "etf_dk 数据集",
+      "grain": "dk",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "etf_list",
+      "default_adjust": "raw",
+      "domain": "etf",
+      "functions": [
+        "fetch_etf_list"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "etf_list 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "etf_name",
+      "default_adjust": "raw",
+      "domain": "etf",
+      "functions": [
+        "fetch_etf_name"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "etf_name 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "financial_report",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_financial_report"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "financial_report 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "future_day",
+      "default_adjust": "raw",
+      "domain": "future",
+      "functions": [
+        "fetch_future_day"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "future_day 数据集",
+      "grain": "day",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "future_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_future_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "future_dk 数据集",
+      "grain": "dk",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "future_list",
+      "default_adjust": "raw",
+      "domain": "future",
+      "functions": [
+        "fetch_future_list"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "future_list 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "future_min",
+      "default_adjust": "raw",
+      "domain": "future",
+      "functions": [
+        "fetch_future_min"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "future_min 数据集",
+      "grain": "min",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "future_tick",
+      "default_adjust": "raw",
+      "domain": "future",
+      "functions": [
+        "fetch_future_tick"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "future_tick 数据集",
+      "grain": "transaction",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "future_transaction_ctp",
+      "default_adjust": "raw",
+      "domain": "generic",
+      "functions": [
+        "fetch_future_transaction_ctp"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "CTP期货逐笔成交数据集",
+      "grain": "transaction",
+      "venue": "ctp",
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "get_hkstock_list",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_get_hkstock_list"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "get_hkstock_list 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "hkstock_day",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_hkstock_day"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "hkstock_day 数据集",
+      "grain": "day",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "hkstock_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_hkstock_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "hkstock_dk 数据集",
+      "grain": "dk",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "index_day",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_day"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "index_day 数据集",
+      "grain": "day",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "index_day_adv",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_day_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "index_day_adv 数据集",
+      "grain": "day",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "index_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_index_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "index_dk 数据集",
+      "grain": "dk",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "index_list",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_list"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "index_list 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "index_min",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_min"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "index_min 数据集",
+      "grain": "min",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "index_name",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_name"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "index_name 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "index_transaction",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_transaction"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "index_transaction 数据集",
+      "grain": "transaction",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "index_transaction_adv",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_index_transaction_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "index_transaction_adv 数据集",
+      "grain": "transaction",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "lof_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_lof_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "lof_dk 数据集",
+      "grain": "dk",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "reits_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_reits_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "reits_dk 数据集",
+      "grain": "dk",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_adj",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_adj"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_adj 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_block",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_block"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_block 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_block_history",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_block_history"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_block_history 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_block_slice_history",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_block_slice_history"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_block_slice_history 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_day",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_day"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_day 数据集",
+      "grain": "day",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_day_adv",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_day_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_day_adv 数据集",
+      "grain": "day",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_divyield",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_divyield"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_divyield 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_dk",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_stock_dk"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_dk 数据集",
+      "grain": "dk",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_dk_adv",
+      "default_adjust": "raw",
+      "domain": "dk",
+      "functions": [
+        "fetch_stock_dk_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_dk_adv 数据集",
+      "grain": "dk",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_financial_calendar",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_financial_calendar"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_financial_calendar 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_full",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_full"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_full 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_info",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_info"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_info 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_list",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_list"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_list 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_min",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_min"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_min 数据集",
+      "grain": "min",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_min_adv",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_min_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_min_adv 数据集",
+      "grain": "min",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_name",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_name"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_name 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_realtime_min",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_realtime_min"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_realtime_min 数据集",
+      "grain": "min",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_terminated",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_terminated"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_terminated 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_to_market_date",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_to_market_date"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_to_market_date 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_transaction",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_transaction"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_transaction 数据集",
+      "grain": "transaction",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "available_at<=as_of",
+      "dataset_id": "stock_transaction_adv",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_transaction_adv"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "market",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_transaction_adv 数据集",
+      "grain": "transaction",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {
+        "symbol": "optional",
+        "start": "optional",
+        "end": "optional"
+      },
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "stock_xdxr",
+      "default_adjust": "raw",
+      "domain": "stock",
+      "functions": [
+        "fetch_stock_xdxr"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "time_column": "dt",
+      "description_zh": "stock_xdxr 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw",
+        "qfq",
+        "hfq"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "trade_date",
+      "default_adjust": "raw",
+      "domain": "generic",
+      "functions": [
+        "fetch_trade_date"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "trade_date 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "wind_indicators",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_wind_indicators"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "wind_indicators 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "yc_valuation",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_yc_valuation"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "yc_valuation 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "zz_index",
+      "default_adjust": "raw",
+      "domain": "index",
+      "functions": [
+        "fetch_zz_index"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "zz_index 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    },
+    {
+      "as_of_rule": "snapshot_effective_time",
+      "dataset_id": "zz_valuation",
+      "default_adjust": "raw",
+      "domain": "bond",
+      "functions": [
+        "fetch_zz_valuation"
+      ],
+      "primary_keys": [
+        "code",
+        "dt"
+      ],
+      "query_mode": "reference",
+      "supported_adjust": [
+        "raw"
+      ],
+      "time_column": "dt",
+      "description_zh": "zz_valuation 数据集",
+      "grain": "reference",
+      "venue": null,
+      "adjust_support": [
+        "raw"
+      ],
+      "default_filters": {},
+      "fallback_policy": "standardized_empty"
+    }
+  ],
+  "generated_at_utc": "2026-02-12T05:54:35.050312+00:00",
+  "schema_version": "qa_dataset_registry_v1"
+}

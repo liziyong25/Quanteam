@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/llm_call_schema_v1.json",
+  "title": "llm_call_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "LLMCall is an append-only audit record of a single LLM completion request/response, after redaction. It must not contain holdout or secrets.",
+  "required": ["schema_version", "prompt_hash", "provider_id", "mode", "request", "response_json"],
+  "properties": {
+    "schema_version": { "const": "llm_call_v1" },
+    "prompt_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "provider_id": { "type": "string", "minLength": 1 },
+    "mode": { "type": "string", "enum": ["live", "record", "replay"] },
+    "request": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": ["agent_id", "system", "user", "sanitized_input_sha256", "schema_sha256"],
+      "properties": {
+        "agent_id": { "type": "string" },
+        "agent_version": { "type": "string" },
+        "system": { "type": "string" },
+        "user": { "type": "string" },
+        "sanitized_input_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "schema_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "response_json": { "type": "object", "additionalProperties": true },
+    "usage": { "type": "object", "additionalProperties": true },
+    "extensions": { "type": "object", "additionalProperties": true }
+  }
+}
+

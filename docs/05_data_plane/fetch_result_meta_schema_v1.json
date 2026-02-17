@@ -1,0 +1,107 @@
+{
+  "schema_name": "fetch_result_meta_schema_v1",
+  "schema_version": "v1",
+  "schema_status": "draft_skeleton",
+  "owner_track": "skeleton",
+  "source_alignment": {
+    "req_id": "WV-041",
+    "source_document": "Quant‑EAM Whole View Framework.md（v0.5‑draft）.md",
+    "source_line": 187,
+    "clause": "fetch_result_meta_schema_v1.json"
+  },
+  "meta_fields": {
+    "status": {
+      "type": "string",
+      "required": true,
+      "description": "Execution outcome marker"
+    },
+    "reason": {
+      "type": "string",
+      "required": true
+    },
+    "elapsed_sec": {
+      "type": "number",
+      "required": true,
+      "minimum": 0
+    },
+    "selected_function": {
+      "type": "string",
+      "required": true,
+      "description": "Final fetch_* function selected by runtime"
+    },
+    "engine": {
+      "type": "string",
+      "required": true,
+      "enum": ["mongo", "mysql"]
+    },
+    "row_count": {
+      "type": "integer",
+      "required": true,
+      "minimum": 0
+    },
+    "col_count": {
+      "type": "integer",
+      "required": true,
+      "minimum": 0
+    },
+    "columns": {
+      "type": "array",
+      "required": true,
+      "items": "string"
+    },
+    "request_hash": {
+      "type": "string",
+      "required": true,
+      "description": "Stable request fingerprint"
+    },
+    "min_ts": {
+      "type": ["string", "null"],
+      "required": true
+    },
+    "max_ts": {
+      "type": ["string", "null"],
+      "required": true
+    },
+    "coverage": {
+      "type": "object",
+      "required": true,
+      "description": "Requested/observed symbol coverage with missing-rate summary"
+    },
+    "probe_status": {
+      "type": "string",
+      "required": false,
+      "enum": ["pass_has_data", "pass_empty"]
+    },
+    "warnings": {
+      "type": "array",
+      "required": true,
+      "items": "string"
+    }
+  },
+  "validation_placeholders": {
+    "required_fields": [
+      "status",
+      "reason",
+      "elapsed_sec",
+      "selected_function",
+      "engine",
+      "row_count",
+      "col_count",
+      "columns",
+      "min_ts",
+      "max_ts",
+      "request_hash",
+      "coverage",
+      "warnings"
+    ],
+    "enum_rules": [
+      "engine in {mongo,mysql}",
+      "probe_status in {pass_has_data,pass_empty} when present"
+    ],
+    "consistency_rules": [
+      "row_count >= 0 and col_count >= 0",
+      "request_hash is deterministic sha256 for canonical request payload"
+    ],
+    "lineage_rules": []
+  }
+}

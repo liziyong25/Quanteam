@@ -1,0 +1,4 @@
+interface:
+  display_name: "Requirement Splitter"
+  short_description: "Compress and split requirement docs into stable clauses."
+  default_prompt: "Use this skill to parse requirement markdown into compact, dependency-aware clauses and generate machine-readable rows."

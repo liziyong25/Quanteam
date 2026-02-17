@@ -1,0 +1,13 @@
+policy_id: budget_policy_v1_default
+policy_version: "v1"
+title: Budget/Stop Policy v1 (default)
+description: >
+  Governance policy for iteration budgets and stop conditions in the workflow layer.
+  Read-only input to Kernel/Orchestrator. Jobs/modules must not inline/override this policy.
+params:
+  max_proposals_per_job: 5
+  max_spawn_per_job: 3
+  max_total_iterations: 10
+  # Optional: stop if we keep failing with no improvement. Semantics are defined by Orchestrator docs.
+  stop_if_no_improvement_n: 0
+

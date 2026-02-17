@@ -1,0 +1,22 @@
+# Phase G164: Requirement Gap Closure (QF-076)
+
+## Goal
+- Close requirement gap `QF-076` from `docs/05_data_plane/QA_Fetch_FetchData_Impl_Spec_v1.md:133`.
+
+## Requirements
+- Requirement ID: QF-076
+- Owner Track: impl_fetchdata
+- Clause: 再执行 `*_day` 拉取行情数据；
+
+## Architecture
+- Single SSOT source: docs/12_workflows/skeleton_ssot_v1.yaml
+- Requirement-gap-only planning path.
+- Interface-first dependency gate for impl goals.
+
+## DoD
+- Acceptance commands pass.
+- Packet validator passes.
+- SSOT writeback marks linked requirement implemented.
+
+## Implementation Plan
+TBD by controller at execution time.

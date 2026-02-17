@@ -1,0 +1,70 @@
+{
+  "schema_name": "data_snapshot_manifest_v1",
+  "schema_version": "v1",
+  "schema_status": "draft_skeleton",
+  "owner_track": "skeleton",
+  "source_alignment": {
+    "req_id": "WV-042",
+    "source_document": "Quant‑EAM Whole View Framework.md（v0.5‑draft）.md",
+    "source_line": 188,
+    "clause": "data_snapshot_manifest_v1.json（DataLake ingest）"
+  },
+  "manifest_fields": {
+    "snapshot_id": {
+      "type": "string",
+      "required": true
+    },
+    "dataset": {
+      "type": "string",
+      "required": true
+    },
+    "storage_uri": {
+      "type": "string",
+      "required": true
+    },
+    "schema_ref": {
+      "type": "string",
+      "required": true
+    },
+    "row_count": {
+      "type": "integer",
+      "required": true,
+      "minimum": 0
+    },
+    "time_range": {
+      "type": "object",
+      "required": false,
+      "properties": {
+        "start": "string",
+        "end": "string",
+        "as_of": "string"
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "required": false,
+      "additional_properties": true
+    },
+    "ingest_meta": {
+      "type": "object",
+      "required": false,
+      "properties": {
+        "ingested_at": "string",
+        "ingest_job_id": "string",
+        "checksum": "string"
+      }
+    }
+  },
+  "validation_placeholders": {
+    "required_fields": [
+      "snapshot_id",
+      "dataset",
+      "storage_uri",
+      "schema_ref",
+      "row_count"
+    ],
+    "storage_rules": [],
+    "partition_rules": [],
+    "retention_rules": []
+  }
+}

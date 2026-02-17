@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Playbook Construction Sequence Recommendation Read-Only Evidence</h1>
+    <p class="page-subtitle">
+      Read-only governance evidence sourced from Playbook section <code>5</code>
+      in <code>Quant‑EAM Implementation Phases Playbook.md</code>.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">section 5 evidence only</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Section</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Evidence Summary</h2>
+      <div class="kv">
+        <div class="k">ui_route</div>
+        <div class="v"><code>/ui/playbook-sequence</code></div>
+        <div class="k">sequence_rows</div>
+        <div class="v"><span data-testid="playbook-sequence-total">{{ summary.sequence_item_total }}</span></div>
+        <div class="k">sequence_phases</div>
+        <div class="v"><span data-testid="playbook-sequence-phase-total">{{ summary.sequence_phase_total }}</span></div>
+        <div class="k">loop_components</div>
+        <div class="v"><span data-testid="playbook-sequence-loop-total">{{ summary.loop_component_total }}</span></div>
+        <div class="k">automation_note_present</div>
+        <div class="v"><span data-testid="playbook-sequence-automation-note-present">{{ summary.automation_note_present }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Playbook Section 5 Construction Sequence Recommendation</h2>
+    <div class="section"><span class="pill">{{ playbook.section }}</span></div>
+    {% if playbook.intro %}
+      <div class="muted">{{ playbook.intro }}</div>
+    {% endif %}
+
+    <div class="section">
+      <h2>Recommended Build Sequence</h2>
+      {% if playbook.sequence_rows %}
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>#</th><th>recommendation</th><th>source_line</th></tr></thead>
+            <tbody>
+            {% for row in playbook.sequence_rows %}
+              <tr data-testid="playbook-sequence-row-{{ loop.index }}">
+                <td>{{ row.index }}</td>
+                <td>{{ row.item }}</td>
+                <td>{{ row.source_line }}</td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="plot-fallback">No sequence recommendation rows extracted from Playbook section 5.</div>
+      {% endif %}
+    </div>
+
+    <div class="grid">
+      <div class="section">
+        <h2>Loop-First Closure Phases</h2>
+        {% if playbook.sequence_phase_rows %}
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>#</th><th>phase</th><th>source_line</th></tr></thead>
+              <tbody>
+              {% for row in playbook.sequence_phase_rows %}
+                <tr data-testid="playbook-sequence-phase-row-{{ loop.index }}">
+                  <td>{{ row.index }}</td>
+                  <td>{{ row.phase_label }}</td>
+                  <td>{{ row.source_line }}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="plot-fallback">No phase-sequence tokens extracted from Playbook section 5.</div>
+        {% endif %}
+      </div>
+
+      <div class="section">
+        <h2>Loop-First Rationale</h2>
+        {% if playbook.loop_first_note %}
+          <div data-testid="playbook-sequence-loop-note">{{ playbook.loop_first_note }}</div>
+          {% if playbook.loop_component_rows %}
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>#</th><th>closed-loop component</th><th>source_line</th></tr></thead>
+                <tbody>
+                {% for row in playbook.loop_component_rows %}
+                  <tr data-testid="playbook-sequence-loop-row-{{ loop.index }}">
+                    <td>{{ row.index }}</td>
+                    <td>{{ row.component }}</td>
+                    <td>{{ row.source_line }}</td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="plot-fallback">No loop-first rationale extracted from Playbook section 5.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Agents Automation Positioning</h2>
+      {% if playbook.automation_note %}
+        <div data-testid="playbook-sequence-automation-note">{{ playbook.automation_note }}</div>
+      {% else %}
+        <div class="plot-fallback">No agents-automation sequencing note extracted from Playbook section 5.</div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

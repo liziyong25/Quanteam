@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>{{ title if title else "Quant-EAM Review Console" }}</title>
+    <link rel="stylesheet" href="/static/ui.css"/>
+  </head>
+  <body>
+    <div class="wrap app-shell">
+      <header class="topbar">
+        <div class="brand">
+          Quant‑EAM <small>read‑only review</small>
+        </div>
+        <div class="nav">
+          <a href="/ui">/ui</a>
+          <a href="/ui/jobs">/ui/jobs</a>
+          <a href="/ui/governance-checks">/ui/governance-checks</a>
+          <a href="/ui/policies-constraints">/ui/policies-constraints</a>
+          <a href="/ui/contracts-coverage">/ui/contracts-coverage</a>
+          <a href="/ui/dossier-evidence">/ui/dossier-evidence</a>
+          <a href="/ui/playbook-phases">/ui/playbook-phases</a>
+          <a href="/ui/workflow-checkpoints">/ui/workflow-checkpoints</a>
+          <a href="/ui/object-model">/ui/object-model</a>
+          <a href="/ui/ia-coverage">/ui/ia-coverage</a>
+          <a href="/ui/agent-roles">/ui/agent-roles</a>
+          <a href="/ui/diagnostics-promotion">/ui/diagnostics-promotion</a>
+          <a href="/ui/ui-coverage-matrix">/ui/ui-coverage-matrix</a>
+          <a href="/ui/version-roadmap">/ui/version-roadmap</a>
+          <a href="/ui/composer">/ui/composer</a>
+          <a href="/ui/workbench">/ui/workbench</a>
+          <a href="/ui/qa-fetch">/ui/qa-fetch</a>
+          <a href="/ui/prompts">/ui/prompts</a>
+          <a href="/runs">/runs</a>
+          <a href="/registry/cards">/registry/cards</a>
+          <a href="/version">/version</a>
+        </div>
+      </header>
+
+      <main class="page-shell">
+        {% block content %}{% endblock %}
+      </main>
+
+      <footer class="footer">
+        UI is read‑only. All content is rendered from dossier + gate results + registry files (SSOT).
+      </footer>
+    </div>
+  </body>
+</html>

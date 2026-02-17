@@ -1,0 +1,20 @@
+policy_id: gate_suite_v1_default
+policy_version: "v1"
+title: Gate Suite v1 (default)
+description: >
+  Declares a suite of gates (checks) to run. This phase only declares structure, not gate algorithms.
+params:
+  gates:
+    - gate_id: basic_sanity
+      gate_version: v1
+      params:
+        require_artifacts:
+          - metrics.json
+          - gate_results.json
+    - gate_id: determinism_guard
+      gate_version: v1
+      params:
+        require_config_snapshot: true
+  holdout_policy:
+    output: pass_fail_minimal_summary
+

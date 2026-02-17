@@ -1,0 +1,4 @@
+interface:
+  display_name: "Packet Evidence Guard"
+  short_description: "Validate subagent packet evidence and scope compliance."
+  default_prompt: "Use this skill to ensure task/executor/validator packet artifacts are complete and pass checker validation."

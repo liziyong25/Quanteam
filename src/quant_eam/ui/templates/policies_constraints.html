@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Policies and Constraints Evidence</h1>
+    <p class="page-subtitle">
+      Read-only evidence from Whole View section <code>1</code> hard constraints and Playbook sections <code>0.1/0.2</code>.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">no holdout expansion</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Sections</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Coverage Summary</h2>
+      <div class="kv">
+        <div class="k">whole_view_constraints</div>
+        <div class="v"><span data-testid="whole-view-count">{{ whole_view_constraints|length }}</span></div>
+        <div class="k">playbook_task_rules</div>
+        <div class="v"><span data-testid="playbook-task-count">{{ playbook_task_rules|length }}</span></div>
+        <div class="k">playbook_quality_rules</div>
+        <div class="v"><span data-testid="playbook-quality-count">{{ playbook_quality_rules|length }}</span></div>
+        <div class="k">combined_rows</div>
+        <div class="v"><span class="pill">{{ combined_rows|length }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Whole View Hard Constraints</h2>
+    {% if whole_view_constraints %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>id</th><th>constraint</th><th>detail</th></tr></thead>
+          <tbody>
+          {% for row in whole_view_constraints %}
+            <tr data-testid="whole-view-hard-constraint-{{ loop.index }}">
+              <td><span class="pill">{{ row.check_id }}</span></td>
+              <td>{{ row.item }}</td>
+              <td>{{ row.detail if row.detail else "n/a" }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No Whole View constraints extracted from section 1.</div>
+    {% endif %}
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Playbook Task Rules (0.1)</h2>
+      {% if playbook_task_rules %}
+        {% for item in playbook_task_rules %}
+          <div data-testid="playbook-task-rule-{{ loop.index }}">{{ item }}</div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No Playbook 0.1 task rules extracted.</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Playbook Quality Gates (0.2)</h2>
+      {% if playbook_quality_rules %}
+        {% for item in playbook_quality_rules %}
+          <div data-testid="playbook-quality-rule-{{ loop.index }}">{{ item }}</div>
+        {% endfor %}
+      {% else %}
+        <div class="plot-fallback">No Playbook 0.2 quality rules extracted.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Combined Evidence Rows</h2>
+    {% if combined_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>source</th><th>category</th><th>item</th><th>detail</th></tr></thead>
+          <tbody>
+          {% for row in combined_rows %}
+            <tr data-testid="combined-row-{{ loop.index }}">
+              <td><code>{{ row.source }}</code></td>
+              <td><span class="pill">{{ row.category }}</span></td>
+              <td>{{ row.item }}</td>
+              <td>{{ row.detail if row.detail else "" }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No combined rows assembled from source sections.</div>
+    {% endif %}
+  </div>
+{% endblock %}

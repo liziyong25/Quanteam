@@ -1,0 +1,15 @@
+{
+  "checks": [
+    {
+      "check_id": "bad_operator",
+      "metric_key": "max_drawdown",
+      "operator": "less_or_equal",
+      "severity": "error",
+      "threshold": 0.2
+    }
+  ],
+  "diagnostic_id": "diag_bad",
+  "run_id": "abc123def456",
+  "schema_version": "diagnostic_spec_v1",
+  "title": "Bad Diagnostic Spec"
+}

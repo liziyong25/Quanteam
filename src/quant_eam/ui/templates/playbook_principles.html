@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Playbook Construction Principles and Quality Gates Read-Only Evidence</h1>
+    <p class="page-subtitle">
+      Read-only governance evidence sourced from Playbook sections <code>0</code>/<code>0.2</code>
+      in <code>Quant‑EAM Implementation Phases Playbook.md</code>.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is evidence-only and exposes no write actions.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">section 0/0.2 evidence only</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Sections</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>section</th><th>status</th></tr></thead>
+          <tbody>
+          {% for row in source_files %}
+            <tr>
+              <td><code>{{ row.path }}</code></td>
+              <td>{{ row.section }}</td>
+              <td>{% if row.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Evidence Summary</h2>
+      <div class="kv">
+        <div class="k">ui_route</div>
+        <div class="v"><code>/ui/playbook-principles</code></div>
+        <div class="k">principles</div>
+        <div class="v"><span data-testid="playbook-principles-total">{{ summary.principle_total }}</span></div>
+        <div class="k">quality_gates</div>
+        <div class="v"><span data-testid="playbook-quality-total">{{ summary.quality_gate_total }}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Playbook Section 0 Construction Principles</h2>
+    <div class="section"><span class="pill">{{ playbook.principle_section }}</span></div>
+    {% if playbook.principle_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>principle</th><th>source_line</th></tr></thead>
+          <tbody>
+          {% for row in playbook.principle_rows %}
+            <tr data-testid="playbook-principles-row-{{ loop.index }}">
+              <td>{{ row.index }}</td>
+              <td>{{ row.item }}</td>
+              <td>{{ row.source_line }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No construction principles extracted from Playbook section 0.1.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Playbook Section 0.2 Global Quality Gates</h2>
+    <div class="section"><span class="pill">{{ playbook.quality_section }}</span></div>
+    {% if playbook.quality_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>quality gate</th><th>source_line</th></tr></thead>
+          <tbody>
+          {% for row in playbook.quality_rows %}
+            <tr data-testid="playbook-quality-row-{{ loop.index }}">
+              <td>{{ row.index }}</td>
+              <td>{{ row.item }}</td>
+              <td>{{ row.source_line }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No quality gates extracted from Playbook section 0.2.</div>
+    {% endif %}
+  </div>
+{% endblock %}

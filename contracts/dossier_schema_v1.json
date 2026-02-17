@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/dossier_schema_v1.json",
+  "title": "dossier_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "Dossier manifest (metadata + artifact paths). Dossier is append-only and is the SSOT for UI and review.",
+  "required": [
+    "schema_version",
+    "run_id",
+    "created_at",
+    "blueprint_hash",
+    "policy_bundle_id",
+    "data_snapshot_id",
+    "append_only",
+    "artifacts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "dossier_v1",
+      "description": "Schema version discriminator. Must be exactly 'dossier_v1'."
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Forward-compatible extension area. Must not be used to override governance/policies."
+    },
+    "run_id": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "blueprint_hash": { "type": "string" },
+    "policy_bundle_id": {
+      "type": "string",
+      "description": "Read-only policy bundle reference (by id)."
+    },
+    "data_snapshot_id": { "type": "string" },
+    "append_only": {
+      "const": true,
+      "description": "Must be true. Dossier manifests are append-only."
+    },
+    "artifacts": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": { "type": "string" },
+      "description": "Logical artifact name -> path string (relative path recommended)."
+    },
+    "hashes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "pattern": "^[a-fA-F0-9]{64}$",
+        "description": "sha256 hex"
+      },
+      "description": "Optional path -> sha256 mapping for integrity."
+    }
+  }
+}

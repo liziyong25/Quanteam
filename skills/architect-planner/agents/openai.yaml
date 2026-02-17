@@ -1,0 +1,4 @@
+interface:
+  display_name: "Architect Planner"
+  short_description: "Pre-plan requirement and goal order before publish."
+  default_prompt: "Use this skill to perform architecture-first pre-planning across requirement docs and produce dependency-safe task order with bundle and parallel hints."

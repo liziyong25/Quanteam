@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Workbench</h1>
+    <p class="page-subtitle">Phase-0 to Phase-4 session orchestration entry. Session state, cards, and events are persisted under artifacts/workbench.</p>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Active Sessions</h2>
+      {% if sessions and sessions|length > 0 %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>session_id</th>
+              <th>status</th>
+              <th>current step</th>
+              <th>title</th>
+              <th>updated_at</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in sessions %}
+            <tr>
+              <td><a href="/ui/workbench/{{ s.session_id }}">{{ s.session_id }}</a></td>
+              <td><span class="pill">{{ s.status }}</span></td>
+              <td>{{ s.current_step }}</td>
+              <td>{{ s.title }}</td>
+              <td>{{ s.updated_at }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="plot-fallback">No workbench sessions yet. Create one via POST /workbench/sessions.</div>
+      {% endif %}
+      <p class="muted">Requirement entry alias: <a href="/ui/workbench/req/wb-002">/ui/workbench/req/wb-002</a></p>
+    </div>
+
+    <div class="card">
+      <h2>Create Session (UI)</h2>
+      <form method="post" action="/workbench/sessions" class="form-grid">
+        <input type="hidden" name="_ui" value="1"/>
+        <label>
+          <span>title</span>
+          <input name="title" value="Workbench idea" required/>
+        </label>
+        <label>
+          <span>symbols</span>
+          <input name="symbols" value="AAPL,MSFT" required/>
+        </label>
+        <label class="full">
+          <span>hypothesis_text</span>
+          <textarea name="hypothesis_text" rows="3" required>Mean revert entry</textarea>
+        </label>
+        <label>
+          <span>frequency</span>
+          <input name="frequency" value="1d"/>
+        </label>
+        <label>
+          <span>evaluation_intent</span>
+          <input name="evaluation_intent" value="demo_e2e"/>
+        </label>
+        <div class="full">
+          <button type="submit" class="btn">Create Workbench Session</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Workbench API Quick Start</h2>
+    <pre class="code">
+POST /workbench/sessions
+GET  /workbench/sessions/{session_id}
+POST /workbench/sessions/{session_id}/message
+POST /workbench/sessions/{session_id}/continue
+GET  /workbench/sessions/{session_id}/events
+POST /workbench/sessions/{session_id}/fetch-probe
+POST /workbench/sessions/{session_id}/steps/{step}/drafts
+POST /workbench/sessions/{session_id}/steps/{step}/drafts/{version}/apply
+    </pre>
+      <p class="muted">Artifacts:
+        <code>artifacts/workbench/sessions/&lt;session_id&gt;/session.json</code>,
+        <code>artifacts/workbench/sessions/&lt;session_id&gt;/events.jsonl</code>,
+        <code>artifacts/jobs/&lt;job_id&gt;/outputs/workbench/cards/*.json</code>,
+        <code>artifacts/jobs/&lt;job_id&gt;/outputs/workbench/step_drafts/&lt;step&gt;/selected.json</code>
+      </p>
+  </div>
+
+  {% if selected_session %}
+    <div class="card">
+      <h2>Session Detail</h2>
+      {% set s = selected_session.session %}
+      <div class="code-wrap">
+        <p><strong>Session:</strong> {{ s.session_id }} | <strong>status:</strong> {{ s.status }} | <strong>current step:</strong> {{ s.current_step }}</p>
+        <p><strong>job_id:</strong> {{ s.job_id }} | <strong>created:</strong> {{ s.created_at }}</p>
+        <p><strong>cards:</strong> {{ selected_session.cards_path }}</p>
+      </div>
+
+      <h3>Actions</h3>
+      <div class="grid">
+        <div>
+          <form method="post" action="/workbench/sessions/{{ s.session_id }}/continue" class="form-grid">
+            <input type="hidden" name="_ui" value="1"/>
+            <label>
+              <span>target_step (optional)</span>
+              <select name="target_step">
+                <option value="">auto next</option>
+                {% for step in selected_session.steps %}
+                <option value="{{ step }}">{{ step }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <div class="full">
+              <button type="submit" class="btn">Continue / Refresh</button>
+            </div>
+          </form>
+        </div>
+        <div>
+          <form method="post" action="/workbench/sessions/{{ s.session_id }}/fetch-probe" class="form-grid">
+            <input type="hidden" name="_ui" value="1"/>
+            <label>
+              <span>symbols</span>
+              <input name="symbols" value="{{ (s.idea.symbols | join(',')) if s.idea and s.idea.symbols else '' }}" placeholder="AAPL,MSFT"/>
+            </label>
+            <div class="full">
+              <button type="submit" class="btn">Run Fetch Probe</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <h3>Trace</h3>
+      {% if s.trace and s.trace|length > 0 %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>step</th><th>status</th><th>status_text</th></tr>
+          </thead>
+          <tbody>
+            {% for row in s.trace %}
+            <tr>
+              <td>{{ row.step }}</td>
+              <td>{{ row.status }}</td>
+              <td>{{ row.status_text }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="plot-fallback">No trace rows yet.</div>
+      {% endif %}
+
+      <h3>Recent Events ({{ selected_session.event_count }})</h3>
+      {% if selected_session.events and selected_session.events|length > 0 %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>time</th><th>step</th><th>event</th></tr>
+          </thead>
+          <tbody>
+            {% for item in selected_session.events %}
+            <tr>
+              <td>{{ item.created_at }}</td>
+              <td>{{ item.step }}</td>
+              <td>{{ item.event_type }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="plot-fallback">No events yet.</div>
+      {% endif %}
+
+      <h3>Result Cards ({{ selected_session.cards_count }})</h3>
+      {% if selected_session.cards and selected_session.cards|length > 0 %}
+      <div class="card-stack">
+        {% for card in selected_session.cards %}
+        <div class="card">
+          <p><strong>{{ card.phase_label }}</strong> | {{ card.title }} | <code>{{ card.card_id }}</code></p>
+          {% if card.summary_lines and card.summary_lines|length > 0 %}
+          <ul>
+            {% for line in card.summary_lines %}
+            <li>{{ line }}</li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <div class="plot-fallback">No summary lines.</div>
+          {% endif %}
+          <details>
+            <summary>Evidence details (collapsed by default)</summary>
+            <pre class="code">{{ card.evidence_json }}</pre>
+          </details>
+          <details>
+            <summary>Card payload</summary>
+            <pre class="code">{{ card.details_json }}</pre>
+          </details>
+          <p class="muted"><code>{{ card.artifact_path }}</code></p>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+        <div class="plot-fallback">No result cards yet. Continue the session to generate phase cards.</div>
+      {% endif %}
+    </div>
+  {% endif %}
+{% endblock %}

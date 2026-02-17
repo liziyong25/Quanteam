@@ -1,0 +1,40 @@
+schema_version: requirement_splitter_profiles_v1
+description: >
+  Compact requirement extraction profiles. The splitter keeps requirement-dense
+  clauses and skips narrative sections to avoid over-fragmented goal generation.
+profiles:
+  default:
+    mode: compressed
+    min_clause_len: 12
+    keep_headings: true
+    keep_bullets: true
+    dedup: true
+    chain_dependencies: true
+    include_heading_regex:
+      - '(?i)\b(requirement|需求|目标|scope|boundary|constraints|interface|api|phase|验收|dod)\b'
+    exclude_heading_regex:
+      - '(?i)\b(background|改造背景|风险|备注|参考|appendix|实施备注)\b'
+  WV:
+    min_clause_len: 14
+    include_heading_regex:
+      - '(?i)\b(system|boundary|hard constraints|kernel|orchestrator|contract|policy|holdout|phase|验收|dod)\b'
+    exclude_heading_regex:
+      - '(?i)\b(version|changelog|术语|附录)\b'
+    max_requirements: 160
+  QF:
+    min_clause_len: 14
+    include_heading_regex:
+      - '(?i)\b(fetch|runtime|probe|resolver|registry|contract|api|schema|phase|验收|dod)\b'
+    exclude_heading_regex:
+      - '(?i)\b(preface|背景|history|附录)\b'
+    max_requirements: 120
+  WB:
+    min_clause_len: 14
+    include_heading_regex:
+      - '(?i)\b(需求|产品目标|非目标|fr|nfr|核心功能|路由与接口|数据落盘|phase|验收标准|dod)\b'
+    exclude_heading_regex:
+      - '(?i)\b(改造背景|主控\s*\+\s*subagent 执行流程|风险与控制|与现有文档体系的对齐|实施备注)\b'
+    keep_clause_regex:
+      - '(?i)\b(FR|NFR)-\d{3}\b'
+      - '(?i)\b(/ui/workbench|/workbench/sessions|session|draft|cards|events|e2e)\b'
+    max_requirements: 72

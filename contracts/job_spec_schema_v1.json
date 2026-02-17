@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/job_spec_schema_v1.json",
+  "title": "job_spec_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "JobSpec is orchestrator input (deterministic). It is not a business contract; it wires existing v1 contracts into an auditable workflow. Policy assets remain read-only; job_spec must not inline/override policy content.",
+  "required": ["schema_version", "snapshot_id", "policy_bundle_path", "blueprint"],
+  "properties": {
+    "schema_version": {
+      "const": "job_spec_v1",
+      "description": "Schema discriminator. Must be exactly 'job_spec_v1'."
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Forward-compatible extension area. Must not be used to override governance/policies."
+    },
+    "snapshot_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Data snapshot id used by the compiler availability check / runner."
+    },
+    "policy_bundle_path": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Path to a policy_bundle_v1.yaml (read-only). Typically a repo-relative path such as 'policies/policy_bundle_v1.yaml'."
+    },
+    "blueprint": {
+      "$ref": "https://quant-eam.local/contracts/blueprint_schema_v1.json",
+      "description": "Blueprint v1 JSON object (validated separately in API; kept here for deterministic job_id and review)."
+    }
+  }
+}
+

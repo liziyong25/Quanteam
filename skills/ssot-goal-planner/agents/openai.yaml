@@ -1,0 +1,4 @@
+interface:
+  display_name: "SSOT Goal Planner"
+  short_description: "Turn unmet requirements into dependency-safe goals."
+  default_prompt: "Use this skill to generate deterministic goal rows from unmet requirements with proper dependencies and acceptance commands."

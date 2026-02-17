@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/output_guard_report_schema_v1.json",
+  "title": "output_guard_report_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "OutputGuardReport is an audit artifact produced by the agent harness. It records hard-rule guard validation results for agent outputs (no inline policies, no scripts, no holdout details).",
+  "required": ["schema_version", "agent_id", "passed", "finding_count", "findings"],
+  "properties": {
+    "schema_version": { "const": "output_guard_report_v1" },
+    "agent_id": { "type": "string", "minLength": 1 },
+    "passed": { "type": "boolean" },
+    "finding_count": { "type": "integer", "minimum": 0 },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["rule_id", "path", "message"],
+        "properties": {
+          "rule_id": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "message": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "extensions": { "type": "object", "additionalProperties": true }
+  }
+}
+

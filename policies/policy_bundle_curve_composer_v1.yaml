@@ -1,0 +1,12 @@
+policy_bundle_id: policy_bundle_curve_composer_v1_default
+policy_version: "v1"
+title: Policy Bundle v1 (curve composer)
+description: >
+  Bundle for curve-level composition runs. Modules must reference only policy_bundle_id.
+  Policies are read-only inputs; composition logic must not override params inline.
+execution_policy_id: execution_policy_v1_default
+cost_policy_id: cost_policy_v1_default
+asof_latency_policy_id: asof_latency_policy_v1_default
+risk_policy_id: risk_policy_v1_default
+gate_suite_id: gate_suite_v1_curve_composer_default
+

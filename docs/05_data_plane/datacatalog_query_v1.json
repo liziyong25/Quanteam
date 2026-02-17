@@ -1,0 +1,48 @@
+{
+  "schema_name": "datacatalog_query_v1",
+  "schema_version": "v1",
+  "schema_status": "draft_skeleton",
+  "owner_track": "skeleton",
+  "source_alignment": {
+    "req_id": "WV-043",
+    "source_document": "Quant‑EAM Whole View Framework.md（v0.5‑draft）.md",
+    "source_line": 189,
+    "clause": "datacatalog_query_v1.json（time‑travel query 请求/响应）"
+  },
+  "scope": "time-travel query request and response",
+  "request_schema": {
+    "required_fields": [
+      "query_id",
+      "dataset",
+      "as_of"
+    ],
+    "fields": {
+      "query_id": "string",
+      "dataset": "string",
+      "as_of": "string",
+      "filters": "object",
+      "select": "array<string>",
+      "limit": "integer"
+    }
+  },
+  "response_schema": {
+    "required_fields": [
+      "query_id",
+      "snapshot_id",
+      "records",
+      "meta"
+    ],
+    "fields": {
+      "query_id": "string",
+      "snapshot_id": "string",
+      "records": "array<object>",
+      "meta": "object",
+      "warnings": "array<string>"
+    }
+  },
+  "validation_placeholders": {
+    "time_travel_rules": [],
+    "authorization_rules": [],
+    "result_contract_rules": []
+  }
+}

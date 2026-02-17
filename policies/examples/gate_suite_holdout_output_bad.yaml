@@ -1,0 +1,12 @@
+policy_id: gate_suite_v1_holdout_output_bad
+policy_version: "v1"
+title: "Gate Suite v1 (bad example: wrong holdout output)"
+description: holdout_policy.output must be pass_fail_minimal_summary.
+params:
+  gates:
+    - gate_id: basic_sanity
+      gate_version: v1
+      params: {}
+  holdout_policy:
+    output: full_metrics
+

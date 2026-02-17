@@ -1,0 +1,568 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Job {{ job_id }}</h1>
+    <p class="page-subtitle">Append-only job evidence and approval checkpoints for the deterministic pipeline.</p>
+  </div>
+
+  <div class="card">
+    <div class="kv">
+      <div class="k">state</div><div class="v">{{ state }}</div>
+      <div class="k">snapshot_id</div>
+      <div class="v">
+        {% if snapshot_id %}
+          <a href="/ui/snapshots/{{ snapshot_id }}">{{ snapshot_id }}</a>
+        {% else %}
+          <span class="muted">unknown</span>
+        {% endif %}
+      </div>
+      <div class="k">policy_bundle_path</div><div class="v">{{ policy_bundle_path }}</div>
+      <div class="k">blueprint_id</div><div class="v">{{ blueprint_id }}</div>
+      <div class="k">title</div><div class="v">{{ bp_title }}</div>
+    </div>
+  </div>
+
+  {% if llm_usage_report_json %}
+  <h2>LLM Budget/Usage</h2>
+  <div class="card">
+    <div><b>stopped</b>:
+      {% if llm_usage_report.stopped %}
+        <span class="pill bad">true</span>
+        <span class="muted">(reason={{ llm_usage_report.stop_reason or "unknown" }})</span>
+      {% else %}
+        <span class="pill good">false</span>
+      {% endif %}
+    </div>
+    <div><b>policy_id</b>: {{ llm_usage_report.policy_id }}</div>
+    <div><b>thresholds</b>: <code>{{ llm_usage_report.thresholds }}</code></div>
+    <div><b>totals</b>: <code>{{ llm_usage_report.totals }}</code></div>
+    {% if llm_usage_report_path %}
+    <div><b>llm_usage_report.json</b>: <code>{{ llm_usage_report_path }}</code></div>
+    {% endif %}
+    {% if llm_usage_events_path %}
+    <div><b>llm_usage_events.jsonl</b>: <code>{{ llm_usage_events_path }}</code></div>
+    {% endif %}
+    <h3>llm_usage_report.json</h3>
+    <pre class="code">{{ llm_usage_report_json }}</pre>
+  </div>
+  {% endif %}
+
+  {% if experience_pack_json %}
+  <h2>ExperiencePack</h2>
+  <div class="card">
+    <div class="muted">Phase-29: deterministic experience retrieval (evidence-first). This is reference material only; agents do not arbitrate.</div>
+    <div><b>query</b>: {{ experience_pack.query_input.query }}</div>
+    <div><b>top_k</b>: {{ experience_pack.query_input.top_k }}</div>
+    {% if experience_pack.results and experience_pack.results|length > 0 %}
+    <h3>Top Matches</h3>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>score</th>
+            <th>card</th>
+            <th>run</th>
+            <th>status</th>
+            <th>title</th>
+            <th>why matched</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for r in experience_pack.results %}
+          <tr>
+            <td>{{ r.score }}</td>
+            <td><a href="/ui/cards/{{ r.card_id }}">{{ r.card_id }}</a></td>
+            <td><a href="/ui/runs/{{ r.run_id }}">{{ r.run_id }}</a></td>
+            <td>{{ r.effective_status }}</td>
+            <td>{{ r.title }}</td>
+            <td>
+              {% if r.ranking_explain %}
+                <code>{{ r.ranking_explain }}</code>
+              {% else %}
+                <span class="muted">n/a</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+    <h3>experience_pack.json</h3>
+    <pre class="code">{{ experience_pack_json }}</pre>
+  </div>
+  {% endif %}
+
+  {% if llm_evidence and llm_evidence|length > 0 %}
+  <h2>LLM Evidence</h2>
+  <div class="card">
+    <div class="muted">Agents sanitize inputs before any LLM call. This section is read-only evidence (session + redaction + call records).</div>
+  </div>
+  {% for ev in llm_evidence %}
+    <div class="card">
+      <div><b>agent</b>: {{ ev.agent }}</div>
+      <div><b>dir</b>: <code>{{ ev.dir }}</code></div>
+      <div><b>provider_id</b>: {{ ev.provider_id or "unknown" }}</div>
+      <div><b>mode</b>: {{ ev.mode or "unknown" }}</div>
+      <div><b>prompt_version</b>: {{ ev.prompt_version or "unknown" }}</div>
+      <div><b>output_schema_version</b>: {{ ev.output_schema_version or "unknown" }}</div>
+      <div><b>guard_status</b>:
+        {% if ev.guard_passed is sameas true %}
+          <span class="pill good">PASS</span>
+        {% elif ev.guard_passed is sameas false %}
+          <span class="pill bad">FAIL</span>
+        {% else %}
+          <span class="muted">unknown</span>
+        {% endif %}
+        <span class="muted">(finding_count={{ ev.guard_finding_count or 0 }})</span>
+      </div>
+      {% if ev.error_summary_json %}
+      <h3>error_summary.json</h3>
+      <pre class="code">{{ ev.error_summary_json }}</pre>
+      {% endif %}
+      {% if ev.guard_findings_preview_json %}
+      <h3>output_guard findings (preview)</h3>
+      <pre class="code">{{ ev.guard_findings_preview_json }}</pre>
+      {% endif %}
+      <h3>llm_session.json</h3>
+      <pre class="code">{{ ev.session_json }}</pre>
+      {% if ev.redaction_json %}
+      <h3>redaction_summary.json</h3>
+      <pre class="code">{{ ev.redaction_json }}</pre>
+      {% endif %}
+      {% if ev.calls_tail %}
+      <h3>llm_calls.jsonl (tail)</h3>
+      <pre class="code">{{ ev.calls_tail }}</pre>
+      {% endif %}
+    </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if dossier_fetch_summary %}
+  <h2>Fetch Evidence Viewer</h2>
+  <div class="card">
+    <div class="muted">Read-only dossier fetch evidence for review checkpoints.</div>
+    <div><b>fetch_dir</b>: <code>{{ dossier_fetch_summary.fetch_dir }}</code></div>
+    <div><b>steps_index_path</b>: <code>{{ dossier_fetch_summary.steps_index_path }}</code></div>
+    <div><b>step_count</b>: {{ dossier_fetch_summary.step_count }}</div>
+    {% if dossier_fetch_index_json %}
+    <h3>fetch_steps_index.json</h3>
+    <pre class="code">{{ dossier_fetch_index_json }}</pre>
+    {% endif %}
+  </div>
+  {% for step in dossier_fetch_steps %}
+  <div class="card" data-testid="fetch-evidence-step-{{ step.step_index }}">
+    <div><b>step_index</b>: {{ step.step_index }}</div>
+    <div><b>step_kind</b>: {{ step.step_kind }}</div>
+    <div><b>status</b>: {{ step.status }}</div>
+    <div><b>request_path</b>: <code>{{ step.request_path }}</code></div>
+    <div><b>result_meta_path</b>: <code>{{ step.result_meta_path }}</code></div>
+    <div><b>preview_path</b>: <code>{{ step.preview_path }}</code></div>
+    {% if step.error_path %}
+    <div><b>error_path</b>: <code>{{ step.error_path }}</code></div>
+    {% endif %}
+    {% if step.request_json %}
+    <h3>step request</h3>
+    <pre class="code">{{ step.request_json }}</pre>
+    {% endif %}
+    {% if step.meta_json %}
+    <h3>step result meta</h3>
+    <pre class="code">{{ step.meta_json }}</pre>
+    {% endif %}
+    {% if step.error_json %}
+    <h3>step error</h3>
+    <pre class="code">{{ step.error_json }}</pre>
+    {% endif %}
+    {% if step.preview_rows and step.preview_rows|length > 0 %}
+    <h3>step preview (first rows)</h3>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            {% for key in step.preview_rows[0].keys() %}
+            <th>{{ key }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in step.preview_rows %}
+          <tr>
+            {% for value in row.values() %}
+            <td>{{ value }}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  {% if waiting_approval %}
+  <div class="card">
+    <h3>Waiting Approval</h3>
+    {% if approval_step == "llm_live_confirm" and llm_live_confirm_info %}
+      <div class="pill bad">LIVE/RECORD Confirmation Required</div>
+      <div class="muted">This job is configured to call a real LLM provider in <b>{{ llm_live_confirm_info.mode }}</b> mode. Approving will allow live calls to proceed.</div>
+      <h4>LLM Config</h4>
+      <div><b>provider_id</b>: {{ llm_live_confirm_info.provider_id }}</div>
+      <div><b>model</b>: {{ llm_live_confirm_info.model or "unknown" }}</div>
+      {% if llm_live_confirm_info.budget_policy_id %}
+      <h4>Budget</h4>
+      <div><b>policy_id</b>: {{ llm_live_confirm_info.budget_policy_id }}</div>
+      <div><b>policy_path</b>: <code>{{ llm_live_confirm_info.budget_policy_path }}</code></div>
+      <div><b>thresholds</b>: <code>{{ llm_live_confirm_info.thresholds }}</code></div>
+      <div><b>totals</b>: <code>{{ llm_live_confirm_info.totals }}</code></div>
+      <div><b>estimated_remaining_calls</b>: {{ llm_live_confirm_info.estimated_remaining_calls }}</div>
+      {% endif %}
+    {% endif %}
+    <form method="post" action="/ui/jobs/{{ job_id }}/approve{% if approval_step %}?step={{ approval_step }}{% endif %}" class="form-inline">
+      <button type="submit" class="btn">Approve</button>
+    </form>
+    {% if reject_enabled %}
+    <form method="post" action="/ui/jobs/{{ job_id }}/reject{% if approval_step %}?step={{ approval_step }}{% endif %}" class="form-inline">
+      <label>
+        Reject note
+        <input type="text" name="note" placeholder="why rejected (optional)">
+      </label>
+      <button type="submit" class="btn">Reject</button>
+    </form>
+    <div class="muted">Reject writes append-only rejection evidence and routes to fallback step <code>{{ reject_fallback_step }}</code>.</div>
+    {% endif %}
+    <div class="muted">Approval writes an append-only APPROVED event under EAM_JOB_ROOT. It does not modify dossier/registry history.</div>
+  </div>
+  {% endif %}
+
+  {% if reject_log_rows and reject_log_rows|length > 0 %}
+  <h2>Rejection Evidence</h2>
+  <div class="card">
+    <h3>reject_log.jsonl (latest)</h3>
+    <pre class="code">{{ reject_log_rows | tojson(indent=2) }}</pre>
+    {% if reject_state_json %}
+    <h3>reject_state.json</h3>
+    <pre class="code">{{ reject_state_json }}</pre>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if rerun_agent_options and rerun_agent_options|length > 0 %}
+  <div class="card">
+    <h3>Rerun Agent</h3>
+    <form method="post" action="/ui/jobs/{{ job_id }}/rerun" class="form-inline">
+      <label>
+        agent_id
+        <select name="agent_id">
+          {% for aid in rerun_agent_options %}
+          <option value="{{ aid }}">{{ aid }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button type="submit" class="btn">Rerun Agent</button>
+    </form>
+    <div class="muted">Rerun writes append-only rerun evidence and keeps prior artifacts immutable.</div>
+  </div>
+  {% endif %}
+
+  {% if rerun_log_rows and rerun_log_rows|length > 0 %}
+  <h2>Rerun Evidence</h2>
+  <div class="card">
+    <h3>rerun_log.jsonl (latest)</h3>
+    <pre class="code">{{ rerun_log_rows | tojson(indent=2) }}</pre>
+    {% if rerun_state_json %}
+    <h3>rerun_state.json</h3>
+    <pre class="code">{{ rerun_state_json }}</pre>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if blueprint_draft_json %}
+  <h2>Blueprint Draft (IntentAgent output)</h2>
+  <pre class="code">{{ blueprint_draft_json }}</pre>
+  {% endif %}
+
+  {% if blueprint_final_json %}
+  <h2>Blueprint Final (StrategySpecAgent output)</h2>
+  <pre class="code">{{ blueprint_final_json }}</pre>
+  {% endif %}
+
+  {% if signal_dsl_json %}
+  <h2>signal_dsl_v1</h2>
+  <pre class="code">{{ signal_dsl_json }}</pre>
+  {% endif %}
+
+  {% if variable_dictionary_json %}
+  <h2>variable_dictionary_v1</h2>
+  <pre class="code">{{ variable_dictionary_json }}</pre>
+  {% endif %}
+
+  {% if calc_trace_plan_json %}
+  <h2>calc_trace_plan_v1</h2>
+  <pre class="code">{{ calc_trace_plan_json }}</pre>
+  {% endif %}
+
+  {% if spec_qa_report_json or spec_qa_report_md %}
+  <h2>Spec-QA Report</h2>
+  <div class="card">
+    {% if spec_qa_report_json %}
+    <h3>spec_qa_report.json</h3>
+    <pre class="code">{{ spec_qa_report_json }}</pre>
+    {% endif %}
+    {% if spec_qa_report_md %}
+    <h3>spec_qa_report.md</h3>
+    <pre class="code">{{ spec_qa_report_md }}</pre>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if diagnostics_plan_json %}
+  <h2>Diagnostics Role Plan</h2>
+  <pre class="code">{{ diagnostics_plan_json }}</pre>
+  {% endif %}
+
+  {% if registry_curator_summary_json %}
+  <h2>Registry Curator Summary</h2>
+  <pre class="code">{{ registry_curator_summary_json }}</pre>
+  {% endif %}
+
+  {% if composer_agent_plan_json %}
+  <h2>Composer Agent Plan</h2>
+  <pre class="code">{{ composer_agent_plan_json }}</pre>
+  {% endif %}
+
+  {% if runspec_json %}
+  <h2>RunSpec (Compiler output)</h2>
+  <pre class="code">{{ runspec_json }}</pre>
+  {% endif %}
+
+  {% if trace_meta_json %}
+  <h2>CalcTrace Preview Meta</h2>
+  <pre class="code">{{ trace_meta_json }}</pre>
+  {% endif %}
+
+  {% if trace_preview_rows %}
+  <h2>CalcTrace Preview (first rows)</h2>
+  {% set overlay = namespace(min_close=None, max_close=None, first_dt="", last_dt="", symbol="") %}
+  {% for r in trace_preview_rows %}
+    {% set close_now = r.close|float %}
+    {% if overlay.min_close is none or close_now < overlay.min_close %}
+      {% set overlay.min_close = close_now %}
+    {% endif %}
+    {% if overlay.max_close is none or close_now > overlay.max_close %}
+      {% set overlay.max_close = close_now %}
+    {% endif %}
+    {% if loop.first %}
+      {% set overlay.first_dt = r.dt %}
+      {% set overlay.symbol = r.symbol %}
+    {% endif %}
+    {% if loop.last %}
+      {% set overlay.last_dt = r.dt %}
+      {% if not overlay.symbol %}
+        {% set overlay.symbol = r.symbol %}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+  {% set overlay_min = overlay.min_close if overlay.min_close is not none else 0 %}
+  {% set overlay_max = overlay.max_close if overlay.max_close is not none else 0 %}
+  {% set overlay_span = overlay_max - overlay_min %}
+  {% set overlay_rows = trace_preview_rows|length %}
+  {% set chart_w = 960 %}
+  {% set chart_h = 320 %}
+  {% set chart_px = 22 %}
+  {% set chart_py = 24 %}
+  {% set chart_inner_w = chart_w - (chart_px * 2) %}
+  {% set chart_inner_h = chart_h - (chart_py * 2) %}
+  {% set chart_bottom = chart_py + chart_inner_h %}
+  {% set chart_step = (chart_inner_w / (overlay_rows - 1)) if overlay_rows > 1 else 0 %}
+  <div class="card trace-preview-overlay" data-testid="trace-preview-overlay">
+    <div class="trace-overlay-head">
+      <div class="trace-overlay-title">K-line Overlay</div>
+      <div class="trace-overlay-meta">
+        <span>symbol: {{ overlay.symbol or "n/a" }}</span>
+        <span>rows: {{ overlay_rows }}</span>
+        <span>close range: {{ overlay_min }} -> {{ overlay_max }}</span>
+        <span>{{ overlay.first_dt }} -> {{ overlay.last_dt }}</span>
+      </div>
+    </div>
+    <div class="trace-overlay-canvas-wrap">
+      <svg class="trace-overlay-canvas" viewBox="0 0 {{ chart_w }} {{ chart_h }}" role="img" aria-label="Trace preview K-line overlay">
+        <rect x="0" y="0" width="{{ chart_w }}" height="{{ chart_h }}" fill="transparent"></rect>
+        {% for band in range(0, 5) %}
+          {% set gy = chart_py + (chart_inner_h * band / 4) %}
+          <line class="trace-overlay-grid" x1="{{ chart_px }}" y1="{{ gy }}" x2="{{ chart_w - chart_px }}" y2="{{ gy }}"></line>
+        {% endfor %}
+        <line class="trace-overlay-axis" x1="{{ chart_px }}" y1="{{ chart_bottom }}" x2="{{ chart_w - chart_px }}" y2="{{ chart_bottom }}"></line>
+        {% for r in trace_preview_rows %}
+          {% set close_now = r.close|float %}
+          {% set x = chart_px + (loop.index0 * chart_step) %}
+          {% if overlay_span > 0 %}
+            {% set y = chart_py + ((overlay_max - close_now) / overlay_span * chart_inner_h) %}
+          {% else %}
+            {% set y = chart_py + (chart_inner_h / 2) %}
+          {% endif %}
+          {% set is_eligible = (r.eligible|string|lower) == "true" %}
+          {% set is_entry_raw = (r.entry_raw|string|lower) == "true" %}
+          {% set is_entry_lagged = (r.entry_lagged|string|lower) == "true" %}
+          {% if not loop.first %}
+            {% set prev_close = loop.previtem.close|float %}
+            {% set prev_x = chart_px + ((loop.index0 - 1) * chart_step) %}
+            {% if overlay_span > 0 %}
+              {% set prev_y = chart_py + ((overlay_max - prev_close) / overlay_span * chart_inner_h) %}
+            {% else %}
+              {% set prev_y = chart_py + (chart_inner_h / 2) %}
+            {% endif %}
+            <line class="trace-overlay-segment" x1="{{ prev_x }}" y1="{{ prev_y }}" x2="{{ x }}" y2="{{ y }}"></line>
+          {% endif %}
+          <line class="trace-overlay-wick{% if not is_eligible %} is-muted{% endif %}" x1="{{ x }}" y1="{{ y - 9 }}" x2="{{ x }}" y2="{{ y + 9 }}"></line>
+          <rect class="trace-overlay-body{% if not is_eligible %} is-muted{% endif %}" x="{{ x - 4 }}" y="{{ y - 4 }}" width="8" height="8" rx="1"></rect>
+          {% if is_entry_raw %}
+            <circle class="trace-overlay-marker raw" cx="{{ x }}" cy="{{ y - 13 }}" r="3"></circle>
+          {% endif %}
+          {% if is_entry_lagged %}
+            <circle class="trace-overlay-marker lagged" cx="{{ x }}" cy="{{ y + 13 }}" r="3"></circle>
+          {% endif %}
+          {% if overlay_rows == 1 and loop.first %}
+            <text class="trace-overlay-label" x="{{ x }}" y="{{ chart_bottom + 16 }}" text-anchor="middle">{{ r.dt }}</text>
+          {% elif overlay_rows > 1 and (loop.first or loop.last) %}
+            <text class="trace-overlay-label" x="{{ x }}" y="{{ chart_bottom + 16 }}" text-anchor="{% if loop.first %}start{% else %}end{% endif %}">{{ r.dt }}</text>
+          {% endif %}
+        {% endfor %}
+      </svg>
+    </div>
+    <div class="trace-overlay-legend">
+      <span><i class="trace-overlay-swatch candle"></i>close candles</span>
+      <span><i class="trace-overlay-swatch line"></i>close trend</span>
+      <span><i class="trace-overlay-swatch raw"></i>entry_raw=true</span>
+      <span><i class="trace-overlay-swatch lagged"></i>entry_lagged=true</span>
+    </div>
+  </div>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>dt</th>
+          <th>symbol</th>
+          <th>close</th>
+          <th>available_at</th>
+          <th>eligible</th>
+          <th>entry_raw</th>
+          <th>entry_lagged</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in trace_preview_rows %}
+        <tr>
+          <td>{{ r.dt }}</td>
+          <td>{{ r.symbol }}</td>
+          <td>{{ r.close }}</td>
+          <td>{{ r.available_at }}</td>
+          <td>{{ r.eligible }}</td>
+          <td>{{ r.entry_raw }}</td>
+          <td>{{ r.entry_lagged }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if report_text %}
+  <h2>Report (ReportAgent output)</h2>
+  <pre class="code">{{ report_text }}</pre>
+  {% endif %}
+
+  {% if report_summary_json %}
+  <h2>Report Summary</h2>
+  <pre class="code">{{ report_summary_json }}</pre>
+  {% endif %}
+
+  {% if improvement_proposals_json %}
+  <h2>Improvement Proposals</h2>
+  <div class="card">
+    <div class="muted">Proposals are candidates only. Spawn creates a new job and returns to the blueprint review checkpoint.</div>
+  </div>
+  {% if improvement_proposals_list %}
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>proposal_id</th>
+          <th>title</th>
+          <th>action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in improvement_proposals_list %}
+        <tr>
+          <td>{{ p.proposal_id }}</td>
+          <td>{{ p.title }}</td>
+          <td>
+            <form method="post" action="/ui/jobs/{{ job_id }}/spawn?proposal_id={{ p.proposal_id }}" class="form-inline">
+              <button type="submit" class="btn">Spawn Job</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  <pre class="code">{{ improvement_proposals_json }}</pre>
+  {% endif %}
+
+  {% if sweep_leaderboard_json or (sweep_trials_tail and sweep_trials_tail|length > 0) %}
+  <h2>Param Sweep</h2>
+  <div class="card">
+    <div class="muted">Phase-23: deterministic grid sweep under budget_policy. Selection is based on test metric only; holdout is filter-only and remains minimal.</div>
+    {% if sweep_leaderboard_obj and sweep_leaderboard_obj.best and sweep_leaderboard_obj.best.params %}
+    <form method="post" action="/ui/jobs/{{ job_id }}/spawn_best" class="form-inline">
+      <button type="submit" class="btn">Spawn Best Candidate</button>
+    </form>
+    {% endif %}
+  </div>
+  {% if sweep_trials_tail and sweep_trials_tail|length > 0 %}
+  <h3>trials.jsonl (tail)</h3>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>trial</th>
+          <th>test_metric</th>
+          <th>overall_pass</th>
+          <th>holdout_pass</th>
+          <th>run_id</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in sweep_trials_tail %}
+        <tr>
+          <td>{{ t.trial_index }}</td>
+          <td>{{ t.test_metric }}</td>
+          <td>{{ t.overall_pass }}</td>
+          <td>{{ t.holdout_pass_minimal }}</td>
+          <td>
+            {% if t.run_id %}
+              <a href="/ui/runs/{{ t.run_id }}">{{ t.run_id }}</a>
+            {% else %}
+              <span class="muted">n/a</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  {% if sweep_leaderboard_json %}
+  <h3>leaderboard.json</h3>
+  <pre class="code">{{ sweep_leaderboard_json }}</pre>
+  {% endif %}
+  {% endif %}
+
+  <h2>Outputs</h2>
+  <pre class="code">{{ outputs_json }}</pre>
+
+  <h2>Events (append-only)</h2>
+  <pre class="code">{{ events_json }}</pre>
+{% endblock %}

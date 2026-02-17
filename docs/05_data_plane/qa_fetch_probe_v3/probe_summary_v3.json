@@ -1,0 +1,15 @@
+{
+  "total": 71,
+  "status_counts": {
+    "blocked_source_missing": 4,
+    "error_runtime": 3,
+    "pass_empty": 34,
+    "pass_has_data": 30
+  },
+  "source_counts": {
+    "wbdata": 23,
+    "wequant": 48
+  },
+  "pass_has_data": 30,
+  "pass_has_data_or_empty": 64
+}

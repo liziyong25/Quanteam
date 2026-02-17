@@ -1,0 +1,4 @@
+interface:
+  display_name: "Milestone Gate"
+  short_description: "Run strict milestone gates with safe commit/push strategy."
+  default_prompt: "Use this skill to enforce milestone gate checks, whitelist staging, and push fallback behavior."

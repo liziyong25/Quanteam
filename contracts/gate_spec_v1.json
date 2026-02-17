@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/gate_spec_v1.json",
+  "title": "gate_spec_v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "gate_spec_id",
+    "source_run_id",
+    "source_diagnostic_id",
+    "candidate_gates"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "gate_spec_v1"
+    },
+    "gate_spec_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{2,63}$"
+    },
+    "source_run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-z]{6,64}$"
+    },
+    "source_diagnostic_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{2,63}$"
+    },
+    "candidate_gates": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "gate_id",
+          "expression",
+          "severity",
+          "evidence_refs"
+        ],
+        "properties": {
+          "gate_id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_.-]{2,63}$"
+          },
+          "expression": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "warn",
+              "fail"
+            ]
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "evidence_refs": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

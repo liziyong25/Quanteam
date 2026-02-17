@@ -1,0 +1,51 @@
+{
+  "schema_version": "blueprint_v1",
+  "blueprint_id": "bp_demo_001",
+  "title": "Demo Blueprint (MA crossover)",
+  "policy_bundle_id": "policy_bundle_v1",
+  "universe": {
+    "asset_pack": "us_equity_liquid",
+    "symbols": ["AAPL", "MSFT"],
+    "timezone": "America/New_York",
+    "calendar": "NYSE"
+  },
+  "bar_spec": { "frequency": "1d" },
+  "data_requirements": [
+    {
+      "dataset_id": "ohlcv",
+      "fields": ["open", "high", "low", "close", "volume"],
+      "frequency": "1d",
+      "adjustment": "split_dividend",
+      "asof_rule": { "mode": "latest_before" }
+    }
+  ],
+  "strategy_spec": {
+    "dsl_version": "signal_dsl_v1",
+    "signals": { "entry": "entry_cond", "exit": "exit_cond" },
+    "expressions": {
+      "entry_cond": {
+        "type": "op",
+        "op": "crosses_above",
+        "args": [{ "type": "var", "var_id": "close" }, { "type": "op", "op": "sma", "args": [{ "type": "var", "var_id": "close" }, { "type": "const", "value": 20 }] }]
+      },
+      "exit_cond": {
+        "type": "op",
+        "op": "crosses_below",
+        "args": [{ "type": "var", "var_id": "close" }, { "type": "op", "op": "sma", "args": [{ "type": "var", "var_id": "close" }, { "type": "const", "value": 20 }] }]
+      }
+    },
+    "execution": { "order_timing": "next_open", "cost_model": { "ref_policy": true, "policy_id": "cost_model_v1" } }
+  },
+  "evaluation_protocol": {
+    "segments": {
+      "train": { "start": "2020-01-01", "end": "2022-12-31", "as_of": "2023-01-01T00:00:00Z" },
+      "test": { "start": "2023-01-01", "end": "2023-12-31", "as_of": "2024-01-01T00:00:00Z" },
+      "holdout": { "start": "2024-01-01", "end": "2024-12-31", "as_of": "2025-01-01T00:00:00Z" }
+    },
+    "purge": { "bars": 1 },
+    "embargo": { "bars": 1 },
+    "gate_suite_id": "gate_suite_v1"
+  },
+  "report_spec": { "plots": true, "tables": true, "trace": true }
+}
+

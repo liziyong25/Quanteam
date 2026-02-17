@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Run {{ run_id }} Gates</h1>
+    <p class="page-subtitle">Read-only gate review view: pass/fail, thresholds, status, and evidence references.</p>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <h2>Gate Review</h2>
+      <div class="kv">
+        <div class="k">run_id</div><div class="v"><span class="pill">{{ run_id }}</span></div>
+        <div class="k">source</div><div class="v"><code>{{ gate_results_path }}</code></div>
+        <div class="k">schema_version</div>
+        <div class="v">
+          {% if gate_results_schema_version %}
+            <span class="pill">{{ gate_results_schema_version }}</span>
+          {% else %}
+            <span class="pill warn">unknown</span>
+          {% endif %}
+        </div>
+        <div class="k">gate_suite_id</div>
+        <div class="v">
+          {% if gate_suite_id %}
+            <span class="pill">{{ gate_suite_id }}</span>
+          {% else %}
+            <span class="pill warn">unknown</span>
+          {% endif %}
+        </div>
+        <div class="k">overall_pass</div>
+        <div class="v" data-testid="overall-pass">
+          {% if overall_pass is sameas true %}
+            <span class="pill good">PASS</span>
+          {% elif overall_pass is sameas false %}
+            <span class="pill bad">FAIL</span>
+          {% else %}
+            <span class="pill warn">unknown</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="section muted">
+        <a href="/ui/runs/{{ run_id }}">Back to run summary</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <h2>Gate Results</h2>
+      <div class="muted">Read-only evidence only. No write actions on this page.</div>
+      {% if gate_rows and gate_rows|length > 0 %}
+      <div class="table-wrap section">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>gate_id</th>
+              <th>version</th>
+              <th>pass</th>
+              <th>status</th>
+              <th>thresholds</th>
+              <th>evidence refs</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for g in gate_rows %}
+            <tr data-testid="gate-row-{{ loop.index }}">
+              <td>{{ g.gate_id if g.gate_id else "unknown" }}</td>
+              <td>{{ g.gate_version if g.gate_version else "" }}</td>
+              <td>
+                {% if g.pass is sameas true %}
+                  <span class="pill good">PASS</span>
+                {% elif g.pass is sameas false %}
+                  <span class="pill bad">FAIL</span>
+                {% else %}
+                  <span class="pill warn">unknown</span>
+                {% endif %}
+              </td>
+              <td><span class="pill">{{ g.status if g.status else "" }}</span></td>
+              <td>
+                {% if g.thresholds %}
+                  <details>
+                    <summary>thresholds</summary>
+                    <pre class="code">{{ g.thresholds | tojson(indent=2) }}</pre>
+                  </details>
+                {% else %}
+                  <span class="pill">n/a</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if g.evidence_artifacts and g.evidence_artifacts|length > 0 %}
+                  {% for ref in g.evidence_artifacts %}
+                    <code>{{ ref }}</code>{% if not loop.last %}<br/>{% endif %}
+                  {% endfor %}
+                {% else %}
+                  <span class="pill">n/a</span>
+                {% endif %}
+                {% if g.evidence_notes %}
+                  <div class="muted section">{{ g.evidence_notes }}</div>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% elif gate_results_present %}
+      <div class="plot-fallback section">No gate result rows found in <code>gate_results.json</code>.</div>
+      {% else %}
+      <div class="plot-fallback section">No <code>gate_results.json</code> found for this run.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if holdout_summary %}
+  <div class="section">
+    <div class="card">
+      <h2>Holdout (Minimal Summary)</h2>
+      <div class="kv">
+        <div class="k">pass</div><div class="v">{{ holdout_summary.pass }}</div>
+        <div class="k">summary</div><div class="v">{{ holdout_summary.summary }}</div>
+      </div>
+      <div class="muted section">Holdout visibility is intentionally minimal: pass/fail and summary only.</div>
+    </div>
+  </div>
+  {% endif %}
+{% endblock %}

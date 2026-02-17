@@ -1,0 +1,67 @@
+{
+  "schema_name": "fetch_request_schema_v1",
+  "schema_version": "v1",
+  "schema_status": "draft_skeleton",
+  "owner_track": "skeleton",
+  "source_alignment": {
+    "req_id": "WV-040",
+    "source_document": "Quant‑EAM Whole View Framework.md（v0.5‑draft）.md",
+    "source_line": 186,
+    "clause": "fetch_request_schema_v1.json"
+  },
+  "request_fields": {
+    "request_id": {
+      "type": "string",
+      "required": true,
+      "description": "Deterministic request identifier for tracing and replay"
+    },
+    "mode": {
+      "type": "string",
+      "required": true,
+      "enum": [
+        "demo",
+        "smoke",
+        "research",
+        "backtest"
+      ]
+    },
+    "dataset": {
+      "type": "string",
+      "required": true,
+      "description": "Target data contract or dataset key"
+    },
+    "time_range": {
+      "type": "object",
+      "required": false,
+      "properties": {
+        "start": "string",
+        "end": "string",
+        "as_of": "string"
+      }
+    },
+    "filters": {
+      "type": "object",
+      "required": false,
+      "additional_properties": true
+    },
+    "policy": {
+      "type": "object",
+      "required": false,
+      "properties": {
+        "timeout_sec": "integer",
+        "on_no_data": "string",
+        "retry": "integer"
+      }
+    }
+  },
+  "validation_placeholders": {
+    "required_fields": [
+      "request_id",
+      "mode",
+      "dataset"
+    ],
+    "format_rules": [],
+    "cross_field_rules": [],
+    "provider_specific_rules": []
+  }
+}

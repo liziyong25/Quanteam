@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quant-eam.local/contracts/trial_event_schema_v1.json",
+  "title": "trial_event_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "Registry TrialLog event. Append-only record that references dossier + gate_results as evidence anchors.",
+  "required": [
+    "schema_version",
+    "run_id",
+    "recorded_at",
+    "dossier_path",
+    "gate_results_path",
+    "overall_pass",
+    "policy_bundle_id",
+    "snapshot_id",
+    "adapter_id"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "trial_event_v1",
+      "description": "Schema version discriminator. Must be exactly 'trial_event_v1'."
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Forward-compatible extension area. Must not be used to override governance/policies."
+    },
+    "run_id": { "type": "string" },
+    "recorded_at": { "type": "string", "format": "date-time" },
+    "dossier_path": { "type": "string" },
+    "gate_results_path": { "type": "string" },
+    "overall_pass": { "type": "boolean" },
+    "blueprint_id": { "type": "string" },
+    "policy_bundle_id": { "type": "string" },
+    "snapshot_id": { "type": "string" },
+    "adapter_id": { "type": "string" },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}
+

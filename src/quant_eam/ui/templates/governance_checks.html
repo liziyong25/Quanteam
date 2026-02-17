@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="page-header">
+    <h1 class="page-title">Whole View Governance Checklist</h1>
+    <p class="page-subtitle">Read-only governance evidence sourced from SSOT and planning docs for G32 non-drift review.</p>
+  </div>
+
+  <div class="card">
+    <h2>Governance Boundary</h2>
+    <div class="muted">This page is GET/HEAD read-only evidence. It exposes no write actions and preserves holdout minimal-summary boundaries.</div>
+    <div class="section">
+      <span class="pill">GET/HEAD only</span>
+      <span class="pill">no write actions</span>
+      <span class="pill">no holdout expansion</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Source Files</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>path</th><th>status</th></tr></thead>
+          <tbody>
+          {% for f in source_files %}
+            <tr>
+              <td><code>{{ f.path }}</code></td>
+              <td>{% if f.exists %}<span class="pill good">present</span>{% else %}<span class="pill bad">missing</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% if source_documents %}
+      <div class="section">
+        <h2>SSOT Source Documents</h2>
+        {% for p in source_documents %}
+          <div><code>{{ p }}</code></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>G32 Goal Snapshot</h2>
+      <div class="kv">
+        <div class="k">goal_id</div><div class="v"><span class="pill">{{ g32.id if g32.id else "unknown" }}</span></div>
+        <div class="k">title</div><div class="v">{{ g32.title if g32.title else "n/a" }}</div>
+        <div class="k">status_now</div><div class="v"><span class="pill">{{ g32.status_now if g32.status_now else "n/a" }}</span></div>
+        <div class="k">depends_on</div><div class="v">{{ g32.depends_on|join(", ") if g32.depends_on else "n/a" }}</div>
+        <div class="k">ui_path</div><div class="v"><code>{{ g32.ui_path if g32.ui_path else "n/a" }}</code></div>
+        <div class="k">expected_state_change</div><div class="v">{{ g32.expected_state_change if g32.expected_state_change else "n/a" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Exception Scope</h2>
+      <div class="kv">
+        <div class="k">exception_id</div><div class="v"><span class="pill">{{ g32_exception.exception_id if g32_exception.exception_id else "n/a" }}</span></div>
+        <div class="k">allowed_route_prefixes</div>
+        <div class="v">
+          {% if g32_exception.allowed_route_prefixes %}
+            {% for p in g32_exception.allowed_route_prefixes %}
+              <code>{{ p }}</code>{% if not loop.last %}<br/>{% endif %}
+            {% endfor %}
+          {% else %}
+            n/a
+          {% endif %}
+        </div>
+      </div>
+      <div class="section">
+        <h2>Required Guards</h2>
+        {% if g32_exception.required_guards %}
+          {% for item in g32_exception.required_guards %}
+            <div>{{ item }}</div>
+          {% endfor %}
+        {% else %}
+          <div class="plot-fallback">No required guards found.</div>
+        {% endif %}
+      </div>
+      <div class="section">
+        <h2>Still Forbidden</h2>
+        {% if g32_exception.still_forbidden %}
+          {% for item in g32_exception.still_forbidden %}
+            <div><code>{{ item }}</code></div>
+          {% endfor %}
+        {% else %}
+          <div class="plot-fallback">No forbidden list found.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>SSOT Design Principles</h2>
+      {% if design_principles %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>principle</th><th>value</th></tr></thead>
+          <tbody>
+          {% for row in design_principles %}
+            <tr>
+              <td><code>{{ row.key }}</code></td>
+              <td><span class="pill">{{ row.value }}</span></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="plot-fallback">No design principles loaded from SSOT.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Whole View Hard Constraints</h2>
+      {% if whole_view_constraints %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>id</th><th>constraint</th><th>detail</th></tr></thead>
+          <tbody>
+          {% for row in whole_view_constraints %}
+            <tr data-testid="whole-view-constraint-{{ loop.index }}">
+              <td><span class="pill">{{ row.check_id }}</span></td>
+              <td>{{ row.item }}</td>
+              <td>{{ row.detail if row.detail else "n/a" }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="plot-fallback">No constraints extracted from whole view framework.</div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <h2>Playbook Governance Rules</h2>
+      <div class="section">
+        <h2>Task Discipline (0.1)</h2>
+        {% if playbook_task_rules %}
+          {% for item in playbook_task_rules %}
+            <div>{{ item }}</div>
+          {% endfor %}
+        {% else %}
+          <div class="plot-fallback">No 0.1 rules extracted.</div>
+        {% endif %}
+      </div>
+      <div class="section">
+        <h2>Quality Gates (0.2)</h2>
+        {% if playbook_quality_rules %}
+          {% for item in playbook_quality_rules %}
+            <div>{{ item }}</div>
+          {% endfor %}
+        {% else %}
+          <div class="plot-fallback">No 0.2 rules extracted.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Minimum Final Checks</h2>
+    {% if minimum_final_checks %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>#</th><th>command</th></tr></thead>
+          <tbody>
+          {% for cmd in minimum_final_checks %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td><code>{{ cmd }}</code></td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No minimum final checks found.</div>
+    {% endif %}
+  </div>
+
+  <div class="card">
+    <h2>Aggregated Checklist Rows</h2>
+    {% if checklist_rows %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead><tr><th>source</th><th>category</th><th>item</th><th>detail</th></tr></thead>
+          <tbody>
+          {% for row in checklist_rows %}
+            <tr data-testid="checklist-row-{{ loop.index }}">
+              <td><code>{{ row.source }}</code></td>
+              <td><span class="pill">{{ row.category }}</span></td>
+              <td>{{ row.item }}</td>
+              <td>{{ row.detail if row.detail else "" }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="plot-fallback">No checklist rows assembled from source docs.</div>
+    {% endif %}
+  </div>
+
+  {% if ssot_enforcement_rules %}
+  <div class="card">
+    <h2>SSOT Enforcement Rules</h2>
+    {% for item in ssot_enforcement_rules %}
+      <div>{{ item }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endblock %}

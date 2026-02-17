@@ -1,0 +1,100 @@
+{
+  "blueprint_draft": {
+    "bar_spec": {
+      "frequency": "1d"
+    },
+    "blueprint_id": "bp_96fd8035f175",
+    "data_requirements": [
+      {
+        "adjustment": "none",
+        "asof_rule": {
+          "mode": "asof"
+        },
+        "dataset_id": "ohlcv_1d",
+        "fields": [
+          "open",
+          "high",
+          "low",
+          "close",
+          "volume",
+          "available_at"
+        ],
+        "frequency": "1d"
+      }
+    ],
+    "description": "Phase-19 regression fixture (deterministic).",
+    "evaluation_protocol": {
+      "embargo": {
+        "bars": 0
+      },
+      "gate_suite_id": "gate_suite_v1_default",
+      "purge": {
+        "bars": 0
+      },
+      "segments": {
+        "holdout": {
+          "end": "2024-01-05",
+          "start": "2024-01-01"
+        },
+        "test": {
+          "end": "2024-01-05",
+          "start": "2024-01-01"
+        },
+        "train": {
+          "end": "2024-01-05",
+          "start": "2024-01-01"
+        }
+      }
+    },
+    "extensions": {
+      "agent_provider": "mock",
+      "evaluation_intent": "phase19_regression",
+      "idea_spec_title": "Fixture Idea",
+      "snapshot_id": "snap_fixture_phase19_001"
+    },
+    "policy_bundle_id": "policy_bundle_v1_default",
+    "report_spec": {
+      "plots": false,
+      "tables": true,
+      "trace": false
+    },
+    "schema_version": "blueprint_v1",
+    "strategy_spec": {
+      "dsl_version": "signal_dsl_v1",
+      "execution": {
+        "cost_model": {
+          "ref_policy": true
+        },
+        "order_timing": "next_open"
+      },
+      "expressions": {
+        "enter": {
+          "type": "const",
+          "value": true
+        },
+        "exit": {
+          "type": "const",
+          "value": false
+        }
+      },
+      "extensions": {
+        "engine_contract": "vectorbt_signal_v1",
+        "strategy_id": "buy_and_hold_mvp"
+      },
+      "signals": {
+        "entry": "enter",
+        "exit": "exit"
+      }
+    },
+    "title": "Fixture Idea",
+    "universe": {
+      "asset_pack": "demo",
+      "calendar": "DEMO",
+      "symbols": [
+        "AAA",
+        "BBB"
+      ],
+      "timezone": "Asia/Taipei"
+    }
+  }
+}

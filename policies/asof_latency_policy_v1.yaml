@@ -1,0 +1,11 @@
+policy_id: asof_latency_policy_v1_default
+policy_version: "v1"
+title: As-Of / Latency Policy v1 (default)
+description: >
+  Governs as-of availability semantics and default latency assumptions to prevent lookahead.
+params:
+  asof_rule: available_at<=as_of
+  default_latency_seconds: 0
+  bar_close_to_signal_seconds: 0
+  trade_lag_bars_default: 1
+

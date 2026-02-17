@@ -1,0 +1,13 @@
+policy_id: llm_budget_policy_v1_default
+policy_version: "v1"
+title: LLM Budget Policy v1 (default)
+description: >
+  Governance budget limits for job-level LLM usage. Enforced by agent harness + orchestrator.
+params:
+  max_calls_per_job: 50
+  max_prompt_chars_per_job: 500000
+  max_response_chars_per_job: 500000
+  max_wall_seconds_per_job: 3600
+  # Optional per-agent-run limit (MVP agents do one call per run; kept for future multi-call agents).
+  max_calls_per_agent_run: 1
+
