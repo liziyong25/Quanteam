@@ -485,7 +485,14 @@
           {% endif %}
           {% if card.phase == "trace_preview" and card.details %}
             {% set overlay = card.details.get("kline_overlay", {}) %}
-            <p><strong>K-line overlay</strong></p>
+            {% set assertions = card.details.get("trace_assertions", {}) %}
+            {% set fetch_summary = card.details.get("fetch_evidence_summary", {}) %}
+            {% set sanity = card.details.get("sanity_metrics", {}) %}
+            {% set fetch_sanity = sanity.get("fetch_sanity", {}) %}
+            {% set trace_meta = sanity.get("trace_meta", {}) %}
+            {% set card_rows = card.details.get("sample_rows", []) %}
+            <p><strong>K-line overlay card</strong></p>
+            <p class="muted" data-testid="wb056-card-kline-overlay">status={{ overlay.get("status", "pending") }} | reason={{ overlay.get("reason", "") }} | source=<code>{{ overlay.get("trace_preview_path", "") }}</code></p>
             <div class="table-wrap">
               <table class="table">
                 <tbody>
@@ -497,9 +504,8 @@
                 </tbody>
               </table>
             </div>
-            {% set card_rows = card.details.get("sample_rows", []) %}
             <p><strong>K-line overlay sample rows</strong></p>
-            {% if card_rows and card_rows|length > 0 %}
+            {% if overlay.get("status") == "ready" and card_rows and card_rows|length > 0 %}
               {% set card_cols = card_rows[0].keys() %}
               <div class="table-wrap">
                 <table class="table">
@@ -521,24 +527,60 @@
                   </tbody>
                 </table>
               </div>
+            {% elif overlay.get("status") == "error" %}
+              <div class="plot-fallback">K-line overlay unavailable: {{ overlay.get("reason", "source_not_found") }}.</div>
+            {% elif overlay.get("status") == "empty" %}
+              <div class="plot-fallback">K-line overlay card is empty: trace preview rows are 0.</div>
             {% else %}
-              <div class="plot-fallback">No K-line overlay sample rows yet.</div>
+              <div class="plot-fallback">K-line overlay pending: missing source evidence.</div>
             {% endif %}
-            {% set assertions = card.details.get("trace_assertions", {}) %}
-            <p><strong>Trace assertions</strong></p>
-            {% if assertions.get("samples") and assertions.get("samples")|length > 0 %}
+
+            <p><strong>trace assertion card</strong></p>
+            <p class="muted" data-testid="wb056-card-trace-assertion">status={{ assertions.get("status", "pending") }} | reason={{ assertions.get("reason", "") }} | source=<code>{{ assertions.get("source_path", "") }}</code></p>
+            {% if assertions.get("status") == "ready" and assertions.get("samples") and assertions.get("samples")|length > 0 %}
             <ul>
               {% for row in assertions.get("samples", []) %}
               <li>{{ row }}</li>
               {% endfor %}
             </ul>
+            {% elif assertions.get("status") == "error" %}
+            <div class="plot-fallback">trace assertion unavailable: {{ assertions.get("reason", "source_not_found") }}.</div>
+            {% elif assertions.get("status") == "empty" %}
+            <div class="plot-fallback">trace assertion card is empty: no assertion rows were produced.</div>
             {% else %}
-            <div class="plot-fallback">No trace assertion samples.</div>
+            <div class="plot-fallback">trace assertion pending: missing source evidence.</div>
             {% endif %}
-            {% set sanity = card.details.get("sanity_metrics", {}) %}
-            {% set fetch_sanity = sanity.get("fetch_sanity", {}) %}
-            {% set trace_meta = sanity.get("trace_meta", {}) %}
-            <p><strong>Sanity metrics</strong></p>
+
+            {% set availability = fetch_summary.get("availability", {}) %}
+            {% set no_lookahead = fetch_summary.get("no_lookahead", {}) %}
+            <p><strong>fetch evidence summary card</strong></p>
+            <p class="muted" data-testid="wb056-card-fetch-evidence">status={{ fetch_summary.get("status", "missing") }} | reason={{ fetch_summary.get("reason", "") }} | source=<code>{{ fetch_summary.get("source_path", "") }}</code></p>
+            <div class="table-wrap">
+              <table class="table">
+                <tbody>
+                  <tr><th>status</th><td>{{ fetch_summary.get("status", "missing") }}</td></tr>
+                  <tr><th>reason</th><td>{{ fetch_summary.get("reason", "") }}</td></tr>
+                  <tr><th>row_count</th><td>{{ fetch_summary.get("row_count", 0) }}</td></tr>
+                  <tr><th>as_of</th><td>{{ fetch_summary.get("as_of", "") }}</td></tr>
+                  <tr><th>availability.rule</th><td>{{ availability.get("rule", "") }}</td></tr>
+                  <tr><th>availability.available_at_field_present</th><td>{{ availability.get("available_at_field_present", false) }}</td></tr>
+                  <tr><th>availability.available_at_window</th><td>{{ availability.get("available_at_min", "") }} -> {{ availability.get("available_at_max", "") }}</td></tr>
+                  <tr><th>availability.available_at_violation_count</th><td>{{ availability.get("available_at_violation_count", 0) }}</td></tr>
+                  <tr><th>no_lookahead.status</th><td>{{ no_lookahead.get("status", "unknown") }}</td></tr>
+                  <tr><th>no_lookahead.rule</th><td>{{ no_lookahead.get("rule", "") }}</td></tr>
+                  <tr><th>no_lookahead.available_at_violation_count</th><td>{{ no_lookahead.get("available_at_violation_count", 0) }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            {% if fetch_summary.get("status") == "missing" %}
+            <div class="plot-fallback">fetch evidence summary pending: missing fetch_result_meta path.</div>
+            {% elif fetch_summary.get("status") == "error" %}
+            <div class="plot-fallback">fetch evidence summary unavailable: {{ fetch_summary.get("reason", "fetch_result_meta_error") }}.</div>
+            {% endif %}
+
+            <p><strong>sanity metrics card</strong></p>
+            <p class="muted" data-testid="wb056-card-sanity-metrics">status={{ sanity.get("status", "pending") }} | reason={{ sanity.get("reason", "") }}</p>
+            {% if sanity.get("status") == "ready" or sanity.get("status") == "error" %}
             <div class="table-wrap">
               <table class="table">
                 <tbody>
@@ -552,6 +594,31 @@
                 </tbody>
               </table>
             </div>
+            {% else %}
+            <div class="plot-fallback">sanity metrics pending: missing trace_meta and fetch_result_meta evidence.</div>
+            {% endif %}
+
+            {% if card.details.get("phase2_field_contract") %}
+            <details>
+              <summary>Phase-2 field contract</summary>
+              <div class="table-wrap">
+                <table class="table">
+                  <thead><tr><th>field</th><th>status</th><th>reason</th><th>source</th><th>path</th></tr></thead>
+                  <tbody>
+                    {% for row in card.details.get("phase2_field_contract", []) %}
+                    <tr>
+                      <td>{{ row.get("field", "") }}</td>
+                      <td>{{ row.get("status", "missing") }}</td>
+                      <td>{{ row.get("reason", "") }}</td>
+                      <td>{{ row.get("source", "") }}</td>
+                      <td><code>{{ row.get("path", "") }}</code></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+            {% endif %}
           {% endif %}
           {% if card.phase == "runspec" and card.details %}
             {% set signal = card.details.get("signal_summary", {}) %}

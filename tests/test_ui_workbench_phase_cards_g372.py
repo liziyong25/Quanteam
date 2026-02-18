@@ -92,3 +92,67 @@ def test_workbench_phase_card_matrix_wb045_coverage_and_order(tmp_path: Path, mo
         assert marker in ui_page.text
         marker_positions.append(ui_page.text.index(marker))
     assert marker_positions == sorted(marker_positions)
+
+
+def test_workbench_trace_preview_wb056_fetch_evidence_summary_shape(tmp_path: Path, monkeypatch) -> None:
+    data_root = tmp_path / "data"
+    art_root = tmp_path / "artifacts"
+    reg_root = tmp_path / "registry"
+    job_root = tmp_path / "jobs"
+    data_root.mkdir()
+    art_root.mkdir()
+    reg_root.mkdir()
+    job_root.mkdir()
+
+    monkeypatch.setenv("EAM_DATA_ROOT", str(data_root))
+    monkeypatch.setenv("EAM_ARTIFACT_ROOT", str(art_root))
+    monkeypatch.setenv("EAM_REGISTRY_ROOT", str(reg_root))
+    monkeypatch.setenv("EAM_JOB_ROOT", str(job_root))
+
+    created = _request_via_asgi(
+        "POST",
+        "/workbench/sessions",
+        json={
+            "title": "WB-056 trace preview cards",
+            "symbols": "AAA,BBB",
+            "hypothesis_text": "phase-2 cards must render explicit fetch evidence summary",
+        },
+    )
+    assert created.status_code == 201, created.text
+    session_id = str(created.json()["session_id"])
+
+    for _ in range(2):
+        cont = _request_via_asgi("POST", f"/workbench/sessions/{session_id}/continue", json={})
+        assert cont.status_code == 200, cont.text
+
+    sess_doc = _request_via_asgi("GET", f"/workbench/sessions/{session_id}").json()
+    cards = sess_doc.get("cards")
+    assert isinstance(cards, list)
+    trace_cards = [card for card in cards if isinstance(card, dict) and str(card.get("phase")) == "trace_preview"]
+    assert len(trace_cards) == 1
+    trace_card = trace_cards[0]
+    details = trace_card.get("details")
+    assert isinstance(details, dict)
+
+    fetch_summary = details.get("fetch_evidence_summary")
+    assert isinstance(fetch_summary, dict)
+    for key in ("status", "reason", "row_count", "as_of", "availability", "no_lookahead"):
+        assert key in fetch_summary
+    assert isinstance(fetch_summary.get("availability"), dict)
+    assert isinstance(fetch_summary.get("no_lookahead"), dict)
+
+    phase2_contract = details.get("phase2_field_contract")
+    assert isinstance(phase2_contract, list)
+    contract_fields = {str(row.get("field")) for row in phase2_contract if isinstance(row, dict)}
+    assert contract_fields == {
+        "calc_trace_preview_path",
+        "calc_trace_plan_path",
+        "trace_meta_path",
+        "fetch_result_meta_path",
+    }
+
+    evidence = json.loads(str(trace_card.get("evidence_json") or "{}"))
+    definition = evidence.get("result_card_definition") if isinstance(evidence, dict) else {}
+    assert isinstance(definition, dict)
+    # WB-056 expansion must not break WB-045 parent requirement compatibility.
+    assert definition.get("requirement_id") == "WB-045"

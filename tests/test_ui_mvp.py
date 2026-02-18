@@ -730,6 +730,9 @@ def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     req_alias_phase2 = _request_via_asgi("GET", "/ui/workbench/req/wb-055")
     assert req_alias_phase2.status_code == 200
     assert "Requirement entry alias" in req_alias_phase2.text
+    req_alias_phase2_cards = _request_via_asgi("GET", "/ui/workbench/req/wb-056")
+    assert req_alias_phase2_cards.status_code == 200
+    assert "Requirement entry alias" in req_alias_phase2_cards.text
     req_alias_phase2_rollback = _request_via_asgi("GET", "/ui/workbench/req/wb-057")
     assert req_alias_phase2_rollback.status_code == 200
     assert "Requirement entry alias" in req_alias_phase2_rollback.text
@@ -953,6 +956,8 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert r.status_code == 200
     r = client.get("/ui/workbench/req/wb-055")
     assert r.status_code == 200
+    r = client.get("/ui/workbench/req/wb-056")
+    assert r.status_code == 200
     r = client.get("/ui/workbench/req/wb-057")
     assert r.status_code == 200
     expected_route_contract = (
@@ -984,6 +989,7 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert route_paths.index("/ui/workbench/req/wb-053") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-054") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-055") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-056") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-057") < session_route_idx
     assert client.get("/ui/jobs").status_code == 200
     assert client.get("/ui/qa-fetch").status_code == 200
@@ -1051,9 +1057,13 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert "calc_trace_plan summary card" in page.text
     assert "Spec-QA risk card" in page.text
     assert "WB-052 dependency field map" in page.text
-    assert "K-line overlay" in page.text
-    assert "Trace assertions" in page.text
-    assert "Sanity metrics" in page.text
+    assert "K-line overlay card" in page.text
+    assert "trace assertion card" in page.text
+    assert "fetch evidence summary card" in page.text
+    assert "sanity metrics card" in page.text
+    assert "availability.available_at_violation_count" in page.text
+    assert "no_lookahead.available_at_violation_count" in page.text
+    assert "Phase-2 field contract" in page.text
     assert "Signal summary" in page.text
     assert "Trade samples" in page.text
     assert "Return/Drawdown/Gate summary" in page.text

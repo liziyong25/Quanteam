@@ -173,6 +173,7 @@ IA_ROUTE_VIEW_CATALOG: dict[str, dict[str, str]] = {
     "/ui/workbench/req/wb-053": {"view_name": "Workbench phase-1 draft operations entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-054": {"view_name": "Workbench phase-1 apply/rollback operations entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-055": {"view_name": "Workbench phase-2 skeleton entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-056": {"view_name": "Workbench phase-2 result cards entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-057": {"view_name": "Workbench phase-2 rollback+rerun entry", "template": "workbench.html"},
     "/ui/workbench/{session_id}": {"view_name": "Workbench session", "template": "workbench.html"},
 }
@@ -423,6 +424,7 @@ WORKBENCH_REQUIREMENT_ENTRY_ALIASES: tuple[str, ...] = (
     "/ui/workbench/req/wb-053",
     "/ui/workbench/req/wb-054",
     "/ui/workbench/req/wb-055",
+    "/ui/workbench/req/wb-056",
     "/ui/workbench/req/wb-057",
 )
 WORKBENCH_EVIDENCE_MAX_BYTES = 262_144
@@ -1878,6 +1880,28 @@ def _workbench_trace_preview_feedback(session: dict[str, Any]) -> tuple[dict[str
     trace_plan_path = _resolve_existing_evidence_path(trace_plan_token)
     fetch_meta_path = _resolve_existing_evidence_path(fetch_meta_token)
 
+    def _safe_int(raw: Any, *, default: int = 0) -> int:
+        try:
+            return int(raw)
+        except Exception:
+            return default
+
+    def _phase2_contract_row(field: str, token: str, resolved: Path | None, *, source: str) -> dict[str, Any]:
+        status = "ready" if resolved is not None else ("error" if token else "missing")
+        reason = ""
+        if status == "error":
+            reason = "path_not_found"
+        elif status == "missing":
+            reason = "path_missing"
+        return {
+            "field": field,
+            "status": status,
+            "reason": reason,
+            "present": bool(token),
+            "path": resolved.as_posix() if resolved is not None else token,
+            "source": source,
+        }
+
     sample_rows = _read_csv_rows_limited(trace_csv_path, max_rows=20) if trace_csv_path is not None else []
     symbols = sorted({str(row.get("symbol") or "").strip() for row in sample_rows if str(row.get("symbol") or "").strip()})
     dt_tokens = [str(row.get("dt") or "").strip() for row in sample_rows if str(row.get("dt") or "").strip()]
@@ -1909,6 +1933,53 @@ def _workbench_trace_preview_feedback(session: dict[str, Any]) -> tuple[dict[str
             if token:
                 assertion_samples.append(token)
 
+    kline_status = "ready" if trace_csv_path is not None else ("error" if trace_csv_token else "pending")
+    kline_reason = ""
+    if kline_status == "error":
+        kline_reason = "calc_trace_preview_path_not_found"
+    elif kline_status == "pending":
+        kline_reason = "missing_calc_trace_preview_path"
+    elif not sample_rows:
+        kline_status = "empty"
+        kline_reason = "calc_trace_preview_has_no_rows"
+
+    trace_assertion_status = "ready" if trace_plan_path is not None else ("error" if trace_plan_token else "pending")
+    trace_assertion_reason = ""
+    if trace_assertion_status == "error":
+        trace_assertion_reason = "calc_trace_plan_path_not_found"
+    elif trace_assertion_status == "pending":
+        trace_assertion_reason = "missing_calc_trace_plan_path"
+    elif not assertion_rows:
+        trace_assertion_status = "empty"
+        trace_assertion_reason = "trace_assertion_list_empty"
+
+    phase2_field_contract = [
+        _phase2_contract_row(
+            "calc_trace_preview_path",
+            trace_csv_token,
+            trace_csv_path,
+            source="outputs_index",
+        ),
+        _phase2_contract_row(
+            "calc_trace_plan_path",
+            trace_plan_token,
+            trace_plan_path,
+            source="outputs_index",
+        ),
+        _phase2_contract_row(
+            "trace_meta_path",
+            trace_meta_token,
+            trace_meta_path,
+            source="outputs_index",
+        ),
+        _phase2_contract_row(
+            "fetch_result_meta_path",
+            fetch_meta_token,
+            fetch_meta_path,
+            source="fetch_evidence_paths_or_last_fetch_probe",
+        ),
+    ]
+
     fetch_sanity_raw = fetch_meta_doc.get("sanity_checks") if isinstance(fetch_meta_doc.get("sanity_checks"), dict) else {}
     missing_ratio = fetch_sanity_raw.get("missing_ratio_by_column")
     nonzero_missing_columns: list[str] = []
@@ -1922,7 +1993,99 @@ def _workbench_trace_preview_feedback(session: dict[str, Any]) -> tuple[dict[str
                 nonzero_missing_columns.append(str(col))
     nonzero_missing_columns = sorted(set(nonzero_missing_columns))
 
+    availability_raw = (
+        fetch_meta_doc.get("availability_summary")
+        if isinstance(fetch_meta_doc.get("availability_summary"), dict)
+        else {}
+    )
+    gate_input_summary = fetch_meta_doc.get("gate_input_summary") if isinstance(fetch_meta_doc.get("gate_input_summary"), dict) else {}
+    no_lookahead_raw = gate_input_summary.get("no_lookahead") if isinstance(gate_input_summary.get("no_lookahead"), dict) else {}
+
+    availability_violation_count = _safe_int(
+        availability_raw.get("available_at_violation_count") if isinstance(availability_raw, dict) else 0
+    )
+    no_lookahead_violation_count = _safe_int(
+        no_lookahead_raw.get("available_at_violation_count") if isinstance(no_lookahead_raw, dict) else availability_violation_count
+    )
+    if isinstance(no_lookahead_raw, dict) and no_lookahead_raw:
+        no_lookahead_status = "pass" if no_lookahead_violation_count <= 0 else "fail"
+    elif isinstance(availability_raw, dict) and availability_raw:
+        no_lookahead_status = "pass" if availability_violation_count <= 0 else "fail"
+    else:
+        no_lookahead_status = "unknown"
+
+    fetch_status = str(fetch_meta_doc.get("status") or "").strip()
+    fetch_reason = str(fetch_meta_doc.get("reason") or "").strip()
+    if not fetch_status:
+        if not fetch_meta_token:
+            fetch_status = "missing"
+            fetch_reason = fetch_reason or "fetch_result_meta_path_missing"
+        elif fetch_meta_path is None:
+            fetch_status = "error"
+            fetch_reason = fetch_reason or "fetch_result_meta_path_not_found"
+        elif not fetch_meta_doc:
+            fetch_status = "error"
+            fetch_reason = fetch_reason or "fetch_result_meta_unreadable"
+        else:
+            fetch_status = "unknown"
+            fetch_reason = fetch_reason or "fetch_result_meta_status_unknown"
+
+    fetch_row_count = _safe_int(fetch_meta_doc.get("row_count"), default=0)
+    fetch_as_of = str(fetch_meta_doc.get("as_of") or "").strip()
+    availability_summary = {
+        "has_as_of": bool(availability_raw.get("has_as_of")) if isinstance(availability_raw, dict) else bool(fetch_as_of),
+        "as_of": str(availability_raw.get("as_of") or fetch_as_of).strip(),
+        "rule": str(availability_raw.get("rule") or "").strip(),
+        "available_at_field_present": bool(availability_raw.get("available_at_field_present"))
+        if isinstance(availability_raw, dict)
+        else False,
+        "available_at_min": str(availability_raw.get("available_at_min") or "").strip()
+        if isinstance(availability_raw, dict)
+        else "",
+        "available_at_max": str(availability_raw.get("available_at_max") or "").strip()
+        if isinstance(availability_raw, dict)
+        else "",
+        "available_at_violation_count": max(0, availability_violation_count),
+    }
+    no_lookahead_summary = {
+        "status": no_lookahead_status,
+        "rule": str(no_lookahead_raw.get("rule") or availability_summary.get("rule") or "").strip()
+        if isinstance(no_lookahead_raw, dict)
+        else str(availability_summary.get("rule") or "").strip(),
+        "has_as_of": bool(no_lookahead_raw.get("has_as_of"))
+        if isinstance(no_lookahead_raw, dict) and "has_as_of" in no_lookahead_raw
+        else bool(availability_summary.get("has_as_of")),
+        "available_at_field_present": bool(no_lookahead_raw.get("available_at_field_present"))
+        if isinstance(no_lookahead_raw, dict) and "available_at_field_present" in no_lookahead_raw
+        else bool(availability_summary.get("available_at_field_present")),
+        "available_at_violation_count": max(0, no_lookahead_violation_count),
+    }
+    fetch_evidence_summary = {
+        "status": fetch_status,
+        "reason": fetch_reason,
+        "row_count": max(0, fetch_row_count),
+        "as_of": fetch_as_of,
+        "availability": availability_summary,
+        "no_lookahead": no_lookahead_summary,
+        "source_path": fetch_meta_path.as_posix() if fetch_meta_path is not None else fetch_meta_token,
+    }
+
+    sanity_status = "ready" if (trace_meta_path is not None or fetch_meta_path is not None) else "pending"
+    sanity_reason = ""
+    if sanity_status == "pending":
+        sanity_reason = "missing_trace_meta_and_fetch_result_meta"
+    if (trace_meta_token and trace_meta_path is None) or (fetch_meta_token and fetch_meta_path is None):
+        sanity_status = "error"
+        reason_parts: list[str] = []
+        if trace_meta_token and trace_meta_path is None:
+            reason_parts.append("trace_meta_path_not_found")
+        if fetch_meta_token and fetch_meta_path is None:
+            reason_parts.append("fetch_result_meta_path_not_found")
+        sanity_reason = ",".join(reason_parts) or "sanity_input_path_not_found"
+
     sanity_metrics = {
+        "status": sanity_status,
+        "reason": sanity_reason,
         "trace_meta": trace_meta_doc if isinstance(trace_meta_doc, dict) else {},
         "fetch_sanity": {
             "preview_row_count": int(fetch_sanity_raw.get("preview_row_count") or 0) if isinstance(fetch_sanity_raw, dict) else 0,
@@ -1934,6 +2097,8 @@ def _workbench_trace_preview_feedback(session: dict[str, Any]) -> tuple[dict[str
     }
 
     kline_overlay = {
+        "status": kline_status,
+        "reason": kline_reason,
         "trace_preview_path": trace_csv_path.as_posix() if trace_csv_path is not None else trace_csv_token,
         "bars": len(sample_rows),
         "symbols": symbols,
@@ -1944,6 +2109,8 @@ def _workbench_trace_preview_feedback(session: dict[str, Any]) -> tuple[dict[str
         "sample_rows": sample_rows,
     }
     trace_assertions = {
+        "status": trace_assertion_status,
+        "reason": trace_assertion_reason,
         "count": len(assertion_rows),
         "source_path": trace_plan_path.as_posix() if trace_plan_path is not None else trace_plan_token,
         "samples": assertion_samples,
@@ -1952,6 +2119,12 @@ def _workbench_trace_preview_feedback(session: dict[str, Any]) -> tuple[dict[str
         "Demo feedback card assembled from trace preview artifacts.",
         f"K-line overlay: {len(sample_rows)} bars across {len(symbols)} symbols ({dt_start or '?'} -> {dt_end or '?'})",
         f"Trace assertions: {len(assertion_rows)} checks",
+        (
+            "Fetch evidence: "
+            f"status={fetch_evidence_summary['status']}, "
+            f"row_count={fetch_evidence_summary['row_count']}, "
+            f"as_of={fetch_evidence_summary['as_of'] or '?'}"
+        ),
         (
             "Sanity metrics: "
             f"preview_rows={sanity_metrics['fetch_sanity']['preview_row_count']}, "
@@ -1972,8 +2145,10 @@ def _workbench_trace_preview_feedback(session: dict[str, Any]) -> tuple[dict[str
     details = {
         "kline_overlay": kline_overlay,
         "trace_assertions": trace_assertions,
+        "fetch_evidence_summary": fetch_evidence_summary,
         "sanity_metrics": sanity_metrics,
         "sample_rows": sample_rows,
+        "phase2_field_contract": phase2_field_contract,
         "g356_dependency_field_map": _workbench_dependency_field_map(outputs_index),
     }
     return details, summary_lines, artifacts
@@ -9690,6 +9865,12 @@ def ui_workbench_req_wb054(request: Request) -> HTMLResponse:
 @router.api_route("/ui/workbench/req/wb-055", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_workbench_req_wb055(request: Request) -> HTMLResponse:
     # Stable requirement-bound entry path used by SSOT ui_path for G379.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-056", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb056(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G381.
     return ui_workbench(request)
 
 
