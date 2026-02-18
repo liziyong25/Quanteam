@@ -96,9 +96,9 @@
   </div>
 
   {% if selected_session %}
-    <div class="card">
-      <h2>Session Detail</h2>
       {% set s = selected_session.session %}
+    <div class="card" id="workbench-session-detail" data-session-id="{{ s.session_id }}" data-event-count="{{ selected_session.event_count }}">
+      <h2>Session Detail</h2>
       <div class="code-wrap">
         <p><strong>Session:</strong> {{ s.session_id }} | <strong>status:</strong> {{ s.status }} | <strong>current step:</strong> {{ s.current_step }}</p>
         <p><strong>job_id:</strong> {{ s.job_id }} | <strong>created:</strong> {{ s.created_at }}</p>
@@ -110,6 +110,7 @@
         <div>
           <form method="post" action="/workbench/sessions/{{ s.session_id }}/continue" class="form-grid" data-loading-form="1">
             <input type="hidden" name="_ui" value="1"/>
+            <input type="hidden" name="idempotency_key" value="" data-idempotency-input="continue" data-session-id="{{ s.session_id }}"/>
             <label>
               <span>target_step (optional)</span>
               <select name="target_step">
@@ -127,6 +128,7 @@
         <div>
           <form method="post" action="/workbench/sessions/{{ s.session_id }}/fetch-probe" class="form-grid" data-loading-form="1">
             <input type="hidden" name="_ui" value="1"/>
+            <input type="hidden" name="idempotency_key" value="" data-idempotency-input="fetch_probe" data-session-id="{{ s.session_id }}"/>
             <label>
               <span>symbols</span>
               <input name="symbols" value="{{ (s.idea.symbols | join(',')) if s.idea and s.idea.symbols else '' }}" placeholder="AAPL,MSFT"/>
@@ -135,6 +137,52 @@
               <button type="submit" class="btn" data-loading-label="Fetching...">Run Fetch Probe</button>
             </div>
           </form>
+        </div>
+      </div>
+
+      <h3>Recovery Loop (FR-009)</h3>
+      {% set recovery = selected_session.current_step_recovery if selected_session.current_step_recovery else {} %}
+      <p class="muted">
+        active_step={{ s.current_step }} |
+        selected_draft={{ recovery.get("selected_version") if recovery.get("selected_version") else "none" }} |
+        previous_draft={{ recovery.get("previous_version") if recovery.get("previous_version") else "none" }}
+      </p>
+      <div class="grid">
+        <div>
+          <form method="post" action="/workbench/sessions/{{ s.session_id }}/steps/{{ s.current_step }}/rerun" class="form-grid" data-loading-form="1">
+            <input type="hidden" name="_ui" value="1"/>
+            <input type="hidden" name="idempotency_key" value="" data-idempotency-input="step_rerun" data-session-id="{{ s.session_id }}"/>
+            <div class="full">
+              <button type="submit" class="btn" data-loading-label="Rerunning...">Rerun Current Step</button>
+            </div>
+          </form>
+        </div>
+        <div>
+          {% if s.current_step != "idea" %}
+          <form method="post" action="/workbench/sessions/{{ s.session_id }}/steps/{{ s.current_step }}/drafts/apply" class="form-grid" data-loading-form="1">
+            <input type="hidden" name="_ui" value="1"/>
+            <input type="hidden" name="idempotency_key" value="" data-idempotency-input="draft_apply" data-session-id="{{ s.session_id }}"/>
+            <label>
+              <span>historical draft version</span>
+              <input name="version" type="number" min="1" step="1" placeholder="e.g. 1" required/>
+            </label>
+            <div class="full">
+              <button type="submit" class="btn" data-loading-label="Applying...">Apply Draft Version</button>
+            </div>
+          </form>
+          <form method="post" action="/workbench/sessions/{{ s.session_id }}/steps/{{ s.current_step }}/drafts/rollback" class="form-grid" data-loading-form="1">
+            <input type="hidden" name="_ui" value="1"/>
+            <input type="hidden" name="idempotency_key" value="" data-idempotency-input="draft_rollback" data-session-id="{{ s.session_id }}"/>
+            <div class="full">
+              <button type="submit" class="btn" data-loading-label="Rolling back...">Rollback To Previous Draft</button>
+            </div>
+          </form>
+          {% if recovery.get("selection_history") and recovery.get("selection_history")|length > 0 %}
+          <p class="muted">selection_history: {{ recovery.get("selection_history") | join(" -> ") }}</p>
+          {% endif %}
+          {% else %}
+          <div class="plot-fallback">Draft apply/rollback is available after entering a non-idea step.</div>
+          {% endif %}
         </div>
       </div>
 
@@ -190,6 +238,7 @@
                 {% if row.step == s.current_step %}
                   <form method="post" action="/workbench/sessions/{{ s.session_id }}/continue" data-loading-form="1">
                     <input type="hidden" name="_ui" value="1"/>
+                    <input type="hidden" name="idempotency_key" value="" data-idempotency-input="continue" data-session-id="{{ s.session_id }}"/>
                     <input type="hidden" name="target_step" value="{{ row.step }}"/>
                     <button type="submit" class="btn btn-small" data-loading-label="继续中...">继续</button>
                   </form>
@@ -535,6 +584,26 @@
   {% endif %}
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+      var refreshPending = false;
+
+      function randomSuffix() {
+        if (window.crypto && window.crypto.randomUUID) {
+          return window.crypto.randomUUID().replace(/-/g, "");
+        }
+        return String(Date.now()) + String(Math.random()).replace(/\D/g, "");
+      }
+
+      document.querySelectorAll("input[data-idempotency-input]").forEach(function (input, idx) {
+        if (input.value) {
+          return;
+        }
+        var action = String(input.getAttribute("data-idempotency-input") || "action").trim() || "action";
+        var sessionId = String(input.getAttribute("data-session-id") || "").trim();
+        var suffix = randomSuffix().slice(0, 28);
+        var key = sessionId ? [action, sessionId, String(idx + 1), suffix].join("-") : [action, String(idx + 1), suffix].join("-");
+        input.value = key.slice(0, 64);
+      });
+
       document.querySelectorAll("form[data-loading-form='1']").forEach(function (form) {
         form.addEventListener("submit", function () {
           var btn = form.querySelector("button[type='submit']");
@@ -545,6 +614,57 @@
           btn.textContent = btn.getAttribute("data-loading-label") || "Loading...";
         });
       });
+
+      var sessionDetail = document.getElementById("workbench-session-detail");
+      if (!sessionDetail) {
+        return;
+      }
+      var sessionId = String(sessionDetail.getAttribute("data-session-id") || "").trim();
+      if (!sessionId) {
+        return;
+      }
+      var lastEventIndex = Number(sessionDetail.getAttribute("data-event-count") || "0");
+      if (!Number.isFinite(lastEventIndex) || lastEventIndex < 0) {
+        lastEventIndex = 0;
+      }
+
+      function scheduleReload() {
+        if (refreshPending) {
+          return;
+        }
+        refreshPending = true;
+        window.location.reload();
+      }
+
+      function pollEvents() {
+        var url = "/workbench/sessions/" + encodeURIComponent(sessionId) + "/events?after=" + String(Math.floor(lastEventIndex)) + "&limit=200";
+        window.fetch(url, { headers: { Accept: "application/json" } })
+          .then(function (resp) {
+            if (!resp.ok) {
+              return null;
+            }
+            return resp.json();
+          })
+          .then(function (doc) {
+            if (!doc || doc.mode !== "polling") {
+              return;
+            }
+            var eventCount = Number(doc.event_count || 0);
+            var totalCount = Number(doc.total_event_count || 0);
+            if (eventCount > 0) {
+              scheduleReload();
+              return;
+            }
+            if (Number.isFinite(totalCount) && totalCount > lastEventIndex) {
+              lastEventIndex = totalCount;
+            }
+          })
+          .catch(function () {
+            return null;
+          });
+      }
+
+      window.setInterval(pollEvents, 2500);
     });
   </script>
 {% endblock %}

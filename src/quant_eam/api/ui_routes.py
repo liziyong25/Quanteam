@@ -251,9 +251,12 @@ WORKBENCH_EVENT_APPEND_LOCK = Lock()
 WORKBENCH_DRAFT_WRITE_LOCK = Lock()
 WORKBENCH_CONTINUE_LOCKS_GUARD = Lock()
 WORKBENCH_CONTINUE_LOCKS: dict[str, Lock] = {}
+WORKBENCH_ACTION_IDEMPOTENCY_GUARD = Lock()
+WORKBENCH_ACTION_IDEMPOTENCY_CACHE: dict[str, dict[str, dict[str, Any]]] = {}
 WORKBENCH_OWNER_HEADER_CANDIDATES: tuple[str, ...] = ("x-workbench-owner", "x-user-id", "x-owner-id")
 WORKBENCH_IDEMPOTENCY_KEY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,63}$")
 WORKBENCH_CONTINUE_IDEMPOTENCY_CACHE_LIMIT = 32
+WORKBENCH_ACTION_IDEMPOTENCY_CACHE_LIMIT = 128
 WORKBENCH_ENDPOINT_SCHEMA_VERSIONS: dict[str, str] = {
     "create_request": "workbench_session_create_request_v1",
     "create_response": "workbench_session_create_response_v1",
@@ -266,6 +269,8 @@ WORKBENCH_ENDPOINT_SCHEMA_VERSIONS: dict[str, str] = {
     "fetch_probe_response": "workbench_session_fetch_probe_response_v1",
     "draft_create_response": "workbench_step_draft_create_response_v1",
     "draft_apply_response": "workbench_step_draft_apply_response_v1",
+    "draft_rollback_response": "workbench_step_draft_rollback_response_v1",
+    "step_rerun_response": "workbench_step_rerun_response_v1",
 }
 WORKBENCH_PHASE_TITLES: dict[str, str] = {
     "idea": "Phase-0 Idea Intake",
@@ -274,6 +279,14 @@ WORKBENCH_PHASE_TITLES: dict[str, str] = {
     "runspec": "Phase-3 Research Backtest",
     "improvements": "Phase-4 Improvements and Registry",
 }
+WORKBENCH_STEP_RERUN_AGENT_MAP: dict[str, str] = {
+    "idea": "intent_agent_v1",
+    "strategy_spec": "strategy_spec_agent_v1",
+    "trace_preview": "demo_agent_v1",
+    "runspec": "backtest_agent_v1",
+    "improvements": "improvement_agent_v1",
+}
+WORKBENCH_DRAFT_SELECTION_HISTORY_LIMIT = 32
 WORKBENCH_ROUTE_INTERFACE_V43: tuple[tuple[str, str], ...] = (
     ("POST", "/workbench/sessions"),
     ("GET", "/workbench/sessions/{session_id}"),
@@ -794,13 +807,17 @@ def _workbench_bind_or_assert_session_owner(session: dict[str, Any], *, request:
     return owner_id
 
 
-def _workbench_parse_continue_idempotency_key(*, request: Request, payload: dict[str, Any]) -> str:
+def _workbench_parse_action_idempotency_key(*, request: Request, payload: dict[str, Any]) -> str:
     raw = str(request.headers.get("idempotency-key") or request.headers.get("x-idempotency-key") or payload.get("idempotency_key") or "").strip()
     if not raw:
         return ""
     if not WORKBENCH_IDEMPOTENCY_KEY_RE.match(raw):
         raise HTTPException(status_code=422, detail="invalid idempotency_key")
     return raw
+
+
+def _workbench_parse_continue_idempotency_key(*, request: Request, payload: dict[str, Any]) -> str:
+    return _workbench_parse_action_idempotency_key(request=request, payload=payload)
 
 
 def _workbench_parse_step(step: str, *, allow_idea: bool = True) -> str:
@@ -819,6 +836,151 @@ def _workbench_parse_positive_int(value: str, *, field_name: str) -> int:
     if out < 1:
         raise HTTPException(status_code=422, detail=f"{field_name} must be a positive integer")
     return out
+
+
+def _workbench_parse_optional_positive_int(value: Any, *, field_name: str) -> int | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    return _workbench_parse_positive_int(text, field_name=field_name)
+
+
+def _workbench_step_rerun_agent_id(step: str) -> str:
+    step_id = _workbench_parse_step(step, allow_idea=True)
+    aid = str(WORKBENCH_STEP_RERUN_AGENT_MAP.get(step_id) or "").strip()
+    if not aid:
+        raise HTTPException(status_code=409, detail=f"rerun agent mapping missing for step: {step_id}")
+    if aid not in RERUN_AGENT_OPTIONS:
+        raise HTTPException(status_code=409, detail=f"rerun agent not allowed for step: {step_id}")
+    return aid
+
+
+def _workbench_step_draft_dir_from_session(*, session_id: str, session: dict[str, Any], step: str) -> Path:
+    raw_job_id = str(session.get("job_id") or "").strip() or f"job_{session_id}"
+    safe_job_id = require_safe_id(raw_job_id, kind="job_id")
+    return _workbench_step_drafts_root(session_id, step, job_id=safe_job_id)
+
+
+def _workbench_current_selected_draft_version(session: dict[str, Any], *, step: str) -> int | None:
+    drafts = session.get("drafts")
+    if not isinstance(drafts, dict):
+        return None
+    step_drafts = drafts.get(step)
+    if not isinstance(step_drafts, dict):
+        return None
+    raw = step_drafts.get("selected")
+    if isinstance(raw, int) and raw > 0:
+        return raw
+    if isinstance(raw, str) and raw.isdigit():
+        out = int(raw)
+        return out if out > 0 else None
+    return None
+
+
+def _workbench_draft_selection_history(session: dict[str, Any], *, step: str) -> list[int]:
+    history_map = session.get("draft_selection_history")
+    if not isinstance(history_map, dict):
+        return []
+    raw_rows = history_map.get(step)
+    if not isinstance(raw_rows, list):
+        return []
+    out: list[int] = []
+    for raw in raw_rows:
+        if isinstance(raw, int) and raw > 0:
+            out.append(raw)
+            continue
+        if isinstance(raw, str) and raw.isdigit():
+            parsed = int(raw)
+            if parsed > 0:
+                out.append(parsed)
+    return out
+
+
+def _workbench_previous_selected_draft_version(session: dict[str, Any], *, step: str, current_version: int | None) -> int | None:
+    history = _workbench_draft_selection_history(session, step=step)
+    if not history:
+        return None
+    current = current_version if isinstance(current_version, int) and current_version > 0 else None
+    for row in reversed(history):
+        if current is not None and row == current:
+            continue
+        return row
+    return None
+
+
+def _workbench_apply_draft_locked(
+    *,
+    session_id: str,
+    session: dict[str, Any],
+    step: str,
+    draft_no: int,
+) -> tuple[Path, Path, int | None, list[int]]:
+    draft_dir = _workbench_step_draft_dir_from_session(session_id=session_id, session=session, step=step)
+    draft_path = draft_dir / f"draft_v{draft_no}.json"
+    if not draft_path.is_file():
+        raise HTTPException(status_code=404, detail="draft not found")
+    try:
+        draft_doc = _load_json(draft_path)
+    except Exception:  # noqa: BLE001
+        raise HTTPException(status_code=409, detail="draft payload invalid")
+    if not isinstance(draft_doc, dict):
+        raise HTTPException(status_code=409, detail="draft payload invalid")
+    if str(draft_doc.get("session_id") or "") != session_id or str(draft_doc.get("step") or "") != step:
+        raise HTTPException(status_code=409, detail="draft payload session/step mismatch")
+    if int(draft_doc.get("version") or 0) != draft_no:
+        raise HTTPException(status_code=409, detail="draft payload version mismatch")
+
+    drafts = session.get("drafts")
+    if not isinstance(drafts, dict):
+        drafts = {}
+        session["drafts"] = drafts
+
+    step_drafts = drafts.get(step)
+    if not isinstance(step_drafts, dict):
+        step_drafts = {}
+
+    prev_selected = _workbench_current_selected_draft_version(session, step=step)
+    step_drafts["selected"] = draft_no
+    step_drafts["path"] = draft_path.as_posix()
+    step_drafts["selected_at"] = _now_iso()
+    drafts[step] = step_drafts
+    session["drafts"] = drafts
+
+    selected_drafts = session.get("selected_drafts")
+    if not isinstance(selected_drafts, dict):
+        selected_drafts = {}
+    selected_drafts[step] = draft_no
+    session["selected_drafts"] = selected_drafts
+
+    history = _workbench_draft_selection_history(session, step=step)
+    if not history or history[-1] != draft_no:
+        history.append(draft_no)
+    history = history[-WORKBENCH_DRAFT_SELECTION_HISTORY_LIMIT:]
+    history_map = session.get("draft_selection_history")
+    if not isinstance(history_map, dict):
+        history_map = {}
+    history_map[step] = history
+    session["draft_selection_history"] = history_map
+
+    selected_path = draft_dir / "selected.json"
+    _write_json(
+        selected_path,
+        {
+            "schema_version": "workbench_step_selected_v1",
+            "session_id": session_id,
+            "step": step,
+            "selected_version": draft_no,
+            "selected_path": draft_path.as_posix(),
+            "selection_history": history,
+            "selected_at": _now_iso(),
+        },
+    )
+    _bump_workbench_revision(session)
+    session["updated_at"] = _now_iso()
+    _write_workbench_session(session_id, session)
+    return draft_path, selected_path, prev_selected, history
 
 
 def _workbench_validate_draft_content(payload: dict[str, Any]) -> Any:
@@ -915,6 +1077,45 @@ def _workbench_cache_continue_response(session: dict[str, Any], *, key: str, res
     while len(cache) > WORKBENCH_CONTINUE_IDEMPOTENCY_CACHE_LIMIT:
         first = next(iter(cache.keys()))
         cache.pop(first, None)
+
+
+def _workbench_get_action_idempotent_response(*, session_id: str, action: str, key: str) -> dict[str, Any] | None:
+    if not key:
+        return None
+    sid = require_safe_id(session_id, kind="session_id")
+    action_key = require_safe_id(action, kind="workbench_action")
+    bucket_key = f"{sid}:{action_key}"
+    with WORKBENCH_ACTION_IDEMPOTENCY_GUARD:
+        bucket = WORKBENCH_ACTION_IDEMPOTENCY_CACHE.get(bucket_key)
+        if not isinstance(bucket, dict):
+            return None
+        row = bucket.get(key)
+        if not isinstance(row, dict):
+            return None
+        response = row.get("response")
+        if not isinstance(response, dict):
+            return None
+        return _json_roundtrip_copy(response)
+
+
+def _workbench_cache_action_response(*, session_id: str, action: str, key: str, response: dict[str, Any]) -> None:
+    if not key:
+        return
+    sid = require_safe_id(session_id, kind="session_id")
+    action_key = require_safe_id(action, kind="workbench_action")
+    bucket_key = f"{sid}:{action_key}"
+    with WORKBENCH_ACTION_IDEMPOTENCY_GUARD:
+        bucket = WORKBENCH_ACTION_IDEMPOTENCY_CACHE.get(bucket_key)
+        if not isinstance(bucket, dict):
+            bucket = {}
+            WORKBENCH_ACTION_IDEMPOTENCY_CACHE[bucket_key] = bucket
+        bucket[key] = {
+            "stored_at": _now_iso(),
+            "response": _json_roundtrip_copy(response),
+        }
+        while len(bucket) > WORKBENCH_ACTION_IDEMPOTENCY_CACHE_LIMIT:
+            first = next(iter(bucket.keys()))
+            bucket.pop(first, None)
 
 
 def _write_workbench_session(session_id: str, doc: dict[str, Any]) -> None:
@@ -1540,9 +1741,12 @@ def _initial_workbench_session(*, session_id: str, idea: dict[str, Any], job_id:
         ],
         "messages": [],
         "drafts": {},
+        "draft_selection_history": {},
         "cards": [],
         "phase_cards": {},
         "selected_drafts": {},
+        "last_rerun": {},
+        "rerun_last_error": "",
         "fetch_probe_status": "idle",
         "fetch_probe_error": "",
         "fetch_probe_preview_rows": [],
@@ -2007,6 +2211,16 @@ def _workbench_session_context(session_id: str) -> dict[str, Any]:
     payload = _load_workbench_session(session_id)
     events = _read_workbench_events(session_id)
     cards = _workbench_cards_for_view(payload)
+    current_step = str(payload.get("current_step") or WORKBENCH_PHASE_STEPS[0])
+    if current_step not in WORKBENCH_PHASE_STEPS:
+        current_step = WORKBENCH_PHASE_STEPS[0]
+    selected_version = _workbench_current_selected_draft_version(payload, step=current_step) if current_step != "idea" else None
+    previous_version = (
+        _workbench_previous_selected_draft_version(payload, step=current_step, current_version=selected_version)
+        if current_step != "idea"
+        else None
+    )
+    history = _workbench_draft_selection_history(payload, step=current_step) if current_step != "idea" else []
     return {
         "title": "Workbench Session",
         "session": payload,
@@ -2016,6 +2230,12 @@ def _workbench_session_context(session_id: str) -> dict[str, Any]:
         "cards_count": len(cards),
         "steps": WORKBENCH_PHASE_STEPS,
         "cards_path": _workbench_cards_root(session_id).as_posix(),
+        "current_step_recovery": {
+            "step": current_step,
+            "selected_version": selected_version,
+            "previous_version": previous_version,
+            "selection_history": history,
+        },
     }
 
 
@@ -7327,8 +7547,15 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
     enforce_write_auth(request)
     session_id = require_safe_id(session_id, kind="session_id")
     payload = await _read_workbench_payload(request)
+    idempotency_key = _workbench_parse_action_idempotency_key(request=request, payload=payload)
+    is_ui = str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}
     session = _load_workbench_session(session_id)
     owner_id = _workbench_bind_or_assert_session_owner(session, request=request)
+    replay = _workbench_get_action_idempotent_response(session_id=session_id, action="fetch_probe", key=idempotency_key)
+    if replay is not None:
+        if is_ui:
+            return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+        return replay
     symbols_from_payload = _coerce_symbol_list(payload.get("symbols"))
     request_step = str(session.get("current_step") or WORKBENCH_PHASE_STEPS[0])
     if request_step not in WORKBENCH_PHASE_STEPS:
@@ -7415,7 +7642,8 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
                 "error": str(e),
                 "event_id": str(ev.get("event_id") or ""),
             }
-            if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
+            _workbench_cache_action_response(session_id=session_id, action="fetch_probe", key=idempotency_key, response=out)
+            if is_ui:
                 return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
             return out
 
@@ -7477,7 +7705,8 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
             "event_id": str(ev.get("event_id") or ""),
             "card": _workbench_card_api_payload(card_doc),
         }
-        if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
+        _workbench_cache_action_response(session_id=session_id, action="fetch_probe", key=idempotency_key, response=out)
+        if is_ui:
             return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
         return out
 
@@ -7549,7 +7778,8 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
         "event_id": str(ev.get("event_id") or ""),
         "card": _workbench_card_api_payload(card_doc),
     }
-    if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
+    _workbench_cache_action_response(session_id=session_id, action="fetch_probe", key=idempotency_key, response=out)
+    if is_ui:
         return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
     return out
 
@@ -7567,9 +7797,7 @@ async def workbench_session_save_draft(session_id: str, step: str, request: Requ
     with WORKBENCH_DRAFT_WRITE_LOCK:
         session = _load_workbench_session(session_id)
         owner_id = _workbench_bind_or_assert_session_owner(session, request=request)
-        raw_job_id = str(session.get("job_id") or "").strip() or f"job_{session_id}"
-        safe_job_id = require_safe_id(raw_job_id, kind="job_id")
-        draft_dir = _workbench_step_drafts_root(session_id, step, job_id=safe_job_id)
+        draft_dir = _workbench_step_draft_dir_from_session(session_id=session_id, session=session, step=step)
         version_list = []
         if draft_dir.is_dir():
             for p in draft_dir.iterdir():
@@ -7619,78 +7847,29 @@ async def workbench_session_apply_draft(session_id: str, step: str, version: str
     enforce_write_auth(request)
     session_id = require_safe_id(session_id, kind="session_id")
     step = _workbench_parse_step(step, allow_idea=False)
-    _ = await _read_workbench_payload(request)
+    payload = await _read_workbench_payload(request)
+    idempotency_key = _workbench_parse_action_idempotency_key(request=request, payload=payload)
     draft_no = _workbench_parse_positive_int(version, field_name="version")
 
     with WORKBENCH_DRAFT_WRITE_LOCK:
         session = _load_workbench_session(session_id)
         owner_id = _workbench_bind_or_assert_session_owner(session, request=request)
-        raw_job_id = str(session.get("job_id") or "").strip() or f"job_{session_id}"
-        safe_job_id = require_safe_id(raw_job_id, kind="job_id")
-        draft_dir = _workbench_step_drafts_root(session_id, step, job_id=safe_job_id)
-        draft_path = draft_dir / f"draft_v{draft_no}.json"
-        if not draft_path.is_file():
-            raise HTTPException(status_code=404, detail="draft not found")
-        try:
-            draft_doc = _load_json(draft_path)
-        except Exception:  # noqa: BLE001
-            raise HTTPException(status_code=409, detail="draft payload invalid")
-        if not isinstance(draft_doc, dict):
-            raise HTTPException(status_code=409, detail="draft payload invalid")
-        if str(draft_doc.get("session_id") or "") != session_id or str(draft_doc.get("step") or "") != step:
-            raise HTTPException(status_code=409, detail="draft payload session/step mismatch")
-        if int(draft_doc.get("version") or 0) != draft_no:
-            raise HTTPException(status_code=409, detail="draft payload version mismatch")
-
-        drafts = session.get("drafts")
-        if not isinstance(drafts, dict):
-            drafts = {}
-            session["drafts"] = drafts
-
-        step_drafts = drafts.get(step)
-        if not isinstance(step_drafts, dict):
-            step_drafts = {}
-        prev_selected_raw = step_drafts.get("selected")
-        if isinstance(prev_selected_raw, int):
-            prev_selected = prev_selected_raw
-        elif isinstance(prev_selected_raw, str) and prev_selected_raw.isdigit():
-            prev_selected = int(prev_selected_raw)
-        else:
-            prev_selected = None
-        step_drafts["selected"] = draft_no
-        step_drafts["path"] = draft_path.as_posix()
-        step_drafts["selected_at"] = _now_iso()
-        drafts[step] = step_drafts
-        session["drafts"] = drafts
-
-        selected_drafts = session.get("selected_drafts")
-        if not isinstance(selected_drafts, dict):
-            selected_drafts = {}
-        selected_drafts[step] = draft_no
-        session["selected_drafts"] = selected_drafts
-
-        selected_path = draft_dir / "selected.json"
-        _write_json(
-            selected_path,
-            {
-                "schema_version": "workbench_step_selected_v1",
-                "session_id": session_id,
-                "step": step,
-                "selected_version": draft_no,
-                "selected_path": draft_path.as_posix(),
-                "selected_at": _now_iso(),
-            },
+        replay = _workbench_get_action_idempotent_response(session_id=session_id, action="draft_apply", key=idempotency_key)
+        if replay is not None:
+            return replay
+        draft_path, selected_path, prev_selected, selection_history = _workbench_apply_draft_locked(
+            session_id=session_id,
+            session=session,
+            step=step,
+            draft_no=draft_no,
         )
-        _bump_workbench_revision(session)
-        session["updated_at"] = _now_iso()
-        _write_workbench_session(session_id, session)
     apply_ev = _append_workbench_event(
         session_id=session_id,
         step=step,
         action="draft_applied",
         actor="user",
         source="workbench_session_apply_draft",
-        payload={"version": draft_no, "selected_path": selected_path.as_posix()},
+        payload={"version": draft_no, "selected_path": selected_path.as_posix(), "selection_history": selection_history},
     )
     state_action = "draft_selection_changed" if prev_selected != draft_no else "draft_selection_reaffirmed"
     state_ev = _append_workbench_event(
@@ -7704,10 +7883,11 @@ async def workbench_session_apply_draft(session_id: str, step: str, version: str
             "previous_version": prev_selected,
             "current_version": draft_no,
             "selected_path": selected_path.as_posix(),
+            "selection_history": selection_history,
         },
     )
 
-    return {
+    out = {
         "schema_version": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS["draft_apply_response"],
         "session_id": session_id,
         "owner_id": owner_id,
@@ -7715,9 +7895,344 @@ async def workbench_session_apply_draft(session_id: str, step: str, version: str
         "selected_draft_version": draft_no,
         "path": draft_path.as_posix(),
         "selected_index_path": selected_path.as_posix(),
+        "selection_history": selection_history,
         "event": apply_ev,
         "state_event": state_ev,
     }
+    _workbench_cache_action_response(session_id=session_id, action="draft_apply", key=idempotency_key, response=out)
+    return out
+
+
+@router.post("/workbench/sessions/{session_id}/steps/{step}/drafts/apply")
+async def workbench_session_apply_draft_from_payload(session_id: str, step: str, request: Request) -> Any:
+    enforce_write_auth(request)
+    session_id = require_safe_id(session_id, kind="session_id")
+    step = _workbench_parse_step(step, allow_idea=False)
+    payload = await _read_workbench_payload(request)
+    idempotency_key = _workbench_parse_action_idempotency_key(request=request, payload=payload)
+    draft_no = _workbench_parse_optional_positive_int(payload.get("version"), field_name="version")
+    if draft_no is None:
+        raise HTTPException(status_code=422, detail="version is required")
+
+    with WORKBENCH_DRAFT_WRITE_LOCK:
+        session = _load_workbench_session(session_id)
+        owner_id = _workbench_bind_or_assert_session_owner(session, request=request)
+        replay = _workbench_get_action_idempotent_response(session_id=session_id, action="draft_apply", key=idempotency_key)
+        if replay is not None:
+            if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
+                return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+            return replay
+        draft_path, selected_path, prev_selected, selection_history = _workbench_apply_draft_locked(
+            session_id=session_id,
+            session=session,
+            step=step,
+            draft_no=draft_no,
+        )
+    apply_ev = _append_workbench_event(
+        session_id=session_id,
+        step=step,
+        action="draft_applied",
+        actor="user",
+        source="workbench_session_apply_draft_from_payload",
+        payload={"version": draft_no, "selected_path": selected_path.as_posix(), "selection_history": selection_history},
+    )
+    state_action = "draft_selection_changed" if prev_selected != draft_no else "draft_selection_reaffirmed"
+    state_ev = _append_workbench_event(
+        session_id=session_id,
+        step=step,
+        action=state_action,
+        actor="system",
+        source="workbench_session_apply_draft_from_payload",
+        status="ok",
+        payload={
+            "previous_version": prev_selected,
+            "current_version": draft_no,
+            "selected_path": selected_path.as_posix(),
+            "selection_history": selection_history,
+        },
+    )
+
+    out = {
+        "schema_version": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS["draft_apply_response"],
+        "session_id": session_id,
+        "owner_id": owner_id,
+        "step": step,
+        "selected_draft_version": draft_no,
+        "path": draft_path.as_posix(),
+        "selected_index_path": selected_path.as_posix(),
+        "selection_history": selection_history,
+        "event": apply_ev,
+        "state_event": state_ev,
+    }
+    _workbench_cache_action_response(session_id=session_id, action="draft_apply", key=idempotency_key, response=out)
+    if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
+        return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+    return out
+
+
+@router.post("/workbench/sessions/{session_id}/steps/{step}/drafts/rollback")
+async def workbench_session_rollback_draft(session_id: str, step: str, request: Request) -> Any:
+    enforce_write_auth(request)
+    session_id = require_safe_id(session_id, kind="session_id")
+    step = _workbench_parse_step(step, allow_idea=False)
+    payload = await _read_workbench_payload(request)
+    idempotency_key = _workbench_parse_action_idempotency_key(request=request, payload=payload)
+    target_version = _workbench_parse_optional_positive_int(
+        payload.get("target_version") if "target_version" in payload else payload.get("version"),
+        field_name="target_version",
+    )
+
+    with WORKBENCH_DRAFT_WRITE_LOCK:
+        session = _load_workbench_session(session_id)
+        owner_id = _workbench_bind_or_assert_session_owner(session, request=request)
+        replay = _workbench_get_action_idempotent_response(session_id=session_id, action="draft_rollback", key=idempotency_key)
+        if replay is not None:
+            if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
+                return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+            return replay
+        current_selected = _workbench_current_selected_draft_version(session, step=step)
+        if current_selected is None:
+            raise HTTPException(status_code=409, detail="no selected draft to rollback")
+
+        rollback_to = target_version
+        if rollback_to is None:
+            rollback_to = _workbench_previous_selected_draft_version(
+                session,
+                step=step,
+                current_version=current_selected,
+            )
+        if rollback_to is None and current_selected > 1:
+            fallback = current_selected - 1
+            fallback_dir = _workbench_step_draft_dir_from_session(session_id=session_id, session=session, step=step)
+            if (fallback_dir / f"draft_v{fallback}.json").is_file():
+                rollback_to = fallback
+        if rollback_to is None:
+            raise HTTPException(status_code=409, detail="previous draft not available for rollback")
+        if rollback_to == current_selected:
+            raise HTTPException(status_code=409, detail="target rollback version must differ from current selected version")
+
+        draft_path, selected_path, prev_selected, selection_history = _workbench_apply_draft_locked(
+            session_id=session_id,
+            session=session,
+            step=step,
+            draft_no=rollback_to,
+        )
+    rollback_ev = _append_workbench_event(
+        session_id=session_id,
+        step=step,
+        action="draft_rolled_back",
+        actor="user",
+        source="workbench_session_rollback_draft",
+        payload={
+            "rollback_from": current_selected,
+            "rollback_to": rollback_to,
+            "selected_path": selected_path.as_posix(),
+            "selection_history": selection_history,
+        },
+    )
+    state_ev = _append_workbench_event(
+        session_id=session_id,
+        step=step,
+        action="draft_selection_rollback_applied",
+        actor="system",
+        source="workbench_session_rollback_draft",
+        status="ok",
+        payload={
+            "previous_version": prev_selected,
+            "current_version": rollback_to,
+            "rollback_from": current_selected,
+            "rollback_to": rollback_to,
+            "selected_path": selected_path.as_posix(),
+            "selection_history": selection_history,
+        },
+    )
+
+    out = {
+        "schema_version": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS["draft_rollback_response"],
+        "session_id": session_id,
+        "owner_id": owner_id,
+        "step": step,
+        "rollback_from_version": current_selected,
+        "rollback_to_version": rollback_to,
+        "selected_draft_version": rollback_to,
+        "path": draft_path.as_posix(),
+        "selected_index_path": selected_path.as_posix(),
+        "selection_history": selection_history,
+        "event": rollback_ev,
+        "state_event": state_ev,
+    }
+    _workbench_cache_action_response(session_id=session_id, action="draft_rollback", key=idempotency_key, response=out)
+    if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
+        return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+    return out
+
+
+@router.post("/workbench/sessions/{session_id}/steps/{step}/rerun")
+async def workbench_session_rerun_step(session_id: str, step: str, request: Request) -> Any:
+    enforce_write_auth(request)
+    session_id = require_safe_id(session_id, kind="session_id")
+    step = _workbench_parse_step(step, allow_idea=True)
+    payload = await _read_workbench_payload(request)
+    idempotency_key = _workbench_parse_action_idempotency_key(request=request, payload=payload)
+    is_ui = str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}
+
+    with _workbench_continue_lock(session_id):
+        session = _load_workbench_session(session_id)
+        owner_id = _workbench_bind_or_assert_session_owner(session, request=request)
+        replay = _workbench_get_action_idempotent_response(session_id=session_id, action="step_rerun", key=idempotency_key)
+        if replay is not None:
+            if is_ui:
+                return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+            return replay
+        current_step = str(session.get("current_step") or WORKBENCH_PHASE_STEPS[0])
+        if current_step not in WORKBENCH_PHASE_STEPS:
+            raise HTTPException(status_code=409, detail="invalid session step")
+        if step != current_step:
+            raise HTTPException(status_code=409, detail="step must match current_step for rerun")
+
+        agent_id = _workbench_step_rerun_agent_id(step)
+        request_ev = _append_workbench_event(
+            session_id=session_id,
+            step=step,
+            action="step_rerun_requested",
+            actor="user",
+            source="workbench_session_rerun_step",
+            payload={"step": step, "agent_id": agent_id},
+        )
+
+        if _workbench_real_jobs_enabled():
+            job_id = str(session.get("job_id") or "").strip()
+            if not job_id:
+                raise HTTPException(status_code=409, detail="workbench session missing job_id")
+            try:
+                require_safe_job_id(job_id)
+            except HTTPException:
+                raise HTTPException(status_code=409, detail="workbench session job_id is not a real job id")
+
+            from quant_eam.api.jobs_api import rerun as api_job_rerun
+
+            try:
+                rerun_result = api_job_rerun(request, job_id, agent_id=agent_id)
+            except HTTPException as exc:
+                err = str(exc.detail)
+                session["rerun_last_error"] = err
+                session["last_rerun"] = {
+                    "step": step,
+                    "agent_id": agent_id,
+                    "job_id": job_id,
+                    "status": "error",
+                    "error": err,
+                    "updated_at": _now_iso(),
+                }
+                _bump_workbench_revision(session)
+                session["updated_at"] = _now_iso()
+                _write_workbench_session(session_id, session)
+                _append_workbench_event(
+                    session_id=session_id,
+                    step=step,
+                    action="step_rerun_failed",
+                    actor="system",
+                    source="workbench_session_rerun_step",
+                    status="error",
+                    payload={
+                        "job_id": job_id,
+                        "agent_id": agent_id,
+                        "error": err,
+                        "request_event_id": str(request_ev.get("event_id") or ""),
+                    },
+                )
+                raise
+
+            rerun_id = str(rerun_result.get("rerun_id") or "")
+            session["rerun_last_error"] = ""
+            session["last_rerun"] = {
+                "step": step,
+                "agent_id": agent_id,
+                "job_id": job_id,
+                "status": "ok",
+                "rerun_id": rerun_id,
+                "agent_run_path": str(rerun_result.get("agent_run_path") or ""),
+                "updated_at": _now_iso(),
+            }
+            _bump_workbench_revision(session)
+            session["updated_at"] = _now_iso()
+            _write_workbench_session(session_id, session)
+            state_ev = _append_workbench_event(
+                session_id=session_id,
+                step=step,
+                action="step_rerun_completed",
+                actor="system",
+                source="workbench_session_rerun_step",
+                status="ok",
+                payload={
+                    "job_id": job_id,
+                    "agent_id": agent_id,
+                    "rerun_id": rerun_id,
+                    "agent_run_path": str(rerun_result.get("agent_run_path") or ""),
+                    "request_event_id": str(request_ev.get("event_id") or ""),
+                },
+            )
+            out = {
+                "schema_version": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS["step_rerun_response"],
+                "session_id": session_id,
+                "owner_id": owner_id,
+                "step": step,
+                "current_step": current_step,
+                "job_id": job_id,
+                "agent_id": agent_id,
+                "status": "rerun_requested",
+                "event": request_ev,
+                "state_event": state_ev,
+                "rerun": rerun_result,
+            }
+        else:
+            sim_ev = _append_workbench_event(
+                session_id=session_id,
+                step=step,
+                action="step_rerun_simulated",
+                actor="system",
+                source="workbench_session_rerun_step",
+                status="ok",
+                payload={"agent_id": agent_id, "request_event_id": str(request_ev.get("event_id") or "")},
+            )
+            summary_lines, details, artifacts = _workbench_step_summary(session, step=step)
+            card_doc = _ensure_workbench_phase_card(
+                session_id=session_id,
+                session=session,
+                step=step,
+                trigger_event=sim_ev,
+                summary_lines=summary_lines,
+                details=details,
+                artifacts=artifacts,
+                force_new=True,
+            )
+            session["rerun_last_error"] = ""
+            session["last_rerun"] = {
+                "step": step,
+                "agent_id": agent_id,
+                "status": "simulated",
+                "event_id": str(sim_ev.get("event_id") or ""),
+                "updated_at": _now_iso(),
+            }
+            _bump_workbench_revision(session)
+            session["updated_at"] = _now_iso()
+            _write_workbench_session(session_id, session)
+            out = {
+                "schema_version": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS["step_rerun_response"],
+                "session_id": session_id,
+                "owner_id": owner_id,
+                "step": step,
+                "current_step": current_step,
+                "agent_id": agent_id,
+                "status": "simulated",
+                "card": _workbench_card_api_payload(card_doc),
+                "event": request_ev,
+                "state_event": sim_ev,
+            }
+        _workbench_cache_action_response(session_id=session_id, action="step_rerun", key=idempotency_key, response=out)
+    if is_ui:
+        return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+    return out
 
 
 @router.api_route("/ui/workbench", methods=["GET", "HEAD"], response_class=HTMLResponse)
