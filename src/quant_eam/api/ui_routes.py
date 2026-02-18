@@ -10,6 +10,7 @@ import secrets
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
+from threading import Lock
 from typing import Any
 from urllib.parse import parse_qs
 
@@ -244,6 +245,8 @@ WORKBENCH_PHASE_STEPS = (
     "improvements",
 )
 WORKBENCH_DRAFT_VERSION_RE = re.compile(r"^draft_v([1-9][0-9]*)\.json$")
+WORKBENCH_EVENT_APPEND_LOCK = Lock()
+WORKBENCH_DRAFT_WRITE_LOCK = Lock()
 WORKBENCH_PHASE_TITLES: dict[str, str] = {
     "idea": "Phase-0 Idea Intake",
     "strategy_spec": "Phase-1 Strategy Spec",
@@ -263,7 +266,7 @@ def _workbench_sessions_root() -> Path:
 
 def _workbench_session_root(session_id: str) -> Path:
     sid = require_safe_id(session_id, kind="session_id")
-    return _workbench_sessions_root() / sid
+    return require_child_dir(_workbench_sessions_root(), sid)
 
 
 def _workbench_session_path(session_id: str) -> Path:
@@ -292,19 +295,25 @@ def _workbench_job_id(session_id: str) -> str:
     job_id = str(doc.get("job_id") or "").strip()
     if not job_id:
         return fallback
-    return job_id
+    return require_safe_id(job_id, kind="job_id")
 
 
-def _workbench_job_outputs_root(session_id: str) -> Path:
-    return Path(os.getenv("EAM_ARTIFACT_ROOT", "/artifacts")) / "jobs" / _workbench_job_id(session_id) / "outputs" / "workbench"
+def _workbench_job_outputs_root(session_id: str, *, job_id: str | None = None) -> Path:
+    sid = require_safe_id(session_id, kind="session_id")
+    fallback = f"job_{sid}"
+    raw_job_id = str(job_id or _workbench_job_id(sid) or "").strip()
+    safe_job_id = require_safe_id(raw_job_id or fallback, kind="job_id")
+    return Path(os.getenv("EAM_ARTIFACT_ROOT", "/artifacts")) / "jobs" / safe_job_id / "outputs" / "workbench"
 
 
-def _workbench_cards_root(session_id: str) -> Path:
-    return _workbench_job_outputs_root(session_id) / "cards"
+def _workbench_cards_root(session_id: str, *, job_id: str | None = None) -> Path:
+    return _workbench_job_outputs_root(session_id, job_id=job_id) / "cards"
 
 
-def _workbench_step_drafts_root(session_id: str, step: str) -> Path:
-    return _workbench_job_outputs_root(session_id) / "step_drafts" / step
+def _workbench_step_drafts_root(session_id: str, step: str, *, job_id: str | None = None) -> Path:
+    step_id = require_safe_id(step, kind="workbench_step")
+    drafts_parent = _workbench_job_outputs_root(session_id, job_id=job_id) / "step_drafts"
+    return require_child_dir(drafts_parent, step_id)
 
 
 def _workbench_cards_index_path(session_id: str) -> Path:
@@ -433,27 +442,32 @@ def _append_workbench_event(
     source: str = "",
     status: str = "",
 ) -> dict[str, Any]:
-    event_index = len(_read_workbench_events(session_id)) + 1
     actor_norm = "user" if str(actor).strip().lower() == "user" else "system"
-    event: dict[str, Any] = {
-        "schema_version": "workbench_event_v1",
-        "event_id": f"wev_{event_index:04d}",
-        "event_index": event_index,
-        "event_type": action,
-        "actor": actor_norm,
-        "session_id": session_id,
-        "step": step,
-        "created_at": _now_iso(),
-    }
+    session_sid = require_safe_id(session_id, kind="session_id")
+    step_id = require_safe_id(step, kind="workbench_step")
     source_text = str(source).strip()
-    if source_text:
-        event["source"] = source_text
     status_text = str(status).strip()
-    if status_text:
-        event["status"] = status_text
-    if payload:
-        event["payload"] = payload
-    _append_jsonl(_workbench_events_path(session_id), event)
+
+    with WORKBENCH_EVENT_APPEND_LOCK:
+        prior = _read_workbench_events(session_sid)
+        event_index = len(prior) + 1
+        event: dict[str, Any] = {
+            "schema_version": "workbench_event_v1",
+            "event_id": f"wev_{event_index:04d}",
+            "event_index": event_index,
+            "event_type": action,
+            "actor": actor_norm,
+            "session_id": session_sid,
+            "step": step_id,
+            "created_at": _now_iso(),
+        }
+        if source_text:
+            event["source"] = source_text
+        if status_text:
+            event["status"] = status_text
+        if payload:
+            event["payload"] = payload
+        _append_jsonl(_workbench_events_path(session_sid), event)
     return event
 
 
@@ -6590,31 +6604,34 @@ async def workbench_session_save_draft(session_id: str, step: str, request: Requ
     if draft_content == "":
         draft_content = payload
 
-    session = _load_workbench_session(session_id)
-    draft_dir = _workbench_step_drafts_root(session_id, step)
-    version_list = []
-    if draft_dir.is_dir():
-        for p in draft_dir.iterdir():
-            if not p.is_file():
-                continue
-            m = WORKBENCH_DRAFT_VERSION_RE.match(p.name)
-            if m:
-                version_list.append(int(m.group(1)))
-    next_version = max(version_list, default=0) + 1
-    draft_path = draft_dir / f"draft_v{next_version}.json"
+    with WORKBENCH_DRAFT_WRITE_LOCK:
+        session = _load_workbench_session(session_id)
+        raw_job_id = str(session.get("job_id") or "").strip() or f"job_{session_id}"
+        safe_job_id = require_safe_id(raw_job_id, kind="job_id")
+        draft_dir = _workbench_step_drafts_root(session_id, step, job_id=safe_job_id)
+        version_list = []
+        if draft_dir.is_dir():
+            for p in draft_dir.iterdir():
+                if not p.is_file():
+                    continue
+                m = WORKBENCH_DRAFT_VERSION_RE.match(p.name)
+                if m:
+                    version_list.append(int(m.group(1)))
+        next_version = max(version_list, default=0) + 1
+        draft_path = draft_dir / f"draft_v{next_version}.json"
 
-    draft_record = {
-        "schema_version": "workbench_step_draft_v1",
-        "session_id": session_id,
-        "step": step,
-        "version": next_version,
-        "created_at": _now_iso(),
-        "content": draft_content,
-    }
-    _write_json(draft_path, draft_record)
-    _bump_workbench_revision(session)
-    session["updated_at"] = _now_iso()
-    _write_workbench_session(session_id, session)
+        draft_record = {
+            "schema_version": "workbench_step_draft_v1",
+            "session_id": session_id,
+            "step": step,
+            "version": next_version,
+            "created_at": _now_iso(),
+            "content": draft_content,
+        }
+        _write_json(draft_path, draft_record)
+        _bump_workbench_revision(session)
+        session["updated_at"] = _now_iso()
+        _write_workbench_session(session_id, session)
     _append_workbench_event(
         session_id=session_id,
         step=step,
@@ -6636,37 +6653,41 @@ async def workbench_session_apply_draft(session_id: str, step: str, version: str
     if draft_no is None or draft_no < 1:
         raise HTTPException(status_code=422, detail="version must be a positive integer")
 
-    draft_path = _workbench_step_drafts_root(session_id, step) / f"draft_v{draft_no}.json"
-    if not draft_path.is_file():
-        raise HTTPException(status_code=404, detail="draft not found")
-    session = _load_workbench_session(session_id)
-    drafts = session.get("drafts")
-    if not isinstance(drafts, dict):
-        drafts = {}
-        session["drafts"] = drafts
+    with WORKBENCH_DRAFT_WRITE_LOCK:
+        session = _load_workbench_session(session_id)
+        raw_job_id = str(session.get("job_id") or "").strip() or f"job_{session_id}"
+        safe_job_id = require_safe_id(raw_job_id, kind="job_id")
+        draft_dir = _workbench_step_drafts_root(session_id, step, job_id=safe_job_id)
+        draft_path = draft_dir / f"draft_v{draft_no}.json"
+        if not draft_path.is_file():
+            raise HTTPException(status_code=404, detail="draft not found")
+        drafts = session.get("drafts")
+        if not isinstance(drafts, dict):
+            drafts = {}
+            session["drafts"] = drafts
 
-    step_drafts = drafts.get(step)
-    if not isinstance(step_drafts, dict):
-        step_drafts = {}
-    step_drafts["selected"] = draft_no
-    step_drafts["path"] = draft_path.as_posix()
-    drafts[step] = step_drafts
-    session["drafts"] = drafts
-    selected_path = _workbench_step_drafts_root(session_id, step) / "selected.json"
-    _write_json(
-        selected_path,
-        {
-            "schema_version": "workbench_step_selected_v1",
-            "session_id": session_id,
-            "step": step,
-            "selected_version": draft_no,
-            "selected_path": draft_path.as_posix(),
-            "selected_at": _now_iso(),
-        },
-    )
-    _bump_workbench_revision(session)
-    session["updated_at"] = _now_iso()
-    _write_workbench_session(session_id, session)
+        step_drafts = drafts.get(step)
+        if not isinstance(step_drafts, dict):
+            step_drafts = {}
+        step_drafts["selected"] = draft_no
+        step_drafts["path"] = draft_path.as_posix()
+        drafts[step] = step_drafts
+        session["drafts"] = drafts
+        selected_path = draft_dir / "selected.json"
+        _write_json(
+            selected_path,
+            {
+                "schema_version": "workbench_step_selected_v1",
+                "session_id": session_id,
+                "step": step,
+                "selected_version": draft_no,
+                "selected_path": draft_path.as_posix(),
+                "selected_at": _now_iso(),
+            },
+        )
+        _bump_workbench_revision(session)
+        session["updated_at"] = _now_iso()
+        _write_workbench_session(session_id, session)
     _append_workbench_event(
         session_id=session_id,
         step=step,

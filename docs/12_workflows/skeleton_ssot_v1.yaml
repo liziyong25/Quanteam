@@ -20053,36 +20053,57 @@ goal_checklist:
   difficulty_score: 77
   reasoning_tier: medium
   todo_checklist:
-  - Align on G356 deliverables and freeze session/job/event contracts consumed by G357.
-  - Implement WB-011 session create + initial idea-job binding path.
-  - Implement WB-012 checkpoint continue with auto-approve + guarded advance semantics.
-  - Implement WB-013 Phase-0 fetch preview trigger with table/error/loading handling.
-  - Implement WB-014 and WB-020 strategy readable summary + full session action events.
+  - Align on G356 deliverables and freeze session/job/event contracts consumed by
+    G357.
+  - 'Implement WB-011: create workbench session from Idea constraints and attach initial
+    job record.'
+  - 'Implement WB-012: add per-checkpoint “继续” to auto-approve and advance to next
+    checkpoint or terminal state.'
+  - 'Implement WB-013: enable Phase-0 fetch preview trigger with sample table rendering
+    and error/loading handling.'
+  - 'Implement WB-014 and WB-020: show pseudocode + variable dictionary summary +
+    trace plan summary, and log all user/system actions as session events.'
+  - 'Update `docs/12_workflows/skeleton_ssot_v1.yaml` with G357/WB tags, then run:
+    `python3 scripts/check_docs_tree.py`; `python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form
+    tests/test_ui_mvp.py::test_path_traversal_blocked`; `rg -n "G357|WB-011|WB-012|WB-013|WB-014|WB-020"
+    docs/12_workflows/skeleton_ssot_v1.yaml`.'
   risk_notes:
   - G356 schema/API drift can break G357 integration late in implementation.
   - Auto-advance transitions may bypass guards and produce invalid checkpoint/terminal
     states.
-  - Phase-0 preview can feel non-instant unless loading/error states are explicit.
-  - Readable strategy outputs can leak non-approved fields without response shaping.
-  - Session audit trail can miss/duplicate events under retries or concurrent clicks.
-  - Request-path hardening regressions can break traversal protection.
+  - Phase-0 preview may feel non-instant under slow fetch unless async cancel/retry
+    is handled.
+  - Readable strategy outputs may expose internal/unapproved fields without strict
+    response shaping.
+  - Audit trail can miss or duplicate events under retries, concurrent clicks, or
+    background workers.
+  - Security regression around request paths can fail `test_path_traversal_blocked`
+    and block release.
   parallel_hints:
-  - Build session/job creation backend and UI wiring in parallel behind shared fixtures.
-  - Implement checkpoint advance API and UI continue controls concurrently with guard
-    checks.
-  - Build fetch-preview endpoint and table rendering against mocked payloads first.
-  - Prepare strategy summary formatter independently, then integrate into result cards.
-  - Add event-log helper and instrument all user/system action paths.
-  ui_path: /ui/workbench
-  expected_state_change: WB-011/WB-012/WB-013/WB-014/WB-020 requirements transition
-    to implemented with acceptance evidence.
+  - Build session/job creation backend and Idea form wiring in parallel behind a shared
+    contract fixture.
+  - Implement checkpoint advance API/state machine while UI “继续” control and polling
+    are developed separately.
+  - Develop fetch-preview endpoint and sample-table component concurrently using mocked
+    payloads first.
+  - Create strategy summary formatter independently from UI panel layout; integrate
+    via one response DTO.
+  - Add event-log middleware/helper in parallel with feature endpoints, then instrument
+    each action path.
+  - Prepare SSOT/docs updates and acceptance command scripts while coding to shorten
+    final stabilization time.
+  todo_planner:
+    mode: codex_assisted
+    source: codex_cli_planner
+    generated_at: '2026-02-18T04:11:28Z'
+    goal_id: G357
+    artifact_path: artifacts/autopilot/planner/G357/todo_planner_last_message.txt
+  ui_path: /ui/workbench/req/wb-011
+  expected_state_change: Requirement bundle `WB-011/WB-012/WB-013/WB-014/WB-020` transitions
+    to implemented after acceptance.
   expected_artifacts:
   - docs/08_phases/10_impl_workbench/phase_workbench_g357_fr_001_idea_job_bundle.md
   - docs/12_workflows/skeleton_ssot_v1.yaml
-  - docs/00_overview/workbench_ui_productization_v1.md
-  - src/quant_eam/api/ui_routes.py
-  - src/quant_eam/ui/templates/workbench.html
-  - src/quant_eam/ui/static/ui.css
   allowed_paths:
   - docs/08_phases/10_impl_workbench/phase_workbench_g357_fr_001_idea_job_bundle.md
   - docs/12_workflows/skeleton_ssot_v1.yaml
@@ -20100,7 +20121,7 @@ goal_checklist:
     rationale: requirement-gap driven goal
     preauthorized_scope:
       allowed_route_prefixes:
-      - /ui/workbench
+      - /ui/workbench/req/wb-011
       allowed_code_paths:
       - docs/08_phases/10_impl_workbench/phase_workbench_g357_fr_001_idea_job_bundle.md
       - docs/12_workflows/skeleton_ssot_v1.yaml
@@ -20113,14 +20134,209 @@ goal_checklist:
       - contracts/**
       - policies/**
       - Holdout visibility expansion
-  capability_cluster_id: CL_LEGACY_CORE
+  capability_cluster_id: CL_FETCH_357
   allow_noop: false
   notes:
-  - Auto-generated from unmet requirements WB-011/WB-012/WB-013/WB-014/WB-020.
-  - Implemented by codex subagent on 2026-02-18 with real-job workbench integration
-    and audit/event hardening.
-  - Session/job/event contracts for WB-011/WB-012/WB-013/WB-014/WB-020 are aligned to G356
-    and recorded through session events in `/workbench/sessions/{session_id}` flows.
+  - Auto-generated from unmet requirement bundle WB-011/WB-012/WB-013/WB-014/WB-020
+    at 2026-02-18T04:11:06Z
+  - Implemented by controller lifecycle on 2026-02-18T04:43:42Z after attempt 1; packet
+    G357 validated.
+- id: G358
+  title: Impl workbench requirement execution for WB-021
+  status_now: implemented
+  depends_on:
+  - G357
+  track: impl_workbench
+  requirement_ids:
+  - WB-021
+  phase_doc_path: docs/08_phases/10_impl_workbench/phase_workbench_g358_ui_subagent_3_3_nfr.md
+  required_skills:
+  - requirement-splitter
+  - ssot-goal-planner
+  - phase-authoring
+  - packet-evidence-guard
+  difficulty_score: 77
+  reasoning_tier: medium
+  todo_checklist:
+  - 'Baseline on G357: lock current API/UI payload contracts and confirm no breaking
+    deltas.'
+  - Define WB-021 scope in G358 phase doc as NFR umbrella, explicitly linked to NFR-001..005.
+  - 'Implement/verify NFR guardrails: backward-compatible API/UI behavior, append-only
+    job/event semantics, idempotent same-session actions.'
+  - Ensure timely single-page refresh path (polling/SSE compatible) and user-readable
+    error evidence remain intact.
+  - 'Write back SSOT: add G358 goal metadata, map WB-021 to G358, and update status/notes
+    consistently.'
+  - Run acceptance commands and record evidence for packet validation (including `G358|WB-021`
+    grep hit).
+  risk_notes:
+  - WB-021 is an umbrella clause; accidentally marking WB-022..WB-026 as done can
+    create SSOT drift.
+  - Any contract drift from G357 can break `test_ui_create_idea_job_from_form` late.
+  - Idempotency gaps under retry/double-click can duplicate events or corrupt session
+    state.
+  - Append-only violations may not surface in UI quickly but break audit expectations.
+  - Refresh/error behavior may appear correct without deterministic evidence linkage
+    under failures.
+  - Security/path validation regressions can fail `test_path_traversal_blocked`.
+  parallel_hints:
+  - Backend idempotency/append-only enforcement and frontend refresh/error presentation
+    can be developed in parallel behind fixed DTOs.
+  - Prepare `docs/08_phases/...g358...md` and `docs/12_workflows/skeleton_ssot_v1.yaml`
+    updates while implementation is ongoing.
+  - Run `python3 scripts/check_docs_tree.py` and targeted pytest checks in parallel
+    after code freeze.
+  - Build acceptance evidence artifacts in parallel with final SSOT tagging (`G358|WB-021`)
+    checks.
+  - Use mocked event streams to validate refresh UX while backend endpoints finalize.
+  - Do a contract-diff review against G357 outputs concurrently with coding to catch
+    breakage early.
+  todo_planner:
+    mode: codex_assisted
+    source: codex_cli_planner
+    generated_at: '2026-02-18T06:56:44Z'
+    goal_id: G358
+    artifact_path: artifacts/autopilot/planner/G358/todo_planner_last_message.txt
+  ui_path: /ui/workbench/req/wb-021
+  expected_state_change: Requirement `WB-021` transitions to implemented after acceptance.
+  expected_artifacts:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g358_ui_subagent_3_3_nfr.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  allowed_paths:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g358_ui_subagent_3_3_nfr.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  - docs/00_overview/workbench_ui_productization_v1.md
+  - src/quant_eam/ui/**
+  - src/quant_eam/api/**
+  - tests/test_ui_*.py
+  - artifacts/subagent_control/G358/**
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - rg -n "G358|WB-021" docs/12_workflows/skeleton_ssot_v1.yaml
+  stop_condition_exception_scope:
+    exception_id: g358_requirement_gap_scope
+    rationale: requirement-gap driven goal
+    preauthorized_scope:
+      allowed_route_prefixes:
+      - /ui/workbench/req/wb-021
+      allowed_code_paths:
+      - docs/08_phases/10_impl_workbench/phase_workbench_g358_ui_subagent_3_3_nfr.md
+      - docs/12_workflows/skeleton_ssot_v1.yaml
+      - docs/00_overview/workbench_ui_productization_v1.md
+      - src/quant_eam/ui/**
+      - src/quant_eam/api/**
+      - tests/test_ui_*.py
+      - artifacts/subagent_control/G358/**
+      still_forbidden:
+      - contracts/**
+      - policies/**
+      - Holdout visibility expansion
+  capability_cluster_id: CL_FETCH_358
+  allow_noop: false
+  notes:
+  - Auto-generated from unmet requirement WB-021 at 2026-02-18T06:55:41Z
+  - Implemented by controller lifecycle on 2026-02-18T07:17:34Z after attempt 1; packet
+    G358 validated.
+- id: G359
+  title: Impl workbench requirement execution for WB-027
+  status_now: implemented
+  depends_on:
+  - G358
+  track: impl_workbench
+  requirement_ids:
+  - WB-027
+  phase_doc_path: docs/08_phases/10_impl_workbench/phase_workbench_g359_session_store_step_draft_store.md
+  required_skills:
+  - requirement-splitter
+  - ssot-goal-planner
+  - phase-authoring
+  - packet-evidence-guard
+  difficulty_score: 77
+  reasoning_tier: medium
+  todo_checklist:
+  - 'Verify dependency gate: confirm `G358` is implemented and freeze its API/UI contract
+    surface before `WB-027` edits.'
+  - 'Set G359 phase scope to `WB-027` only: define Session Store (`session.json`,`events.jsonl`)
+    and Step Draft Store paths and ownership.'
+  - 'Implement/harden store operations in `src/quant_eam/api/ui_routes.py` for safe
+    pathing, directory creation, and deterministic JSON/JSONL persistence.'
+  - 'Validate create/continue/draft/apply flows persist and read from the two stores
+    without response-shape regressions.'
+  - 'Write SSOT updates in `docs/12_workflows/skeleton_ssot_v1.yaml`: add `G359`,
+    map `WB-027` to `G359`, and keep downstream requirements unchanged.'
+  - 'Run and record acceptance evidence: `python3 scripts/check_docs_tree.py`, targeted
+    pytest, and `rg -n "G359|WB-027" docs/12_workflows/skeleton_ssot_v1.yaml`.'
+  risk_notes:
+  - Contract drift from `G358` baseline may break existing UI/API behavior and targeted
+    pytest.
+  - Path traversal or unsafe joins on `session_id`/`step`/`version` can escape artifact
+    roots.
+  - Session Store and Step Draft Store may use inconsistent roots/filenames versus
+    docs, causing false compliance.
+  - Concurrent writes can corrupt `events.jsonl` ordering or selected draft pointers.
+  - SSOT writeback may accidentally mark `WB-028+` as implemented or alter unrelated
+    mappings.
+  - Conflicting existing G359 phase docs can create scope ambiguity during implementation
+    and review.
+  parallel_hints:
+  - 'Run two coding streams in parallel: Session Store persistence/event indexing vs
+    Step Draft Store create/apply/select logic.'
+  - 'Prepare phase doc and SSOT writeback edits while backend implementation is in
+    progress.'
+  - 'After code freeze, run `python3 scripts/check_docs_tree.py` and targeted pytest
+    in parallel terminals.'
+  - 'Run `rg -n "G359|WB-027" docs/12_workflows/skeleton_ssot_v1.yaml` while assembling
+    packet evidence artifacts.'
+  - 'Keep a lightweight G358 contract-diff checklist running in parallel with functional
+    testing.'
+  todo_planner:
+    mode: codex_assisted
+    source: codex_cli_planner
+    generated_at: '2026-02-18T08:36:19Z'
+    goal_id: G359
+    artifact_path: artifacts/autopilot/planner/G359/todo_planner_last_message.txt
+  ui_path: /ui/workbench/req/wb-027
+  expected_state_change: Requirement `WB-027` transitions to implemented after acceptance.
+  expected_artifacts:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g359_session_store_step_draft_store.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  allowed_paths:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g359_session_store_step_draft_store.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  - docs/00_overview/workbench_ui_productization_v1.md
+  - src/quant_eam/ui/**
+  - src/quant_eam/api/**
+  - tests/test_ui_*.py
+  - artifacts/subagent_control/G359/**
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - rg -n "G359|WB-027" docs/12_workflows/skeleton_ssot_v1.yaml
+  stop_condition_exception_scope:
+    exception_id: g359_requirement_gap_scope
+    rationale: requirement-gap driven goal
+    preauthorized_scope:
+      allowed_route_prefixes:
+      - /ui/workbench/req/wb-027
+      allowed_code_paths:
+      - docs/08_phases/10_impl_workbench/phase_workbench_g359_session_store_step_draft_store.md
+      - docs/12_workflows/skeleton_ssot_v1.yaml
+      - docs/00_overview/workbench_ui_productization_v1.md
+      - src/quant_eam/ui/**
+      - src/quant_eam/api/**
+      - tests/test_ui_*.py
+      - artifacts/subagent_control/G359/**
+      still_forbidden:
+      - contracts/**
+      - policies/**
+      - Holdout visibility expansion
+  capability_cluster_id: CL_FETCH_359
+  allow_noop: false
+  notes:
+  - Auto-generated from unmet requirement WB-027 at 2026-02-18T08:35:21Z
+  - Implemented by controller lifecycle on 2026-02-18T08:36:19Z after attempt 1; packet
+    G359 validated.
 agents_pipeline_v1:
   pipeline_id: agents_pipeline_v1
   execution_model: serial_pipeline_with_checkpoints
@@ -24340,7 +24556,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_FETCH_209
 - req_id: WB-001
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 41
+  source_line: 42
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 2.1 产品目标
   depends_on_req_ids: []
@@ -24355,7 +24571,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_FETCH_338
 - req_id: WB-002
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 42
+  source_line: 43
   owner_track: impl_workbench
   clause: 在不破坏现有 review UI 的前提下新增 用户工作台 UI。
   depends_on_req_ids:
@@ -24368,7 +24584,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_FETCH_350
 - req_id: WB-003
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 43
+  source_line: 44
   owner_track: impl_workbench
   clause: 用户可在一个入口完成 Phase‑0 到 Phase‑4 的串联操作与结果查看。
   depends_on_req_ids:
@@ -24381,7 +24597,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_FETCH_350
 - req_id: WB-004
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 44
+  source_line: 45
   owner_track: impl_workbench
   clause: 每一步都返回“用户可读结果卡片”，默认隐藏底层证据细节。
   depends_on_req_ids:
@@ -24394,7 +24610,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_FETCH_350
 - req_id: WB-005
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 45
+  source_line: 46
   owner_track: impl_workbench
   clause: '仍保留治理边界: 证据落盘、可追溯、可审批、可重放。'
   depends_on_req_ids:
@@ -24407,7 +24623,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_FETCH_350
 - req_id: WB-006
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 47
+  source_line: 48
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 2.2 非目标
   depends_on_req_ids:
@@ -24423,7 +24639,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_FETCH_352
 - req_id: WB-007
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 48
+  source_line: 49
   owner_track: impl_workbench
   clause: 不删除现有 /ui/jobs、/ui/runs、/ui/qa-fetch 等审阅页面。
   depends_on_req_ids:
@@ -24439,7 +24655,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_FETCH_354
 - req_id: WB-008
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 49
+  source_line: 50
   owner_track: impl_workbench
   clause: 不绕过 contracts/policies/gates 的治理规则。
   depends_on_req_ids:
@@ -24455,7 +24671,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_FETCH_354
 - req_id: WB-009
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 50
+  source_line: 51
   owner_track: impl_workbench
   clause: 不将 Agent 变成最终裁决者（裁决仍由 deterministic kernel + gates 完成）。
   depends_on_req_ids:
@@ -24471,7 +24687,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_FETCH_354
 - req_id: WB-010
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 60
+  source_line: 61
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 3.2 核心功能需求（FR）
   depends_on_req_ids:
@@ -24484,7 +24700,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_FETCH_356
 - req_id: WB-011
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 61
+  source_line: 62
   owner_track: impl_workbench
   clause: 'FR-001 工作台会话创建: 用户输入 Idea 约束后创建会话与关联 job。'
   depends_on_req_ids:
@@ -24492,15 +24708,12 @@ requirements_trace_v1:
   status_now: implemented
   mapped_goal_ids:
   - G357
-  acceptance_commands:
-  - python3 scripts/check_docs_tree.py
-  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
-  - rg -n "G357|WB-011|WB-012|WB-013|WB-014|WB-020" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_commands: []
   acceptance_verified: true
-  capability_cluster_id: CL_LEGACY_CORE
+  capability_cluster_id: CL_FETCH_357
 - req_id: WB-012
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 62
+  source_line: 63
   owner_track: impl_workbench
   clause: 'FR-002 一键推进: 在每个检查点可点击“继续”，系统自动审批并推进到下一检查点或终态。'
   depends_on_req_ids:
@@ -24508,15 +24721,12 @@ requirements_trace_v1:
   status_now: implemented
   mapped_goal_ids:
   - G357
-  acceptance_commands:
-  - python3 scripts/check_docs_tree.py
-  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
-  - rg -n "G357|WB-011|WB-012|WB-013|WB-014|WB-020" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_commands: []
   acceptance_verified: true
-  capability_cluster_id: CL_LEGACY_CORE
+  capability_cluster_id: CL_FETCH_357
 - req_id: WB-013
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 63
+  source_line: 64
   owner_track: impl_workbench
   clause: 'FR-003 取数即时反馈: 用户在 Phase‑0 即可触发 fetch 预览并看到表格样本。'
   depends_on_req_ids:
@@ -24524,15 +24734,12 @@ requirements_trace_v1:
   status_now: implemented
   mapped_goal_ids:
   - G357
-  acceptance_commands:
-  - python3 scripts/check_docs_tree.py
-  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
-  - rg -n "G357|WB-011|WB-012|WB-013|WB-014|WB-020" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_commands: []
   acceptance_verified: true
-  capability_cluster_id: CL_LEGACY_CORE
+  capability_cluster_id: CL_FETCH_357
 - req_id: WB-014
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 64
+  source_line: 65
   owner_track: impl_workbench
   clause: 'FR-004 逻辑可读输出: Strategy 阶段展示 pseudocode、变量字典摘要、trace plan 摘要。'
   depends_on_req_ids:
@@ -24540,15 +24747,12 @@ requirements_trace_v1:
   status_now: implemented
   mapped_goal_ids:
   - G357
-  acceptance_commands:
-  - python3 scripts/check_docs_tree.py
-  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
-  - rg -n "G357|WB-011|WB-012|WB-013|WB-014|WB-020" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_commands: []
   acceptance_verified: true
-  capability_cluster_id: CL_LEGACY_CORE
+  capability_cluster_id: CL_FETCH_357
 - req_id: WB-015
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 65
+  source_line: 66
   owner_track: impl_workbench
   clause: 'FR-005 demo 验证反馈: 展示 K 线叠加、trace assertion、sanity 指标。'
   depends_on_req_ids:
@@ -24560,7 +24764,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-016
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 66
+  source_line: 67
   owner_track: impl_workbench
   clause: 'FR-006 回测结果反馈: 展示信号摘要、交易样本、收益/回撤/Gate 摘要。'
   depends_on_req_ids:
@@ -24572,7 +24776,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-017
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 67
+  source_line: 68
   owner_track: impl_workbench
   clause: 'FR-007 改进与沉淀: 展示 attribution 摘要、improvement 候选、registry/card、composer 结果。'
   depends_on_req_ids:
@@ -24584,7 +24788,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-018
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 68
+  source_line: 69
   owner_track: impl_workbench
   clause: 'FR-008 高级证据展开: 每张卡片可展开原始 artifact 路径与明细 JSON/CSV。'
   depends_on_req_ids:
@@ -24596,7 +24800,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-019
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 69
+  source_line: 70
   owner_track: impl_workbench
   clause: 'FR-009 失败可恢复: 支持重跑当前 step、应用历史草稿、回退到上一步草稿。'
   depends_on_req_ids:
@@ -24608,7 +24812,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-020
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 70
+  source_line: 71
   owner_track: impl_workbench
   clause: 'FR-010 全程审计: 用户动作与系统动作都写会话事件日志。'
   depends_on_req_ids:
@@ -24616,27 +24820,25 @@ requirements_trace_v1:
   status_now: implemented
   mapped_goal_ids:
   - G357
-  acceptance_commands:
-  - python3 scripts/check_docs_tree.py
-  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
-  - rg -n "G357|WB-011|WB-012|WB-013|WB-014|WB-020" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_commands: []
   acceptance_verified: true
-  capability_cluster_id: CL_LEGACY_CORE
+  capability_cluster_id: CL_FETCH_357
 - req_id: WB-021
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 72
+  source_line: 73
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 3.3 非功能需求（NFR）
   depends_on_req_ids:
   - WB-020
-  status_now: planned
-  mapped_goal_ids: []
+  status_now: implemented
+  mapped_goal_ids:
+  - G358
   acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_358
 - req_id: WB-022
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 73
+  source_line: 74
   owner_track: impl_workbench
   clause: NFR-001 不破坏现有 API/UI 行为。
   depends_on_req_ids:
@@ -24648,7 +24850,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-023
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 74
+  source_line: 75
   owner_track: impl_workbench
   clause: NFR-002 兼容现有 job/event append-only 语义。
   depends_on_req_ids:
@@ -24660,7 +24862,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-024
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 75
+  source_line: 76
   owner_track: impl_workbench
   clause: NFR-003 对外结果可在单页及时刷新（轮询或 SSE）。
   depends_on_req_ids:
@@ -24672,7 +24874,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-025
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 76
+  source_line: 77
   owner_track: impl_workbench
   clause: NFR-004 对同一会话动作幂等（重复点击不会破坏状态）。
   depends_on_req_ids:
@@ -24684,7 +24886,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-026
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 77
+  source_line: 78
   owner_track: impl_workbench
   clause: NFR-005 全链路错误可解释（UI 给出可读失败原因 + evidence 引用）。
   depends_on_req_ids:
@@ -24696,19 +24898,20 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-027
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 89
+  source_line: 90
   owner_track: impl_workbench
   clause: 新增 Session Store 与 Step Draft Store。
   depends_on_req_ids:
   - WB-021
-  status_now: planned
-  mapped_goal_ids: []
+  status_now: implemented
+  mapped_goal_ids:
+  - G359
   acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_359
 - req_id: WB-028
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 94
+  source_line: 95
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 4.3 路由与接口（新增）
   depends_on_req_ids:
@@ -24720,7 +24923,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-029
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 95
+  source_line: 96
   owner_track: impl_workbench
   clause: POST /workbench/sessions
   depends_on_req_ids:
@@ -24732,7 +24935,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-030
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 96
+  source_line: 97
   owner_track: impl_workbench
   clause: GET /workbench/sessions/{session_id}
   depends_on_req_ids:
@@ -24744,7 +24947,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-031
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 97
+  source_line: 98
   owner_track: impl_workbench
   clause: POST /workbench/sessions/{session_id}/message
   depends_on_req_ids:
@@ -24756,7 +24959,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-032
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 98
+  source_line: 99
   owner_track: impl_workbench
   clause: POST /workbench/sessions/{session_id}/continue
   depends_on_req_ids:
@@ -24768,7 +24971,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-033
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 99
+  source_line: 100
   owner_track: impl_workbench
   clause: GET /workbench/sessions/{session_id}/events（SSE 或轮询兼容）
   depends_on_req_ids:
@@ -24780,7 +24983,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-034
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 100
+  source_line: 101
   owner_track: impl_workbench
   clause: POST /workbench/sessions/{session_id}/fetch-probe
   depends_on_req_ids:
@@ -24792,7 +24995,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-035
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 101
+  source_line: 102
   owner_track: impl_workbench
   clause: POST /workbench/sessions/{session_id}/steps/{step}/drafts
   depends_on_req_ids:
@@ -24804,7 +25007,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-036
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 102
+  source_line: 103
   owner_track: impl_workbench
   clause: POST /workbench/sessions/{session_id}/steps/{step}/drafts/{version}/apply
   depends_on_req_ids:
@@ -24816,7 +25019,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-037
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 103
+  source_line: 104
   owner_track: impl_workbench
   clause: GET /ui/workbench
   depends_on_req_ids:
@@ -24828,7 +25031,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-038
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 104
+  source_line: 105
   owner_track: impl_workbench
   clause: GET /ui/workbench/{session_id}
   depends_on_req_ids:
@@ -24840,7 +25043,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-039
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 106
+  source_line: 107
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 4.4 数据落盘（新增）
   depends_on_req_ids:
@@ -24852,7 +25055,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-040
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 107
+  source_line: 108
   owner_track: impl_workbench
   clause: artifacts/workbench/sessions/<session_id>/session.json
   depends_on_req_ids:
@@ -24864,7 +25067,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-041
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 108
+  source_line: 109
   owner_track: impl_workbench
   clause: artifacts/workbench/sessions/<session_id>/events.jsonl
   depends_on_req_ids:
@@ -24876,7 +25079,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-042
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 109
+  source_line: 110
   owner_track: impl_workbench
   clause: artifacts/jobs/<job_id>/outputs/workbench/cards/*.json
   depends_on_req_ids:
@@ -24888,7 +25091,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-043
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 110
+  source_line: 111
   owner_track: impl_workbench
   clause: artifacts/jobs/<job_id>/outputs/workbench/step_drafts/<step>/draft_vNN.json
   depends_on_req_ids:
@@ -24900,7 +25103,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-044
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 111
+  source_line: 112
   owner_track: impl_workbench
   clause: artifacts/jobs/<job_id>/outputs/workbench/step_drafts/<step>/selected.json
   depends_on_req_ids:
@@ -24912,7 +25115,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-045
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 113
+  source_line: 114
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 5. Phase 对应的用户结果卡定义
   depends_on_req_ids:
@@ -24924,7 +25127,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-046
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 114
+  source_line: 115
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 5.1 Phase‑0（Idea -> Blueprint Draft）
   depends_on_req_ids:
@@ -24936,7 +25139,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-047
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 115
+  source_line: 116
   owner_track: impl_workbench
   clause: '展示卡: DataIntent 卡、FetchRequest 卡、FetchPreview 表格卡、评估协议卡、预算卡。'
   depends_on_req_ids:
@@ -24948,7 +25151,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-048
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 116
+  source_line: 117
   owner_track: impl_workbench
   clause: '可操作: auto_symbols/sample 开关、字段选择、时间窗调整、立即 fetch-probe。'
   depends_on_req_ids:
@@ -24960,7 +25163,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-049
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 118
+  source_line: 119
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 5.2 Phase‑1（Strategy 规格确认）
   depends_on_req_ids:
@@ -24972,7 +25175,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-050
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 119
+  source_line: 120
   owner_track: impl_workbench
   clause: '展示卡: strategy_pseudocode 卡、variable_dictionary 摘要卡、calc_trace_plan 摘要卡、Spec-QA
     风险卡。'
@@ -24985,7 +25188,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-051
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 120
+  source_line: 121
   owner_track: impl_workbench
   clause: '可操作: 草稿编辑并应用、回退上一草稿版本。'
   depends_on_req_ids:
@@ -24997,7 +25200,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-052
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 122
+  source_line: 123
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 5.3 Phase‑2（Demo 验证）
   depends_on_req_ids:
@@ -25009,7 +25212,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-053
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 123
+  source_line: 124
   owner_track: impl_workbench
   clause: '展示卡: K 线叠加卡、trace assertion 卡、fetch evidence 摘要卡、sanity metrics 卡。'
   depends_on_req_ids:
@@ -25021,7 +25224,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-054
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 124
+  source_line: 125
   owner_track: impl_workbench
   clause: '可操作: 不通过时回退到 Phase‑1 并重跑。'
   depends_on_req_ids:
@@ -25033,7 +25236,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-055
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 126
+  source_line: 127
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 5.4 Phase‑3（Research Backtest）
   depends_on_req_ids:
@@ -25045,7 +25248,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-056
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 127
+  source_line: 128
   owner_track: impl_workbench
   clause: '展示卡: 回测摘要卡、交易样本卡、信号摘要卡、Gate 摘要卡、Run 跳转卡。'
   depends_on_req_ids:
@@ -25057,7 +25260,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-057
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 128
+  source_line: 129
   owner_track: impl_workbench
   clause: '可操作: 继续到 Phase‑4、重跑当前 step。'
   depends_on_req_ids:
@@ -25069,7 +25272,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-058
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 130
+  source_line: 131
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 5.5 Phase‑4（评估/改进/入库/组合）
   depends_on_req_ids:
@@ -25081,7 +25284,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-059
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 131
+  source_line: 132
   owner_track: impl_workbench
   clause: '展示卡: attribution 摘要卡、improvement 候选卡、registry 状态卡、composer 结果卡。'
   depends_on_req_ids:
@@ -25093,7 +25296,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-060
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 132
+  source_line: 133
   owner_track: impl_workbench
   clause: '可操作: 生成并应用改进候选、组合运行与结果查看。'
   depends_on_req_ids:
@@ -25105,7 +25308,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-061
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 146
+  source_line: 147
   owner_track: impl_workbench
   clause: Subagent-A Workbench API 与 Session Store。
   depends_on_req_ids:
@@ -25117,7 +25320,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-062
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 177
+  source_line: 178
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 8. 验收标准（DoD）
   depends_on_req_ids:
@@ -25129,7 +25332,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-063
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 179
+  source_line: 180
   owner_track: impl_workbench
   clause: 用户可在 /ui/workbench 完成 Phase‑0~4 全链路。
   depends_on_req_ids:
@@ -25141,7 +25344,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-064
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 180
+  source_line: 181
   owner_track: impl_workbench
   clause: 每个 phase 至少返回 1 张用户可读结果卡。
   depends_on_req_ids:
@@ -25153,7 +25356,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-065
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 181
+  source_line: 182
   owner_track: impl_workbench
   clause: 可创建、编辑、应用 step 草稿并继续推进。
   depends_on_req_ids:
@@ -25165,7 +25368,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-066
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 183
+  source_line: 184
   owner_track: impl_workbench
   clause: 新增 API 测试、UI E2E 测试、全链路集成测试通过。
   depends_on_req_ids:
@@ -25177,7 +25380,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-067
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 184
+  source_line: 185
   owner_track: impl_workbench
   clause: 现有 /ui/jobs、/ui/runs、/ui/qa-fetch 回归通过。
   depends_on_req_ids:
@@ -25189,7 +25392,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-068
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 186
+  source_line: 187
   owner_track: impl_workbench
   clause: 事件 append-only 不破坏。
   depends_on_req_ids:
@@ -25201,7 +25404,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-069
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 193
+  source_line: 194
   owner_track: impl_workbench
   clause: '总体目标与对象模型: Quant‑EAM Whole View Framework.md（v0.5‑draft）.md'
   depends_on_req_ids:
@@ -25213,7 +25416,7 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-070
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 202
+  source_line: 203
   owner_track: impl_workbench
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 11. 当前实现对齐（真实进度 vs 本文目标） / 11.1
     FR 对齐状态（按代码现状）
@@ -25226,10 +25429,10 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-071
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 205
+  source_line: 206
   owner_track: impl_workbench
-  clause: 已有 POST /workbench/sessions，但当前仅生成 session + 占位 job_<session_id>，未创建真实 jobs
-    主链 job。
+  clause: POST /workbench/sessions 在 real-jobs 模式下支持基于 Idea 约束创建真实 idea job，并绑定 workbench
+    session。
   depends_on_req_ids:
   - WB-070
   status_now: planned
@@ -25239,9 +25442,9 @@ requirements_trace_v1:
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-072
   source_document: docs/00_overview/workbench_ui_productization_v1.md
-  source_line: 206
+  source_line: 207
   owner_track: impl_workbench
-  clause: 代码：src/quant_eam/api/ui_routes.py:5269
+  clause: 代码：src/quant_eam/api/ui_routes.py
   depends_on_req_ids:
   - WB-070
   status_now: planned
@@ -28471,6 +28674,61 @@ capability_clusters_v1:
   - python3 -m pytest -q tests/test_ui_mvp.py
   notes:
   - auto-clustered from goal dependency graph
+- cluster_id: CL_FETCH_357
+  title: Fetch capability cluster for G357
+  status_now: implemented
+  goal_ids:
+  - G295
+  - G357
+  requirement_ids:
+  - WB-011
+  - WB-012
+  - WB-013
+  - WB-014
+  - WB-020
+  latest_phase_id: G357
+  acceptance_commands:
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - python3 scripts/check_docs_tree.py
+  - rg -n "G357|WB-011|WB-012|WB-013|WB-014|WB-020" docs/12_workflows/skeleton_ssot_v1.yaml
+  required_tests:
+  - python3 -m pytest -q tests/test_ui_mvp.py
+  notes:
+  - auto-clustered from goal dependency graph
+- cluster_id: CL_FETCH_358
+  title: Fetch capability cluster for G358
+  status_now: implemented
+  goal_ids:
+  - G295
+  - G358
+  requirement_ids:
+  - WB-021
+  latest_phase_id: G358
+  acceptance_commands:
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - python3 scripts/check_docs_tree.py
+  - rg -n "G358|WB-021" docs/12_workflows/skeleton_ssot_v1.yaml
+  required_tests:
+  - python3 -m pytest -q tests/test_ui_mvp.py
+  notes:
+  - auto-clustered from goal dependency graph
+- cluster_id: CL_FETCH_359
+  title: Fetch capability cluster for G359
+  status_now: implemented
+  goal_ids:
+  - G295
+  - G359
+  requirement_ids:
+  - WB-027
+  latest_phase_id: G359
+  acceptance_commands:
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - python3 scripts/check_docs_tree.py
+  - rg -n "G359|WB-027" docs/12_workflows/skeleton_ssot_v1.yaml
+  required_tests:
+  - python3 -m pytest -q tests/test_ui_mvp.py
+  notes:
+  - auto-clustered from goal dependency graph
 - cluster_id: CL_LEGACY_CORE
   title: Legacy/core goal cluster
   status_now: partial
@@ -28776,28 +29034,23 @@ capability_clusters_v1:
   - G355
   - G356
   - G357
+  - G358
+  - G359
   requirement_ids:
   - QF-098
   - QF-099
   - QF-100
   - QF-101
-  - WB-011
-  - WB-012
-  - WB-013
-  - WB-014
   - WB-015
   - WB-016
   - WB-017
   - WB-018
   - WB-019
-  - WB-020
-  - WB-021
   - WB-022
   - WB-023
   - WB-024
   - WB-025
   - WB-026
-  - WB-027
   - WB-028
   - WB-029
   - WB-030
@@ -28848,7 +29101,7 @@ capability_clusters_v1:
   - WV-036
   - WV-037
   - WV-038
-  latest_phase_id: G357
+  latest_phase_id: G359
   acceptance_commands:
   - python3 scripts/check_docs_tree.py
   required_tests:
@@ -28872,7 +29125,7 @@ milestone_policy_v1:
     - Holdout visibility expansion
     dirty_workspace_isolation: whitelist_only
   push_policy:
-    preferred: origin/master
+    preferred: fallback_branch
     fallback_branch_prefix: autopilot/milestone-
     on_master_reject: fallback_branch
   commit_policy:
@@ -81061,6 +81314,32 @@ milestone_history_v1:
     commit_manifest: artifacts/autopilot/milestones/cl_fetch_356-20260218040926/commit_manifest.json
   notes:
   - auto-recorded by whole_view_autopilot milestone evaluator
+- milestone_id: cl_fetch_357-20260218044603
+  cluster_id: CL_FETCH_357
+  status_now: implemented
+  recorded_at: '2026-02-18T04:46:11Z'
+  latest_phase_id: G357
+  push_mode: fallback_branch
+  branch: autopilot/milestone-cl_fetch_357-20260218044603
+  commit_sha: 30737bc47c1a02ed174a9ef7e78c094edb4036b4
+  artifact_paths:
+    milestone_summary: artifacts/autopilot/milestones/cl_fetch_357-20260218044603/milestone_summary.md
+    commit_manifest: artifacts/autopilot/milestones/cl_fetch_357-20260218044603/commit_manifest.json
+  notes:
+  - auto-recorded by whole_view_autopilot milestone evaluator
+- milestone_id: cl_fetch_358-20260218071758
+  cluster_id: CL_FETCH_358
+  status_now: blocked
+  recorded_at: '2026-02-18T07:17:58Z'
+  latest_phase_id: G358
+  push_mode: blocked_by_gate
+  branch: ''
+  commit_sha: ''
+  artifact_paths:
+    milestone_summary: artifacts/autopilot/milestones/cl_fetch_358-20260218071758/milestone_summary.md
+    commit_manifest: artifacts/autopilot/milestones/cl_fetch_358-20260218071758/commit_manifest.json
+  notes:
+  - auto-recorded by whole_view_autopilot milestone evaluator
 queue_empty_generation_protocol_v1:
   status_now: active
   enabled: true
@@ -83303,20 +83582,9 @@ planning_policy_v2:
     latest_plan:
       mode: codex_assisted
       source: codex_cli_architect_planner
-      generated_at: '2026-02-18T02:25:29Z'
-      signature: 802271e906aa8f6c6e9e
+      generated_at: '2026-02-18T06:55:41Z'
+      signature: 11e3119e5de7197a9d5a
       requirement_priority:
-      - WB-010
-      - WB-011
-      - WB-012
-      - WB-013
-      - WB-014
-      - WB-015
-      - WB-016
-      - WB-017
-      - WB-018
-      - WB-019
-      - WB-020
       - WB-021
       - WB-022
       - WB-023
@@ -83357,6 +83625,11 @@ planning_policy_v2:
       - WB-058
       - WB-059
       - WB-060
+      - WB-015
+      - WB-016
+      - WB-017
+      - WB-018
+      - WB-019
       - WB-061
       - WB-062
       - WB-063
@@ -83369,22 +83642,10 @@ planning_policy_v2:
       - WB-070
       - WB-071
       - WB-072
-      goal_priority:
-      - G356
+      goal_priority: []
       bundle_hints:
       - track: impl_workbench
         requirement_ids:
-        - WB-010
-        - WB-011
-        - WB-012
-        - WB-013
-        - WB-014
-        - WB-015
-        - WB-016
-        - WB-017
-        - WB-018
-        - WB-019
-        - WB-020
         - WB-021
         - WB-022
         - WB-023
@@ -83392,10 +83653,10 @@ planning_policy_v2:
         - WB-025
         - WB-026
         - WB-027
-        reason: 先冻结FR/NFR与Session/Draft语义，确保幂等、append-only与可解释错误在接口实现前确定。
+        - WB-028
+        reason: 先锁定方案、NFR、Session/Draft store 与接口骨架，避免后续实现返工。
       - track: impl_workbench
         requirement_ids:
-        - WB-028
         - WB-029
         - WB-030
         - WB-031
@@ -83406,7 +83667,7 @@ planning_policy_v2:
         - WB-036
         - WB-037
         - WB-038
-        reason: 先落骨架接口与页面入口，作为后续各Phase能力的稳定集成面。
+        reason: 同属路由与交互入口层，依赖 WB-028，可按 endpoint/UI 页面并行推进。
       - track: impl_workbench
         requirement_ids:
         - WB-039
@@ -83415,7 +83676,7 @@ planning_policy_v2:
         - WB-042
         - WB-043
         - WB-044
-        reason: 先定数据落盘与草稿选择契约，避免后续卡片与回退/重跑流程反复改schema。
+        reason: 统一事件与工件落盘契约，支撑 evidence 展示、草稿版本与回放。
       - track: impl_workbench
         requirement_ids:
         - WB-045
@@ -83425,6 +83686,9 @@ planning_policy_v2:
         - WB-049
         - WB-050
         - WB-051
+        reason: 先打通 Phase-0/1 的卡片与可操作闭环，建立从 Idea 到 Spec 的稳定链路。
+      - track: impl_workbench
+        requirement_ids:
         - WB-052
         - WB-053
         - WB-054
@@ -83434,7 +83698,15 @@ planning_policy_v2:
         - WB-058
         - WB-059
         - WB-060
-        reason: 按Phase逐段交付可读结果卡与可操作能力，建立端到端用户闭环。
+        reason: Phase-2~4 连续依赖强，建议按 phase 串行、phase 内卡片与动作并行。
+      - track: impl_workbench
+        requirement_ids:
+        - WB-015
+        - WB-016
+        - WB-017
+        - WB-018
+        - WB-019
+        reason: FR-005~009 为横切体验验收项，放在主流程卡片落地后集中补齐更稳妥。
       - track: impl_workbench
         requirement_ids:
         - WB-061
@@ -83449,24 +83721,26 @@ planning_policy_v2:
         - WB-070
         - WB-071
         - WB-072
-        reason: 在主链能力齐备后收敛Subagent/API对齐差距，并完成DoD、回归与现状对齐验收。
+        reason: 作为子代理落地、DoD、回归与现状对齐收口包，适合作为发布门禁。
       parallel_hints:
-      - WB-028完成后，可并行推进WB-029~WB-036（后端处理）与WB-037~WB-038（前端路由页壳）。
-      - WB-044完成后，可按Phase并行实现展示卡：WB-047/WB-050/WB-053/WB-056/WB-059。
-      - 可操作流WB-048/WB-051/WB-054/WB-057/WB-060可与展示卡并行，但共用同一事件与草稿版本约束。
-      - WB-063~WB-065通过后，WB-066（API/集成）与WB-067（UI回归）可并行执行，WB-068单独做append-only守护校验。
+      - WB-022~WB-026 可在 WB-021 完成后并行细化与验收映射。
+      - WB-029~WB-036 可按 handler 并行开发；WB-033 先统一事件 schema 再实现传输形态（SSE/轮询）。
+      - WB-037 与 WB-038 可与后端 endpoint 并行联调，先用 mock session/event 契约。
+      - WB-040~WB-044 可并行实现写入器与读取适配层，但必须共用目录与命名规范。
+      - 每个 phase 内“展示卡”和“可操作”可并行（如 WB-047/048、WB-050/051、WB-053/054、WB-056/057、WB-059/060）。
+      - WB-066 测试可前置到各里程碑持续补齐，不必等到末尾一次性完成。
       rationale:
-      - 排序采用依赖拓扑顺序并以req_id字典序打破并列，保证确定性与有限性。
-      - 满足“骨架接口先于依赖实现”：WB-028~WB-038严格早于WB-045及后续Phase实现。
-      - 将NFR与审计语义前置，减少后续重构成本并约束错误处理与幂等行为。
-      - 将数据落盘契约置于Phase卡片之前，保证evidence可追溯与UI读取一致性。
-      - DoD与真实进度对齐项放在末段，确保验收基于完整链路而非局部能力。
+      - 按依赖拓扑排序，确保所有 requirement_priority 有限且确定。
+      - 严格将接口骨架（WB-028）排在其实现项（WB-029~WB-038）之前。
+      - 先路由/会话契约，再落盘，再 phase 卡片，减少跨层改动成本。
+      - Phase-0 到 Phase-4 采用用户路径顺序，便于逐阶段可演示与验收。
+      - FR-005~009 作为横切体验项后置收敛，可直接复用已落地的 phase 能力。
+      - DoD/回归/对齐项（WB-062+）后置作为上线前质量门。
       skills_used:
       - architect-planner
       - requirement-splitter
       - ssot-goal-planner
-      artifact_path: artifacts/autopilot/preplan/architect_preplan_20260218T022529Z.json
-      cache_hit: true
+      artifact_path: artifacts/autopilot/preplan/architect_preplan_20260218T065541Z.json
 skill_registry_v1:
   status_now: active
   skills:
@@ -84020,6 +84294,24 @@ architect_preplan_history_v1:
   blocked: false
   fallback_reason: ''
   artifact_path: artifacts/autopilot/preplan/802271e906aa8f6c6e9e/architect_preplan_last_message.txt
+- generated_at: '2026-02-18T04:11:06Z'
+  signature: 3356a1a81bc34ad53595
+  mode: codex_assisted
+  source: codex_cli_architect_planner
+  requirement_priority_count: 62
+  goal_priority_count: 0
+  blocked: false
+  fallback_reason: ''
+  artifact_path: artifacts/autopilot/preplan/3356a1a81bc34ad53595/architect_preplan_last_message.txt
+- generated_at: '2026-02-18T06:55:41Z'
+  signature: 11e3119e5de7197a9d5a
+  mode: codex_assisted
+  source: codex_cli_architect_planner
+  requirement_priority_count: 57
+  goal_priority_count: 0
+  blocked: false
+  fallback_reason: ''
+  artifact_path: artifacts/autopilot/preplan/11e3119e5de7197a9d5a/architect_preplan_last_message.txt
 autopilot_decision_log_v1:
 - recorded_at: '2026-02-17T09:54:42Z'
   decision_type: stop_condition_blocked
