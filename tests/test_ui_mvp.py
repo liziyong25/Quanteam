@@ -9,6 +9,7 @@ import httpx
 from fastapi.testclient import TestClient
 
 from quant_eam.api.app import app
+from quant_eam.api.ui_routes import WORKBENCH_ROUTE_INTERFACE_V43, _workbench_missing_route_pairs
 from quant_eam.compiler.compile import main as compiler_main
 from quant_eam.data_lake.demo_ingest import main as demo_ingest_main
 from quant_eam.gaterunner.run import main as gaterunner_main
@@ -460,6 +461,11 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert r.status_code == 200
     assert "Create Workbench Session" in r.text
     assert "Requirement entry alias" in r.text
+    r = client.get("/ui/workbench/req/wb-028")
+    assert r.status_code == 200
+    for method, path in WORKBENCH_ROUTE_INTERFACE_V43:
+        assert f"{method} {path}" in r.text
+    assert _workbench_missing_route_pairs() == []
     assert client.get("/ui/jobs").status_code == 200
     assert client.get("/ui/qa-fetch").status_code == 200
 

@@ -36,7 +36,13 @@
       {% else %}
         <div class="plot-fallback">No workbench sessions yet. Create one via POST /workbench/sessions.</div>
       {% endif %}
-      <p class="muted">Requirement entry alias: <a href="/ui/workbench/req/wb-002">/ui/workbench/req/wb-002</a></p>
+      <p class="muted">
+        Requirement entry alias:
+        {% for alias in requirement_entry_aliases %}
+          {% if not loop.first %} | {% endif %}
+          <a href="{{ alias }}">{{ alias }}</a>
+        {% endfor %}
+      </p>
     </div>
 
     <div class="card">
@@ -77,14 +83,9 @@
   <div class="card">
     <h2>Workbench API Quick Start</h2>
     <pre class="code">
-POST /workbench/sessions
-GET  /workbench/sessions/{session_id}
-POST /workbench/sessions/{session_id}/message
-POST /workbench/sessions/{session_id}/continue
-GET  /workbench/sessions/{session_id}/events
-POST /workbench/sessions/{session_id}/fetch-probe
-POST /workbench/sessions/{session_id}/steps/{step}/drafts
-POST /workbench/sessions/{session_id}/steps/{step}/drafts/{version}/apply
+{% for item in route_inventory %}
+{{ item.method }} {{ item.path }}
+{% endfor %}
     </pre>
       <p class="muted">Artifacts:
         <code>artifacts/workbench/sessions/&lt;session_id&gt;/session.json</code>,
