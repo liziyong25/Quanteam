@@ -150,6 +150,23 @@
       </ul>
       {% endif %}
       {% endif %}
+      {% set phase2_rb = s.last_phase2_rollback if s.last_phase2_rollback else {} %}
+      {% if phase2_rb and phase2_rb.get("rollback_reason") %}
+      <h3>Phase-2 Rollback Context (WB-057)</h3>
+      <div class="table-wrap">
+        <table class="table">
+          <tbody>
+            <tr><th>rollback_reason</th><td>{{ phase2_rb.get("rollback_reason", "") }}</td></tr>
+            <tr><th>rollback_detail</th><td>{{ phase2_rb.get("rollback_detail", "") }}</td></tr>
+            <tr><th>rollback_from_step</th><td>{{ phase2_rb.get("rollback_from_step", "") }}</td></tr>
+            <tr><th>rollback_to_step</th><td>{{ phase2_rb.get("rollback_to_step", "") }}</td></tr>
+            <tr><th>restored_phase1_draft_version</th><td>{{ phase2_rb.get("restored_phase1_draft_version", "") }}</td></tr>
+            <tr><th>restored_from_version</th><td>{{ phase2_rb.get("restored_from_version", "") }}</td></tr>
+            <tr><th>selected_index_path</th><td><code>{{ phase2_rb.get("selected_index_path", "") }}</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
 
       <h3>Actions</h3>
       <div class="grid">
@@ -202,6 +219,19 @@
               <button type="submit" class="btn" data-loading-label="Rerunning...">Rerun Current Step</button>
             </div>
           </form>
+          {% if s.current_step == "trace_preview" %}
+          <form method="post" action="/workbench/sessions/{{ s.session_id }}/phase2/rollback-rerun" class="form-grid" data-loading-form="1">
+            <input type="hidden" name="_ui" value="1"/>
+            <input type="hidden" name="idempotency_key" value="" data-idempotency-input="phase2_rollback_rerun" data-session-id="{{ s.session_id }}"/>
+            <label class="full">
+              <span>rollback detail (optional)</span>
+              <input name="rollback_detail" value="demo checks failed"/>
+            </label>
+            <div class="full">
+              <button type="submit" class="btn" data-loading-label="Rolling back + rerunning...">Rollback To Phase-1 And Rerun</button>
+            </div>
+          </form>
+          {% endif %}
         </div>
         <div>
           {% if s.current_step != "idea" %}

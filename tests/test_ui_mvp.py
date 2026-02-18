@@ -601,6 +601,92 @@ def test_ui_create_idea_job_from_form(tmp_path: Path, monkeypatch) -> None:
     assert wb055_trace_waiting_offsets
     assert int(phase2_checkpoint["trace_preview_waiting_event_offset"]) == max(wb055_trace_waiting_offsets)
 
+    # WB-057: on demo failure user action, rollback to Phase-1 and rerun from restored
+    # strategy_spec draft version.
+    monkeypatch.setenv("EAM_WORKBENCH_REAL_JOBS", "0")
+    wb057 = _request_via_asgi(
+        "POST",
+        "/workbench/sessions",
+        json={
+            "title": "wb057-phase2-rollback-rerun",
+            "symbols": "AAA,BBB",
+            "hypothesis_text": "simulate phase2 rollback rerun",
+        },
+    )
+    assert wb057.status_code == 201, wb057.text
+    wb057_doc = wb057.json()
+    wb057_session_id = str(wb057_doc["session_id"])
+
+    wb057_current_step = "idea"
+    for _ in range(3):
+        cont = _request_via_asgi("POST", f"/workbench/sessions/{wb057_session_id}/continue", json={})
+        assert cont.status_code == 200, cont.text
+        wb057_current_step = str(cont.json().get("current_step") or "")
+        if wb057_current_step == "trace_preview":
+            break
+    assert wb057_current_step == "trace_preview"
+
+    wb057_draft1 = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{wb057_session_id}/steps/strategy_spec/drafts",
+        json={"content": {"note": "wb057-draft-v1", "threshold": 10}},
+    )
+    assert wb057_draft1.status_code == 200, wb057_draft1.text
+    wb057_apply1 = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{wb057_session_id}/steps/strategy_spec/drafts/1/apply",
+        json={},
+    )
+    assert wb057_apply1.status_code == 200, wb057_apply1.text
+    wb057_draft2 = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{wb057_session_id}/steps/strategy_spec/drafts",
+        json={"content": {"note": "wb057-draft-v2", "threshold": 12}},
+    )
+    assert wb057_draft2.status_code == 200, wb057_draft2.text
+    wb057_apply2 = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{wb057_session_id}/steps/strategy_spec/drafts/apply",
+        json={"version": 2},
+    )
+    assert wb057_apply2.status_code == 200, wb057_apply2.text
+
+    wb057_rb = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{wb057_session_id}/phase2/rollback-rerun",
+        json={"rollback_detail": "trace assertion mismatch"},
+    )
+    assert wb057_rb.status_code == 200, wb057_rb.text
+    wb057_rb_doc = wb057_rb.json()
+    rollback_ctx = wb057_rb_doc.get("rollback")
+    assert isinstance(rollback_ctx, dict)
+    assert str(rollback_ctx.get("rollback_reason") or "") == "demo_failed_rollback_to_phase1"
+    assert str(rollback_ctx.get("rollback_from_step") or "") == "trace_preview"
+    assert str(rollback_ctx.get("rollback_to_step") or "") == "strategy_spec"
+    assert int(rollback_ctx.get("restored_from_version") or 0) == 2
+    assert int(rollback_ctx.get("restored_phase1_draft_version") or 0) == 1
+    rerun_result = wb057_rb_doc.get("rerun_result")
+    assert isinstance(rerun_result, dict)
+    assert str(rerun_result.get("status") or "") in {"rerun_requested", "simulated"}
+
+    wb057_get = _request_via_asgi("GET", f"/workbench/sessions/{wb057_session_id}")
+    assert wb057_get.status_code == 200, wb057_get.text
+    wb057_session_payload = wb057_get.json().get("session")
+    assert isinstance(wb057_session_payload, dict)
+    assert str(wb057_session_payload.get("current_step") or "") == "strategy_spec"
+    assert int(wb057_session_payload.get("step_index") or 0) == 1
+    wb057_last_rb = wb057_session_payload.get("last_phase2_rollback")
+    assert isinstance(wb057_last_rb, dict)
+    assert str(wb057_last_rb.get("rollback_reason") or "") == "demo_failed_rollback_to_phase1"
+    wb057_phase1_drafts = wb057_session_payload.get("drafts")
+    assert isinstance(wb057_phase1_drafts, dict)
+    wb057_strategy = wb057_phase1_drafts.get("strategy_spec")
+    assert isinstance(wb057_strategy, dict)
+    assert int(wb057_strategy.get("selected") or 0) == 1
+    wb057_last_rerun = wb057_session_payload.get("last_rerun")
+    assert isinstance(wb057_last_rerun, dict)
+    assert str(wb057_last_rerun.get("step") or "") == "strategy_spec"
+
 
 def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     art_root = tmp_path / "artifacts"
@@ -644,6 +730,9 @@ def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     req_alias_phase2 = _request_via_asgi("GET", "/ui/workbench/req/wb-055")
     assert req_alias_phase2.status_code == 200
     assert "Requirement entry alias" in req_alias_phase2.text
+    req_alias_phase2_rollback = _request_via_asgi("GET", "/ui/workbench/req/wb-057")
+    assert req_alias_phase2_rollback.status_code == 200
+    assert "Requirement entry alias" in req_alias_phase2_rollback.text
 
     # WB-039 baseline: create flow exposes stable persistence contracts and writes session artifacts.
     created = _request_via_asgi(
@@ -864,6 +953,8 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert r.status_code == 200
     r = client.get("/ui/workbench/req/wb-055")
     assert r.status_code == 200
+    r = client.get("/ui/workbench/req/wb-057")
+    assert r.status_code == 200
     expected_route_contract = (
         ("POST", "/workbench/sessions"),
         ("GET", "/workbench/sessions/{session_id}"),
@@ -893,6 +984,7 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert route_paths.index("/ui/workbench/req/wb-053") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-054") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-055") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-057") < session_route_idx
     assert client.get("/ui/jobs").status_code == 200
     assert client.get("/ui/qa-fetch").status_code == 200
 

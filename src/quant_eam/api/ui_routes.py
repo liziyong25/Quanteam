@@ -173,6 +173,7 @@ IA_ROUTE_VIEW_CATALOG: dict[str, dict[str, str]] = {
     "/ui/workbench/req/wb-053": {"view_name": "Workbench phase-1 draft operations entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-054": {"view_name": "Workbench phase-1 apply/rollback operations entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-055": {"view_name": "Workbench phase-2 skeleton entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-057": {"view_name": "Workbench phase-2 rollback+rerun entry", "template": "workbench.html"},
     "/ui/workbench/{session_id}": {"view_name": "Workbench session", "template": "workbench.html"},
 }
 IA_CHECKLIST_ROUTE_BINDINGS: dict[int, list[str]] = {
@@ -277,6 +278,7 @@ WORKBENCH_ENDPOINT_SCHEMA_VERSIONS: dict[str, str] = {
     "draft_apply_response": "workbench_step_draft_apply_response_v1",
     "draft_rollback_response": "workbench_step_draft_rollback_response_v1",
     "step_rerun_response": "workbench_step_rerun_response_v1",
+    "phase2_rollback_rerun_response": "workbench_phase2_rollback_rerun_response_v1",
 }
 WORKBENCH_PHASE_RESULT_CARD_MATRIX: dict[str, dict[str, Any]] = {
     "idea": {
@@ -421,6 +423,7 @@ WORKBENCH_REQUIREMENT_ENTRY_ALIASES: tuple[str, ...] = (
     "/ui/workbench/req/wb-053",
     "/ui/workbench/req/wb-054",
     "/ui/workbench/req/wb-055",
+    "/ui/workbench/req/wb-057",
 )
 WORKBENCH_EVIDENCE_MAX_BYTES = 262_144
 WORKBENCH_EVIDENCE_MAX_CSV_ROWS = 24
@@ -461,6 +464,7 @@ WORKBENCH_FAILURE_REASON_READABLE: dict[str, str] = {
     "ui_intake_fetch_failed": "Session creation completed, but intake fetch evidence generation failed.",
     "fetch_probe_execution_failed": "Fetch probe failed while refreshing Phase-0/Phase-2 evidence.",
     "step_rerun_failed": "Current step rerun failed before completion.",
+    "demo_failed_rollback_to_phase1": "Demo checks failed; session rolled back to Phase-1 before rerun.",
 }
 
 
@@ -1201,6 +1205,109 @@ def _workbench_step_rerun_agent_id(step: str) -> str:
     if aid not in RERUN_AGENT_OPTIONS:
         raise HTTPException(status_code=409, detail=f"rerun agent not allowed for step: {step_id}")
     return aid
+
+
+def _workbench_restore_phase1_draft_for_rerun(*, session_id: str, session: dict[str, Any]) -> dict[str, Any]:
+    phase1_step = "strategy_spec"
+    selected_before = _workbench_current_selected_draft_version(session, step=phase1_step)
+    if selected_before is None:
+        raise HTTPException(status_code=409, detail="phase-1 selected draft is required before rollback+rerun")
+
+    previous = _workbench_previous_selected_draft_version(
+        session,
+        step=phase1_step,
+        current_version=selected_before,
+    )
+    restored_by_rollback = False
+    restored_version = selected_before
+    restored_from_version = selected_before
+    selected_index_path = ""
+    selection_history = _workbench_draft_selection_history(session, step=phase1_step)
+    selection_snapshot = _workbench_draft_selection_snapshot(session, step=phase1_step)
+    if previous is not None and previous != selected_before:
+        _, selected_index, prev_selected, selection_history, selection_snapshot = _workbench_apply_draft_locked(
+            session_id=session_id,
+            session=session,
+            step=phase1_step,
+            draft_no=previous,
+        )
+        restored_by_rollback = True
+        restored_from_version = selected_before
+        restored_version = previous
+        if isinstance(prev_selected, int) and prev_selected > 0:
+            restored_from_version = prev_selected
+        selected_index_path = selected_index.as_posix()
+    else:
+        drafts = session.get("drafts") if isinstance(session.get("drafts"), dict) else {}
+        phase1_draft_state = drafts.get(phase1_step) if isinstance(drafts, dict) and isinstance(drafts.get(phase1_step), dict) else {}
+        selected_index_path = str(phase1_draft_state.get("path") or "").strip()
+
+    return {
+        "phase1_step": phase1_step,
+        "restored_version": restored_version,
+        "restored_from_version": restored_from_version,
+        "restored_by_rollback": restored_by_rollback,
+        "selection_history": selection_history,
+        "selection_snapshot": selection_snapshot,
+        "selected_index_path": selected_index_path,
+    }
+
+
+def _workbench_transition_trace_to_phase1(
+    session: dict[str, Any],
+    *,
+    from_step: str,
+    to_step: str,
+    reason: str,
+) -> None:
+    trace = session.get("trace")
+    if not isinstance(trace, list):
+        trace = []
+        session["trace"] = trace
+
+    updated_from = False
+    for idx in range(len(trace) - 1, -1, -1):
+        row = trace[idx]
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("step") or "") != from_step:
+            continue
+        row["status"] = "rolled_back"
+        row["status_text"] = f"{reason}_to_{to_step}"
+        row["updated_at"] = _now_iso()
+        updated_from = True
+        break
+    if not updated_from:
+        trace.append(
+            {
+                "step": from_step,
+                "status": "rolled_back",
+                "status_text": f"{reason}_to_{to_step}",
+                "created_at": _now_iso(),
+            }
+        )
+
+    updated_to = False
+    for idx in range(len(trace) - 1, -1, -1):
+        row = trace[idx]
+        if not isinstance(row, dict):
+            continue
+        if str(row.get("step") or "") != to_step:
+            continue
+        row["status"] = "in_progress"
+        row["status_text"] = f"restored_from_{from_step}:{reason}"
+        row["updated_at"] = _now_iso()
+        updated_to = True
+        break
+    if not updated_to:
+        trace.append(
+            {
+                "step": to_step,
+                "status": "in_progress",
+                "status_text": f"restored_from_{from_step}:{reason}",
+                "created_at": _now_iso(),
+            }
+        )
 
 
 def _workbench_step_draft_dir_from_session(*, session_id: str, session: dict[str, Any], step: str) -> Path:
@@ -2211,6 +2318,7 @@ def _initial_workbench_session(*, session_id: str, idea: dict[str, Any], job_id:
         "selected_drafts": {},
         "last_rerun": {},
         "rerun_last_error": "",
+        "last_phase2_rollback": {},
         "last_failure": {},
         "fetch_probe_status": "idle",
         "fetch_probe_error": "",
@@ -9251,6 +9359,280 @@ async def workbench_session_rerun_step(session_id: str, step: str, request: Requ
     return out
 
 
+@router.post("/workbench/sessions/{session_id}/phase2/rollback-rerun")
+async def workbench_session_phase2_rollback_rerun(session_id: str, request: Request) -> Any:
+    enforce_write_auth(request)
+    session_id = require_safe_id(session_id, kind="session_id")
+    payload = await _read_workbench_payload(request)
+    idempotency_key = _workbench_parse_action_idempotency_key(request=request, payload=payload)
+    is_ui = str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}
+    rollback_reason = "demo_failed_rollback_to_phase1"
+    rollback_detail = str(payload.get("rollback_detail") or payload.get("failure_detail") or payload.get("detail") or "").strip()
+
+    with _workbench_continue_lock(session_id):
+        session = _load_workbench_session(session_id)
+        owner_id = _workbench_bind_or_assert_session_owner(session, request=request)
+        replay = _workbench_get_action_idempotent_response(
+            session_id=session_id,
+            action="phase2_rollback_rerun",
+            key=idempotency_key,
+        )
+        if replay is not None:
+            if is_ui:
+                return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+            return replay
+
+        current_step = str(session.get("current_step") or WORKBENCH_PHASE_STEPS[0])
+        if current_step != "trace_preview":
+            raise HTTPException(status_code=409, detail="phase2 rollback+rerun requires current_step=trace_preview")
+
+        restored = _workbench_restore_phase1_draft_for_rerun(session_id=session_id, session=session)
+        phase1_step = str(restored.get("phase1_step") or "strategy_spec")
+
+        rollback_request_ev = _append_workbench_event(
+            session_id=session_id,
+            step=current_step,
+            action="phase2_rollback_to_phase1_requested",
+            actor="user",
+            source="workbench_session_phase2_rollback_rerun",
+            payload={
+                "rollback_reason": rollback_reason,
+                "rollback_detail": rollback_detail,
+                "rollback_from_step": current_step,
+                "rollback_to_step": phase1_step,
+                "restored_from_version": restored.get("restored_from_version"),
+                "restored_version": restored.get("restored_version"),
+                "restored_by_rollback": bool(restored.get("restored_by_rollback")),
+                "selected_index_path": str(restored.get("selected_index_path") or ""),
+            },
+        )
+        _workbench_transition_trace_to_phase1(
+            session,
+            from_step=current_step,
+            to_step=phase1_step,
+            reason=rollback_reason,
+        )
+        session["current_step"] = phase1_step
+        session["step_index"] = WORKBENCH_PHASE_STEPS.index(phase1_step)
+        session["job_checkpoint"] = phase1_step
+        session["status"] = "active"
+        rollback_context = {
+            "schema_version": "workbench_phase2_rollback_context_v1",
+            "rollback_reason": rollback_reason,
+            "rollback_detail": rollback_detail,
+            "rollback_from_step": current_step,
+            "rollback_to_step": phase1_step,
+            "restored_from_version": restored.get("restored_from_version"),
+            "restored_phase1_draft_version": restored.get("restored_version"),
+            "restored_by_rollback": bool(restored.get("restored_by_rollback")),
+            "selection_history": restored.get("selection_history") if isinstance(restored.get("selection_history"), list) else [],
+            "selection_snapshot": restored.get("selection_snapshot") if isinstance(restored.get("selection_snapshot"), dict) else {},
+            "selected_index_path": str(restored.get("selected_index_path") or ""),
+            "updated_at": _now_iso(),
+        }
+        session["last_phase2_rollback"] = rollback_context
+
+        rollback_state_ev = _append_workbench_event(
+            session_id=session_id,
+            step=phase1_step,
+            action="phase2_rollback_to_phase1_applied",
+            actor="system",
+            source="workbench_session_phase2_rollback_rerun",
+            status="ok",
+            payload={
+                "rollback_reason": rollback_reason,
+                "rollback_from_step": current_step,
+                "rollback_to_step": phase1_step,
+                "restored_phase1_draft_version": restored.get("restored_version"),
+                "request_event_id": str(rollback_request_ev.get("event_id") or ""),
+            },
+        )
+        _ = _workbench_record_last_failure(
+            session_id,
+            session,
+            step=current_step,
+            reason=rollback_reason,
+            detail=rollback_detail,
+            source="workbench_session_phase2_rollback_rerun",
+            event=rollback_state_ev,
+            extra_refs=[str(restored.get("selected_index_path") or "")],
+        )
+
+        step = phase1_step
+        agent_id = _workbench_step_rerun_agent_id(step)
+        rerun_request_ev = _append_workbench_event(
+            session_id=session_id,
+            step=step,
+            action="step_rerun_requested",
+            actor="user",
+            source="workbench_session_phase2_rollback_rerun",
+            payload={
+                "step": step,
+                "agent_id": agent_id,
+                "rollback_reason": rollback_reason,
+                "rollback_event_id": str(rollback_state_ev.get("event_id") or ""),
+            },
+        )
+
+        if _workbench_real_jobs_enabled():
+            job_id = str(session.get("job_id") or "").strip()
+            if not job_id:
+                raise HTTPException(status_code=409, detail="workbench session missing job_id")
+            try:
+                require_safe_job_id(job_id)
+            except HTTPException:
+                raise HTTPException(status_code=409, detail="workbench session job_id is not a real job id")
+
+            from quant_eam.api.jobs_api import rerun as api_job_rerun
+
+            try:
+                rerun_result = api_job_rerun(request, job_id, agent_id=agent_id)
+            except HTTPException as exc:
+                err = str(exc.detail)
+                failure_ev = _append_workbench_event(
+                    session_id=session_id,
+                    step=step,
+                    action="step_rerun_failed",
+                    actor="system",
+                    source="workbench_session_phase2_rollback_rerun",
+                    status="error",
+                    payload={
+                        "job_id": job_id,
+                        "agent_id": agent_id,
+                        "error": err,
+                        "request_event_id": str(rerun_request_ev.get("event_id") or ""),
+                        "rollback_reason": rollback_reason,
+                    },
+                )
+                session["rerun_last_error"] = err
+                session["last_rerun"] = {
+                    "step": step,
+                    "agent_id": agent_id,
+                    "job_id": job_id,
+                    "status": "error",
+                    "error": err,
+                    "updated_at": _now_iso(),
+                }
+                failure = _workbench_record_last_failure(
+                    session_id,
+                    session,
+                    step=step,
+                    reason="step_rerun_failed",
+                    detail=err,
+                    source="workbench_session_phase2_rollback_rerun",
+                    event=failure_ev,
+                )
+                _bump_workbench_revision(session)
+                session["updated_at"] = _now_iso()
+                _write_workbench_session(session_id, session)
+                raise HTTPException(
+                    status_code=exc.status_code,
+                    detail={"error": err, "failure": failure, "rollback": rollback_context},
+                )
+
+            rerun_id = str(rerun_result.get("rerun_id") or "")
+            session["rerun_last_error"] = ""
+            _workbench_clear_last_failure(session)
+            session["last_rerun"] = {
+                "step": step,
+                "agent_id": agent_id,
+                "job_id": job_id,
+                "status": "ok",
+                "rerun_id": rerun_id,
+                "agent_run_path": str(rerun_result.get("agent_run_path") or ""),
+                "updated_at": _now_iso(),
+            }
+            _bump_workbench_revision(session)
+            session["updated_at"] = _now_iso()
+            _write_workbench_session(session_id, session)
+            rerun_state_ev = _append_workbench_event(
+                session_id=session_id,
+                step=step,
+                action="step_rerun_completed",
+                actor="system",
+                source="workbench_session_phase2_rollback_rerun",
+                status="ok",
+                payload={
+                    "job_id": job_id,
+                    "agent_id": agent_id,
+                    "rerun_id": rerun_id,
+                    "agent_run_path": str(rerun_result.get("agent_run_path") or ""),
+                    "request_event_id": str(rerun_request_ev.get("event_id") or ""),
+                },
+            )
+            rerun_payload = {
+                "status": "rerun_requested",
+                "job_id": job_id,
+                "agent_id": agent_id,
+                "rerun": rerun_result,
+            }
+        else:
+            rerun_sim_ev = _append_workbench_event(
+                session_id=session_id,
+                step=step,
+                action="step_rerun_simulated",
+                actor="system",
+                source="workbench_session_phase2_rollback_rerun",
+                status="ok",
+                payload={
+                    "agent_id": agent_id,
+                    "rollback_reason": rollback_reason,
+                    "request_event_id": str(rerun_request_ev.get("event_id") or ""),
+                },
+            )
+            summary_lines, details, artifacts = _workbench_step_summary(session, step=step)
+            card_doc = _ensure_workbench_phase_card(
+                session_id=session_id,
+                session=session,
+                step=step,
+                trigger_event=rerun_sim_ev,
+                summary_lines=summary_lines,
+                details=details,
+                artifacts=artifacts,
+                force_new=True,
+            )
+            session["rerun_last_error"] = ""
+            _workbench_clear_last_failure(session)
+            session["last_rerun"] = {
+                "step": step,
+                "agent_id": agent_id,
+                "status": "simulated",
+                "event_id": str(rerun_sim_ev.get("event_id") or ""),
+                "updated_at": _now_iso(),
+            }
+            _bump_workbench_revision(session)
+            session["updated_at"] = _now_iso()
+            _write_workbench_session(session_id, session)
+            rerun_state_ev = rerun_sim_ev
+            rerun_payload = {
+                "status": "simulated",
+                "agent_id": agent_id,
+                "card": _workbench_card_api_payload(card_doc),
+            }
+
+        out = {
+            "schema_version": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS["phase2_rollback_rerun_response"],
+            "session_id": session_id,
+            "owner_id": owner_id,
+            "current_step": str(session.get("current_step") or phase1_step),
+            "rollback": rollback_context,
+            "event": rollback_request_ev,
+            "state_event": rollback_state_ev,
+            "rerun_event": rerun_request_ev,
+            "rerun_state_event": rerun_state_ev,
+            "rerun_result": rerun_payload,
+        }
+        _workbench_cache_action_response(
+            session_id=session_id,
+            action="phase2_rollback_rerun",
+            key=idempotency_key,
+            response=out,
+        )
+    if is_ui:
+        return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+    return out
+
+
 @router.api_route("/ui/workbench", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_workbench(request: Request) -> HTMLResponse:
     ctx = _workbench_index_context()
@@ -9308,6 +9690,12 @@ def ui_workbench_req_wb054(request: Request) -> HTMLResponse:
 @router.api_route("/ui/workbench/req/wb-055", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_workbench_req_wb055(request: Request) -> HTMLResponse:
     # Stable requirement-bound entry path used by SSOT ui_path for G379.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-057", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb057(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G380.
     return ui_workbench(request)
 
 
