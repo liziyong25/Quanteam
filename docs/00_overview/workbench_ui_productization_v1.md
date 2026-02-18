@@ -6,6 +6,31 @@
 - 适用范围: `3002 UI` 产品化改造，不替换现有审阅链路
 - 本文性质: 改造背景 + 需求 + 方案 + 主控/子代理开发流程（本轮不改代码）
 
+## 0.1 状态说明（`2026-02-17`）
+- 本文包含“目标态”与“当前实现态”两层信息。
+- 目标态用于产品规划；当前实现态以代码为准：
+  - `src/quant_eam/api/ui_routes.py`
+  - `src/quant_eam/orchestrator/workflow.py`
+  - `src/quant_eam/agents/harness.py`
+
+## 0.2 两套主控链路（必须区分）
+- `开发执行层主控 + Subagent`（Codex 自动化交付）：
+  - `scripts/whole_view_autopilot.py` + `artifacts/subagent_control/*`
+  - 用于开发任务分发、代码修改、packet 验证、SSOT 回写。
+- `运行时业务链主控 + Agents Plane`（真实策略回测）：
+  - `jobs_api -> worker -> orchestrator -> harness -> runner/gates`
+  - 用于真实 job 的策略生成、回测、评估、优化。
+- 两者不是同一条调用链，不能混用职责。
+
+## 0.3 Workbench Recipes（SSOT 入口）
+- 本文是 Workbench 产品化“母文档”：定义边界、共性需求、治理约束、验收口径。
+- 具体研究闭环场景（例如 MA250 年线有效性）使用 recipe 文档承载，不在母文档硬编码场景细节。
+- Recipe 与母文档职责分离：
+  - 母文档：稳定需求与治理边界（避免 requirement 编号频繁漂移）。
+  - Recipe：可执行场景规格（接口入参、时序、DoD、任务卡）。
+- 当前首个 recipe：`docs/10_ui/workbench_ma250_effectiveness_demo_v1.md`。
+- Recipe 变更原则：优先新增/迭代 recipe，不重写母文档正文条款（除非单开 requirement splitter + SSOT 对齐轮次）。
+
 ## 1. 改造背景
 当前 `3002` UI 以审阅和证据链为中心，优势是可治理、可回放、可审计。  
 当前用户痛点是“结果导向体验不足”：用户希望快速看到数据、信号、交易和回测摘要，而不是先面对开发式事件流。  
@@ -63,7 +88,8 @@
 - 新增 `Workbench UI` 页面与组件。
 - 新增 `Session Store` 与 `Step Draft Store`。
 - 新增 `Result Card Builder`（从已有 artifacts 组装用户摘要卡）。
-- 扩展 `Harness` 执行源，支持 `codex_cli`（覆盖全部 agent），并保留 mock fallback。
+- 运行时 `Harness` 保持 `run_agent + provider(mock/real_http)` 路线；`codex_cli` 不作为运行时 agent 执行源。
+- `codex_cli` 当前用于开发执行层（subagent packet 流程），不是运行时 job 主链。
 
 ## 4.3 路由与接口（新增）
 - `POST /workbench/sessions`
@@ -106,6 +132,7 @@
 - 可操作: 生成并应用改进候选、组合运行与结果查看。
 
 ## 6. 主控 + Subagent 执行流程（参考 docs/12_workflows）
+说明：本节是“开发执行层”流程，不是运行时业务链。  
 执行流程遵循 `docs/12_workflows/subagent_dev_workflow_v1.md`。
 
 ## 6.1 主控职责
@@ -119,7 +146,7 @@
 - `Subagent-A` Workbench API 与 Session Store。
 - `Subagent-B` Workbench UI 页面与卡片组件。
 - `Subagent-C` Result Card Builder 与 artifact 解析。
-- `Subagent-D` Harness codex_cli 执行器接入（全部 agent）。
+- `Subagent-D` 开发执行层 `codex_cli` packet 工具链增强（非运行时 agent 执行源）。
 - `Subagent-E` 集成测试、回归测试、验收报告。
 
 ## 6.3 每轮任务卡最小模板
@@ -134,7 +161,7 @@
 1. 工作台会话 API + `/ui/workbench` 空页面 + `continue` 推进能力。  
 2. Phase‑0~2 用户卡片与草稿版本化编辑闭环。  
 3. Phase‑3~4 卡片与 Composer 集成。  
-4. Harness 内置 `codex_cli`（全部 agent）+ fallback + 审计。  
+4. 开发执行层 `codex_cli` packet 能力补强（运行时仍走 harness + provider）。  
 5. 回归与灰度发布。
 
 ## 7. 风险与控制
@@ -169,3 +196,75 @@
 ## 10. 实施备注
 - 本文是“开发交付用方案文档”，本轮不涉及代码修改。  
 - 下一步应由主控将本文拆成任务卡，按子代理流水线执行并持续回写证据。  
+
+## 11. 当前实现对齐（真实进度 vs 本文目标）
+
+### 11.1 FR 对齐状态（按代码现状）
+
+1. `FR-001` 部分实现：
+   - 已有 `POST /workbench/sessions`，但当前仅生成 session + 占位 `job_<session_id>`，未创建真实 `jobs` 主链 job。
+   - 代码：`src/quant_eam/api/ui_routes.py:5269`
+2. `FR-002` 部分实现：
+   - 已有 `continue` 接口，但仅推进 session step，不会触发 worker/orchestrator 审批推进。
+   - 代码：`src/quant_eam/api/ui_routes.py:5370`
+3. `FR-003` 部分实现（当前为 mock）：
+   - 已有 `fetch-probe`，但当前写入 `sample_rows`，不是 qa_fetch runtime 实取。
+   - 代码：`src/quant_eam/api/ui_routes.py:5463`
+4. `FR-004` 部分实现：
+   - 有结果卡机制，但 strategy/spec/trace 内容主要是摘要占位，非真实 artifacts 组装。
+5. `FR-005/FR-006/FR-007` 未完成：
+   - demo/backtest/attribution/composer 卡片未通过 workbench 真实链路驱动。
+6. `FR-008` 基础实现：
+   - 卡片详情支持 `<details>` 展开 evidence。
+7. `FR-009` 未完成：
+   - 未形成“失败后重跑当前 step / 回退到上一步草稿并重跑 job”的闭环控制。
+8. `FR-010` 部分实现：
+   - session 事件有 append-only 日志；但与真实 `jobs/<job_id>/events.jsonl` 尚未打通。
+
+### 11.2 与运行时 Agents Plane 的对齐缺口
+
+要把 workbench 对齐到运行时 `6.4 Agents Plane`，最小必须补齐：
+
+1. `workbench_session_create` 改为真实创建 idea job（复用 `create_job_from_ideaspec`）。
+2. `workbench_session_continue` 改为驱动 `approve + advance_job_once/worker`。
+3. `workbench_session_fetch_probe` 改为调用 `qa_fetch.facade.execute_fetch_request(...)` 或 runtime 等价入口。
+4. 卡片数据源改为 `artifacts/jobs/<job_id>/outputs/outputs.json` + `artifacts/dossiers/<run_id>/*`，不再用会话摘要占位。
+
+### 11.3 前后端 + agent + LLM 的正确调用方式
+
+1. 前端：
+   - 仅调用后端 API，不直接调用 agent 函数。
+2. 后端：
+   - 通过 `jobs_api` + `orchestrator` 推进状态机。
+3. Agent 调用：
+   - orchestrator 内部调用 `run_agent(...)`（`src/quant_eam/agents/harness.py`）。
+4. LLM 调用（运行时）：
+   - harness 读取 `EAM_LLM_PROVIDER` / `EAM_LLM_MODE`，通过 provider（如 `real_http`）HTTP 调用模型端点。
+5. `codex_cli`：
+   - 当前只用于开发执行层（subagent packet 流程），不用于运行时业务 job 主链。
+
+### 11.4 Recipe 对齐状态（代码现实）
+
+为支持 recipe（如 MA250 one-shot）并保持与代码一致，当前仍有以下对齐缺口：
+
+1. `POST /workbench/sessions` 仍要求 `title/symbols/hypothesis_text`：
+   - 尚未支持 message-only 输入，也尚未在创建时调用 `POST /jobs/idea` 生成真实 job。
+   - 代码：`src/quant_eam/api/ui_routes.py:5269`
+2. `POST /workbench/sessions/{session_id}/continue` 仍是会话状态推进：
+   - 尚未读取真实 `WAITING_APPROVAL`，未调用 `/jobs/{job_id}/approve` 与 `advance_job_once(...)`。
+   - 代码：`src/quant_eam/api/ui_routes.py:5370`
+3. `POST /workbench/sessions/{session_id}/fetch-probe` 仍返回 mock `sample_rows`：
+   - 尚未调用 QA-Fetch runtime 的 intent-first 执行与 attempts 证据落盘。
+   - 代码：`src/quant_eam/api/ui_routes.py:5463`
+4. Workbench 的 job 绑定仍是占位 ID：
+   - 当前使用 `job_<session_id>`，不是 `create_job_from_ideaspec` 创建的真实 job id。
+   - 代码：`src/quant_eam/api/ui_routes.py:281`
+5. 对“投资结论”的输出尚未形成 report 扩展规范：
+   - 需在 recipe 中明确 `report_context.json` 输入与 `report_summary.json.decision` 输出字段。
+   - 代码基线：`src/quant_eam/agents/report_agent.py`、`src/quant_eam/agents/harness.py`
+
+## 12. Recipe 索引
+
+| recipe_id | 场景 | 文档路径 | 状态 | 说明 |
+|---|---|---|---|---|
+| `WB-RECIPE-MA250-V1` | A股 MA250 年线有效性 one-shot 闭环 | `docs/10_ui/workbench_ma250_effectiveness_demo_v1.md` | active | 以 message-only -> intake -> fetch -> 回测 -> 结论为最小闭环，支持跨品种 intent 泛化。 |

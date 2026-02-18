@@ -279,7 +279,20 @@ def _workbench_session_store_url(session_id: str) -> str:
 
 
 def _workbench_job_id(session_id: str) -> str:
-    return f"job_{session_id}"
+    fallback = f"job_{session_id}"
+    p = _workbench_session_path(session_id)
+    if not p.is_file():
+        return fallback
+    try:
+        doc = _load_json(p)
+    except Exception:
+        return fallback
+    if not isinstance(doc, dict):
+        return fallback
+    job_id = str(doc.get("job_id") or "").strip()
+    if not job_id:
+        return fallback
+    return job_id
 
 
 def _workbench_job_outputs_root(session_id: str) -> Path:
@@ -350,6 +363,19 @@ def _coerce_symbol_list(value: Any) -> list[str]:
     if isinstance(value, str):
         return [x.strip() for x in value.split(",") if x.strip()]
     return []
+
+
+def _env_flag(name: str, *, default: bool = False) -> bool:
+    raw = str(os.getenv(name, "1" if default else "0")).strip().lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
+def _workbench_real_jobs_enabled() -> bool:
+    return _env_flag("EAM_WORKBENCH_REAL_JOBS", default=False)
+
+
+def _workbench_enable_ui_intake_agent() -> bool:
+    return _env_flag("EAM_WORKBENCH_ENABLE_UI_INTAKE_AGENT", default=True)
 
 
 def _required_workbench_fields(payload: dict[str, Any], *fields: str) -> None:
@@ -676,6 +702,252 @@ def _initial_workbench_session(*, session_id: str, idea: dict[str, Any], job_id:
         "cards_index_path": _workbench_cards_index_path(session_id).as_posix(),
         "snapshot_artifacts_path": f"artifacts/workbench/sessions/{session_id}/session.json",
     }
+
+
+def _coerce_workbench_sample_n(value: Any, *, default: int = 50) -> int:
+    try:
+        parsed = int(value)
+    except Exception:
+        parsed = default
+    return max(1, min(500, parsed))
+
+
+def _coerce_workbench_date_text(value: Any, *, default: str) -> str:
+    text = str(value or "").strip()
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+        return text
+    return default
+
+
+def _workbench_message_from_payload(payload: dict[str, Any]) -> str:
+    message = str(payload.get("message") or "").strip()
+    if message:
+        return message
+    title = str(payload.get("title") or "").strip()
+    hypothesis = str(payload.get("hypothesis_text") or "").strip()
+    parts = [p for p in (title, hypothesis) if p]
+    return "；".join(parts).strip()
+
+
+def _contains_forbidden_fetch_function_fields(node: Any) -> bool:
+    if isinstance(node, dict):
+        for key, value in node.items():
+            normalized = str(key).strip().lower()
+            if normalized in {"function", "function_override"}:
+                return True
+            if _contains_forbidden_fetch_function_fields(value):
+                return True
+        return False
+    if isinstance(node, list):
+        return any(_contains_forbidden_fetch_function_fields(item) for item in node)
+    return False
+
+
+def _extract_symbols_from_preview_rows(rows: Any) -> list[str]:
+    if not isinstance(rows, list):
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        for key in ("code", "symbol", "symbols", "ticker"):
+            val = row.get(key)
+            if isinstance(val, list):
+                values = [str(x).strip() for x in val if str(x).strip()]
+            elif isinstance(val, str):
+                values = [x.strip() for x in val.split(",") if x.strip()]
+            else:
+                values = []
+            for symbol in values:
+                if symbol in seen:
+                    continue
+                seen.add(symbol)
+                out.append(symbol)
+    return out
+
+
+def _extract_symbols_from_fetch_result(result: Any) -> list[str]:
+    if result is None:
+        return []
+    seen: set[str] = set()
+    out: list[str] = []
+
+    final_kwargs = getattr(result, "final_kwargs", None)
+    if isinstance(final_kwargs, dict):
+        for key in ("symbol", "symbols", "code"):
+            val = final_kwargs.get(key)
+            symbols = _coerce_symbol_list(val) if isinstance(val, (str, list)) else []
+            for symbol in symbols:
+                if symbol in seen:
+                    continue
+                seen.add(symbol)
+                out.append(symbol)
+
+    preview = getattr(result, "preview", None)
+    for symbol in _extract_symbols_from_preview_rows(preview):
+        if symbol in seen:
+            continue
+        seen.add(symbol)
+        out.append(symbol)
+    return out
+
+
+def _normalize_idea_frequency(raw: Any) -> str:
+    value = str(raw or "").strip().lower()
+    if value in {"day", "1d"}:
+        return "1d"
+    if value:
+        return value
+    return "1d"
+
+
+def _workbench_intake_fallback_bundle(
+    *,
+    message: str,
+    sample_n: int,
+    start: str,
+    end: str,
+) -> dict[str, Any]:
+    return {
+        "schema_version": "ui_intake_bundle_v1",
+        "normalized_request": {
+            "title": "CN ma250_trend_filter_v1 effectiveness",
+            "hypothesis_text": message,
+            "asset": "stock",
+            "venue": "CN",
+            "universe_hint": "A_SHARE",
+            "frequency": "1d",
+            "start": start,
+            "end": end,
+            "sample_n": sample_n,
+            "need_user_clarification": False,
+        },
+        "strategy_template": "ma250_trend_filter_v1",
+        "fetch_request": {
+            "schema_version": "fetch_request_v1",
+            "mode": "backtest",
+            "auto_symbols": True,
+            "intent": {
+                "asset": "stock",
+                "freq": "day",
+                "venue": "CN",
+                "universe": "A_SHARE",
+                "fields": ["open", "high", "low", "close", "volume"],
+                "start": start,
+                "end": end,
+                "auto_symbols": True,
+                "sample": {"method": "stable_first_n", "n": sample_n},
+            },
+        },
+    }
+
+
+def _run_workbench_ui_intake_agent(*, session_id: str, payload: dict[str, Any]) -> tuple[dict[str, Any], str]:
+    message = _workbench_message_from_payload(payload)
+    if not message:
+        raise HTTPException(status_code=422, detail="message is required")
+    sample_n = _coerce_workbench_sample_n(payload.get("sample_n"), default=50)
+    start = _coerce_workbench_date_text(payload.get("start"), default="2016-01-01")
+    end = _coerce_workbench_date_text(payload.get("end"), default="2025-12-31")
+
+    if not _workbench_enable_ui_intake_agent():
+        return _workbench_intake_fallback_bundle(message=message, sample_n=sample_n, start=start, end=end), message
+
+    from quant_eam.agents.harness import run_agent
+
+    out_dir = _workbench_session_root(session_id) / "agents" / "ui_intake"
+    input_path = out_dir / "agent_input.json"
+    _write_json(
+        input_path,
+        {
+            "message": message,
+            "sample_n": sample_n,
+            "start": start,
+            "end": end,
+            "title": str(payload.get("title") or "").strip(),
+            "hypothesis_text": str(payload.get("hypothesis_text") or "").strip(),
+        },
+    )
+    _ = run_agent(agent_id="ui_intake_agent_v1", input_path=input_path, out_dir=out_dir, provider="mock")
+    bundle_path = out_dir / "ui_intake_bundle.json"
+    if not bundle_path.is_file():
+        raise HTTPException(status_code=500, detail="ui intake bundle missing")
+    bundle = _load_json(bundle_path)
+    if not isinstance(bundle, dict):
+        raise HTTPException(status_code=500, detail="ui intake bundle invalid")
+    if _contains_forbidden_fetch_function_fields(bundle.get("fetch_request")):
+        raise HTTPException(status_code=422, detail="ui intake fetch_request must be intent-first (no function/function_override)")
+    return bundle, message
+
+
+def _workbench_fetch_evidence_root_for_job(job_id: str) -> Path:
+    return Path(os.getenv("EAM_ARTIFACT_ROOT", "/artifacts")) / "jobs" / job_id / "outputs" / "fetch"
+
+
+def _workbench_real_phase_for_checkpoint(checkpoint: str) -> str:
+    cp = str(checkpoint or "").strip()
+    if cp in {"idea", "blueprint"}:
+        return "idea"
+    if cp in {"strategy_spec", "spec_qa"}:
+        return "strategy_spec"
+    if cp in {"trace_preview"}:
+        return "trace_preview"
+    if cp in {"runspec", "run_completed", "gates_completed", "report_completed"}:
+        return "runspec"
+    if cp in {"improvements", "done"}:
+        return "improvements"
+    return "idea"
+
+
+def _latest_job_waiting_step(events: list[dict[str, Any]]) -> str | None:
+    if not events:
+        return None
+    latest = events[-1]
+    if str(latest.get("event_type") or "") != "WAITING_APPROVAL":
+        return None
+    outputs = latest.get("outputs") if isinstance(latest.get("outputs"), dict) else {}
+    step = str(outputs.get("step") or "").strip()
+    return step or None
+
+
+def _job_has_approved_step(events: list[dict[str, Any]], *, step: str) -> bool:
+    for ev in events:
+        if str(ev.get("event_type") or "") != "APPROVED":
+            continue
+        outputs = ev.get("outputs") if isinstance(ev.get("outputs"), dict) else {}
+        if str(outputs.get("step") or "") == str(step):
+            return True
+    return False
+
+
+def _load_job_outputs_index(job_id: str) -> dict[str, Any]:
+    try:
+        p = jobs_job_paths(job_id).outputs_dir / "outputs.json"
+    except Exception:
+        return {}
+    if not p.is_file():
+        return {}
+    try:
+        doc = _load_json(p)
+    except Exception:
+        return {}
+    if not isinstance(doc, dict):
+        return {}
+    return doc
+
+
+def _job_checkpoint_from_events(events: list[dict[str, Any]]) -> str:
+    waiting = _latest_job_waiting_step(events)
+    if waiting:
+        return waiting
+    if events:
+        latest = str(events[-1].get("event_type") or "")
+        if latest == "DONE":
+            return "done"
+        if latest == "ERROR":
+            return "error"
+    return "idea"
 
 
 def _workbench_index_context() -> dict[str, Any]:
@@ -1050,6 +1322,66 @@ def _safe_policy_bundle_path(p: str) -> str:
     if not p or p.startswith("/") or ".." in p or "\\" in p:
         raise HTTPException(status_code=400, detail="invalid policy_bundle_path")
     return p
+
+
+def _seed_blueprint_from_idea_spec(idea_spec: dict[str, Any], *, job_id: str) -> dict[str, Any]:
+    """Build a deterministic blueprint draft for UI-created idea jobs."""
+    title = str(idea_spec.get("title") or "").strip()
+    description = str(idea_spec.get("hypothesis_text") or "").strip()
+    symbols_raw = idea_spec.get("symbols")
+    symbols = [str(x).strip() for x in symbols_raw if str(x).strip()] if isinstance(symbols_raw, list) else []
+    if not symbols:
+        symbols = ["AAA"]
+    frequency = str(idea_spec.get("frequency") or "1d").strip() or "1d"
+    start = str(idea_spec.get("start") or "2024-01-01").strip() or "2024-01-01"
+    end = str(idea_spec.get("end") or "2024-01-10").strip() or "2024-01-10"
+    policy_bundle_id = str(idea_spec.get("policy_bundle_id") or "policy_bundle_v1_default").strip() or "policy_bundle_v1_default"
+    return {
+        "schema_version": "blueprint_v1",
+        "blueprint_id": f"bp_seed_{job_id}",
+        "title": title or f"Intent Draft {job_id}",
+        "description": description,
+        "policy_bundle_id": policy_bundle_id,
+        "universe": {
+            "asset_pack": str(idea_spec.get("universe_hint") or "demo"),
+            "symbols": symbols,
+            "timezone": "Asia/Taipei",
+            "calendar": "DEMO",
+        },
+        "bar_spec": {"frequency": frequency},
+        "data_requirements": [
+            {
+                "dataset_id": "ohlcv_1d",
+                "fields": ["open", "high", "low", "close", "volume", "available_at"],
+                "frequency": frequency,
+                "adjustment": "none",
+                "asof_rule": {"mode": "asof"},
+            }
+        ],
+        "strategy_spec": {
+            "dsl_version": "signal_dsl_v1",
+            "signals": {"entry": "enter", "exit": "exit"},
+            "expressions": {"enter": {"type": "const", "value": True}, "exit": {"type": "const", "value": False}},
+            "execution": {"order_timing": "next_open", "cost_model": {"ref_policy": True}},
+            "extensions": {"engine_contract": "vectorbt_signal_v1", "strategy_id": "buy_and_hold_mvp"},
+        },
+        "evaluation_protocol": {
+            "segments": {
+                "train": {"start": start, "end": end},
+                "test": {"start": start, "end": end},
+                "holdout": {"start": start, "end": end},
+            },
+            "purge": {"bars": 0},
+            "embargo": {"bars": 0},
+            "gate_suite_id": "gate_suite_v1_default",
+        },
+        "report_spec": {"plots": False, "tables": True, "trace": False},
+        "extensions": {
+            "evaluation_intent": str(idea_spec.get("evaluation_intent") or ""),
+            "snapshot_id": str(idea_spec.get("snapshot_id") or ""),
+            "seeded_from_ui_submit": True,
+        },
+    }
 
 
 def _reject_inline_policy_overrides(ext: Any) -> None:
@@ -5270,33 +5602,203 @@ def _hard_constraints_context() -> dict[str, Any]:
 async def workbench_session_create(request: Request) -> Any:
     enforce_write_auth(request)
     payload = await _read_workbench_payload(request)
-    _required_workbench_fields(payload, "title", "symbols", "hypothesis_text")
-
-    symbols = _coerce_symbol_list(payload.get("symbols"))
-    if not symbols:
-        raise HTTPException(status_code=422, detail="symbols must include at least one symbol")
-
     session_id = _new_workbench_session_id()
-    job_id = _workbench_job_id(session_id)
-    idea = {
-        "title": str(payload.get("title", "")).strip(),
-        "symbols": symbols,
-        "hypothesis_text": str(payload.get("hypothesis_text", "")).strip(),
-        "frequency": str(payload.get("frequency", "")).strip() or "1d",
-        "evaluation_intent": str(payload.get("evaluation_intent", "")).strip() or "demo_e2e",
-        "start": str(payload.get("start", "")).strip(),
-        "end": str(payload.get("end", "")).strip(),
-        "snapshot_id": str(payload.get("snapshot_id", "")).strip(),
-        "policy_bundle_path": str(payload.get("policy_bundle_path", "policies/policy_bundle_v1.yaml")).strip(),
+
+    # Backward-compatible simulation mode (rollback path).
+    if not _workbench_real_jobs_enabled():
+        _required_workbench_fields(payload, "title", "symbols", "hypothesis_text")
+        symbols = _coerce_symbol_list(payload.get("symbols"))
+        if not symbols:
+            raise HTTPException(status_code=422, detail="symbols must include at least one symbol")
+
+        job_id = _workbench_job_id(session_id)
+        idea = {
+            "title": str(payload.get("title", "")).strip(),
+            "symbols": symbols,
+            "hypothesis_text": str(payload.get("hypothesis_text", "")).strip(),
+            "frequency": str(payload.get("frequency", "")).strip() or "1d",
+            "evaluation_intent": str(payload.get("evaluation_intent", "")).strip() or "demo_e2e",
+            "start": str(payload.get("start", "")).strip(),
+            "end": str(payload.get("end", "")).strip(),
+            "snapshot_id": str(payload.get("snapshot_id", "")).strip(),
+            "policy_bundle_path": str(payload.get("policy_bundle_path", "policies/policy_bundle_v1.yaml")).strip(),
+        }
+        session_doc = _initial_workbench_session(session_id=session_id, idea=idea, job_id=job_id)
+        _write_workbench_session(session_id, session_doc)
+        event = _append_workbench_event(
+            session_id=session_id,
+            step=WORKBENCH_PHASE_STEPS[0],
+            action="session_created",
+            payload={"job_id": job_id, "title": idea["title"]},
+        )
+        summary_lines, details, artifacts = _workbench_step_summary(session_doc, step=WORKBENCH_PHASE_STEPS[0])
+        card_doc = _ensure_workbench_phase_card(
+            session_id=session_id,
+            session=session_doc,
+            step=WORKBENCH_PHASE_STEPS[0],
+            trigger_event=event,
+            summary_lines=summary_lines,
+            details=details,
+            artifacts=artifacts,
+        )
+        session_doc["updated_at"] = _now_iso()
+        _write_workbench_session(session_id, session_doc)
+
+        out = {
+            "session_id": session_id,
+            "job_id": job_id,
+            "status": "created",
+            "created_at": str(session_doc.get("created_at") or ""),
+            "card": _workbench_card_api_payload(card_doc),
+            "api_paths": {
+                "session": f"/workbench/sessions/{session_id}",
+                "events": f"/workbench/sessions/{session_id}/events",
+                "ui": f"/ui/workbench/{session_id}",
+            },
+        }
+        if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
+            return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+        return out
+
+    # Real jobs path: message-only intake -> fetch autosymbols -> idea job -> append-only fetch evidence.
+    intake_bundle, message = _run_workbench_ui_intake_agent(session_id=session_id, payload=payload)
+    normalized = intake_bundle.get("normalized_request") if isinstance(intake_bundle.get("normalized_request"), dict) else {}
+    fetch_request = intake_bundle.get("fetch_request") if isinstance(intake_bundle.get("fetch_request"), dict) else None
+    if not isinstance(fetch_request, dict):
+        raise HTTPException(status_code=422, detail="ui intake bundle missing fetch_request")
+    if _contains_forbidden_fetch_function_fields(fetch_request):
+        raise HTTPException(status_code=422, detail="fetch_request must be intent-first (no function/function_override)")
+
+    snapshot_id = str(payload.get("snapshot_id") or os.getenv("EAM_DEFAULT_SNAPSHOT_ID") or "").strip()
+    if not snapshot_id:
+        raise HTTPException(status_code=422, detail="snapshot_id is required (payload or EAM_DEFAULT_SNAPSHOT_ID)")
+    policy_bundle_path = str(
+        payload.get("policy_bundle_path") or os.getenv("EAM_DEFAULT_POLICY_BUNDLE_PATH") or "policies/policy_bundle_v1.yaml"
+    ).strip()
+
+    from quant_eam.qa_fetch.runtime import execute_fetch_by_intent, execute_ui_llm_query
+
+    sampled_symbols = _coerce_symbol_list(payload.get("symbols"))
+    if not sampled_symbols:
+        try:
+            probe_res = execute_fetch_by_intent(fetch_request, write_evidence=False, _allow_evidence_opt_out=True)
+            sampled_symbols = _extract_symbols_from_fetch_result(probe_res)
+        except Exception:
+            sampled_symbols = []
+    if not sampled_symbols:
+        sampled_symbols = ["AAA"]
+
+    idea_start = _coerce_workbench_date_text(
+        payload.get("start") or normalized.get("start"),
+        default="2016-01-01",
+    )
+    idea_end = _coerce_workbench_date_text(
+        payload.get("end") or normalized.get("end"),
+        default="2025-12-31",
+    )
+    idea_title = str(normalized.get("title") or payload.get("title") or "").strip() or f"Workbench session {session_id}"
+    idea_hypothesis = str(normalized.get("hypothesis_text") or message).strip() or message
+    idea: dict[str, Any] = {
+        "schema_version": "idea_spec_v1",
+        "title": idea_title,
+        "symbols": sampled_symbols,
+        "hypothesis_text": idea_hypothesis,
+        "frequency": _normalize_idea_frequency(normalized.get("frequency") or payload.get("frequency")),
+        "evaluation_intent": str(payload.get("evaluation_intent") or "workbench_ma250_one_shot").strip() or "workbench_ma250_one_shot",
+        "start": idea_start,
+        "end": idea_end,
+        "snapshot_id": snapshot_id,
+        "policy_bundle_path": policy_bundle_path,
+        "extensions": {
+            "strategy_template": str(intake_bundle.get("strategy_template") or "ma250_trend_filter_v1"),
+            "fetch_request": fetch_request,
+            "workbench_message": message,
+        },
     }
+    universe_hint = str(normalized.get("universe_hint") or "").strip()
+    if universe_hint:
+        idea["universe_hint"] = universe_hint
+
+    try:
+        create_res = create_job_from_ideaspec(
+            idea_spec=idea,
+            snapshot_id=snapshot_id,
+            policy_bundle_path=policy_bundle_path,
+            job_root=default_job_root(),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=str(e))
+
+    job_id = str(create_res.get("job_id") or "").strip()
+    if not job_id:
+        raise HTTPException(status_code=500, detail="failed to create idea job")
+
+    fetch_query_result: dict[str, Any] = {}
+    fetch_evidence_paths: dict[str, Any] = {}
+    fetch_review_checkpoint: dict[str, Any] = {}
+    fetch_preview_rows: list[dict[str, Any]] = []
+    try:
+        fetch_query_result = execute_ui_llm_query(
+            {
+                "query_id": f"workbench_{session_id}_create",
+                "query_text": message,
+                "fetch_request": fetch_request,
+            },
+            out_dir=_workbench_fetch_evidence_root_for_job(job_id),
+        )
+        if isinstance(fetch_query_result.get("fetch_evidence_paths"), dict):
+            fetch_evidence_paths = fetch_query_result["fetch_evidence_paths"]
+        if isinstance(fetch_query_result.get("fetch_review_checkpoint"), dict):
+            fetch_review_checkpoint = fetch_query_result["fetch_review_checkpoint"]
+        query_result = fetch_query_result.get("query_result")
+        if isinstance(query_result, dict) and isinstance(query_result.get("preview"), list):
+            fetch_preview_rows = [row for row in query_result["preview"] if isinstance(row, dict)][:20]
+    except Exception as e:  # noqa: BLE001
+        err_path = _workbench_fetch_evidence_root_for_job(job_id) / "ui_intake_fetch_error.json"
+        _write_json(
+            err_path,
+            {
+                "schema_version": "workbench_ui_intake_fetch_error_v1",
+                "job_id": job_id,
+                "session_id": session_id,
+                "message": str(e),
+            },
+        )
+
     session_doc = _initial_workbench_session(session_id=session_id, idea=idea, job_id=job_id)
+    session_doc["message"] = message
+    session_doc["sampled_symbols"] = sampled_symbols
+    session_doc["ui_intake_bundle"] = intake_bundle
+    session_doc["fetch_request"] = fetch_request
+    session_doc["fetch_evidence_paths"] = fetch_evidence_paths
+    session_doc["fetch_review_checkpoint"] = fetch_review_checkpoint
+    session_doc["fetch_probe_preview_rows"] = fetch_preview_rows
+    if isinstance(fetch_evidence_paths.get("fetch_result_meta_path"), str):
+        session_doc["last_fetch_probe"] = str(fetch_evidence_paths.get("fetch_result_meta_path"))
+    _write_workbench_session(session_id, session_doc)
+
     event = _append_workbench_event(
         session_id=session_id,
         step=WORKBENCH_PHASE_STEPS[0],
-        action="session_created",
-        payload={"job_id": job_id, "title": idea["title"]},
+        action="session_created_real_job",
+        payload={
+            "job_id": job_id,
+            "title": idea_title,
+            "sampled_symbol_count": len(sampled_symbols),
+            "sampled_symbols_preview": sampled_symbols[:20],
+        },
     )
     summary_lines, details, artifacts = _workbench_step_summary(session_doc, step=WORKBENCH_PHASE_STEPS[0])
+    details = dict(details)
+    details["message"] = message
+    details["normalized_request"] = normalized
+    details["fetch_evidence_paths"] = fetch_evidence_paths
+    if fetch_preview_rows:
+        details["fetch_preview_rows"] = fetch_preview_rows
+    artifact_rows = [str(x).strip() for x in artifacts if str(x).strip()]
+    artifact_rows.extend(str(v).strip() for v in fetch_evidence_paths.values() if isinstance(v, str) and str(v).strip())
     card_doc = _ensure_workbench_phase_card(
         session_id=session_id,
         session=session_doc,
@@ -5304,7 +5806,7 @@ async def workbench_session_create(request: Request) -> Any:
         trigger_event=event,
         summary_lines=summary_lines,
         details=details,
-        artifacts=artifacts,
+        artifacts=artifact_rows,
     )
     session_doc["updated_at"] = _now_iso()
     _write_workbench_session(session_id, session_doc)
@@ -5315,6 +5817,8 @@ async def workbench_session_create(request: Request) -> Any:
         "status": "created",
         "created_at": str(session_doc.get("created_at") or ""),
         "card": _workbench_card_api_payload(card_doc),
+        "sampled_symbols": sampled_symbols,
+        "fetch_evidence_paths": fetch_evidence_paths,
         "api_paths": {
             "session": f"/workbench/sessions/{session_id}",
             "events": f"/workbench/sessions/{session_id}/events",
@@ -5373,6 +5877,124 @@ async def workbench_session_continue(session_id: str, request: Request) -> Any:
     session_id = require_safe_id(session_id, kind="session_id")
     payload = await _read_workbench_payload(request)
     session = _load_workbench_session(session_id)
+
+    if _workbench_real_jobs_enabled():
+        job_id = str(session.get("job_id") or "").strip()
+        if not job_id:
+            raise HTTPException(status_code=409, detail="workbench session missing job_id")
+        try:
+            require_safe_job_id(job_id)
+        except HTTPException:
+            raise HTTPException(status_code=409, detail="workbench session job_id is not a real job id")
+
+        from quant_eam.orchestrator.workflow import advance_job_once
+
+        before_events = jobs_load_events(job_id, job_root=default_job_root())
+        waiting_step = _latest_job_waiting_step(before_events)
+        approved_step: str | None = None
+        if waiting_step and waiting_step in APPROVAL_STEPS and not _job_has_approved_step(before_events, step=waiting_step):
+            jobs_append_event(
+                job_id=job_id,
+                event_type="APPROVED",
+                outputs={"step": waiting_step},
+                job_root=default_job_root(),
+            )
+            approved_step = waiting_step
+
+        advance_result = advance_job_once(job_id=job_id)
+        after_events = jobs_load_events(job_id, job_root=default_job_root())
+        checkpoint = _job_checkpoint_from_events(after_events)
+        phase_step = _workbench_real_phase_for_checkpoint(checkpoint)
+
+        prev_step = str(session.get("current_step") or WORKBENCH_PHASE_STEPS[0])
+        prev_idx = WORKBENCH_PHASE_STEPS.index(prev_step) if prev_step in WORKBENCH_PHASE_STEPS else 0
+        phase_idx = WORKBENCH_PHASE_STEPS.index(phase_step) if phase_step in WORKBENCH_PHASE_STEPS else 0
+        if phase_idx < prev_idx:
+            phase_step = prev_step
+            phase_idx = prev_idx
+        transitioned = phase_step != prev_step
+
+        trace = session.get("trace")
+        if not isinstance(trace, list):
+            trace = []
+            session["trace"] = trace
+        if transitioned:
+            for idx in range(len(trace) - 1, -1, -1):
+                row = trace[idx]
+                if not isinstance(row, dict):
+                    continue
+                if str(row.get("step") or "") == prev_step:
+                    row["status"] = "completed"
+                    row["status_text"] = f"continued_to_{phase_step}"
+                    row["updated_at"] = _now_iso()
+                    break
+            trace.append({"step": phase_step, "status": "in_progress", "status_text": "job_checkpoint_advanced", "created_at": _now_iso()})
+
+        outputs_index = _load_job_outputs_index(job_id)
+        artifact_refs = [str(v).strip() for v in outputs_index.values() if isinstance(v, str) and str(v).strip()]
+
+        session["current_step"] = phase_step
+        session["step_index"] = phase_idx
+        session["job_checkpoint"] = checkpoint
+        session["job_advance_result"] = advance_result
+        session["job_outputs_ref"] = outputs_index
+        session["updated_at"] = _now_iso()
+        if checkpoint in {"done", "improvements"} or str(advance_result.get("state") or "").upper() == "DONE":
+            session["status"] = "completed"
+            if trace and isinstance(trace[-1], dict):
+                trace[-1]["status"] = "completed"
+                trace[-1]["status_text"] = "job_done"
+                trace[-1]["updated_at"] = _now_iso()
+
+        _bump_workbench_revision(session)
+        event = _append_workbench_event(
+            session_id=session_id,
+            step=phase_step,
+            action="real_job_continued",
+            payload={
+                "job_id": job_id,
+                "checkpoint": checkpoint,
+                "approved_step": approved_step,
+                "previous_step": prev_step,
+                "current_step": phase_step,
+                "event_count_before": len(before_events),
+                "event_count_after": len(after_events),
+            },
+        )
+        summary_lines, details, artifacts = _workbench_step_summary(session, step=phase_step)
+        details = dict(details)
+        details["job_checkpoint"] = checkpoint
+        details["approved_step"] = approved_step
+        details["job_outputs_ref"] = outputs_index
+        details["job_advance_result"] = advance_result
+        artifacts = [*artifacts, *artifact_refs]
+        card_doc = _ensure_workbench_phase_card(
+            session_id=session_id,
+            session=session,
+            step=phase_step,
+            trigger_event=event,
+            summary_lines=summary_lines,
+            details=details,
+            artifacts=artifacts,
+        )
+        _write_workbench_session(session_id, session)
+
+        idempotent = (len(after_events) == len(before_events)) and (approved_step is None) and (not transitioned)
+        out = {
+            "session_id": session_id,
+            "job_id": job_id,
+            "previous_step": prev_step,
+            "current_step": phase_step,
+            "checkpoint": checkpoint,
+            "status": str(session.get("status") or "active"),
+            "idempotent": bool(idempotent),
+            "approved_step": approved_step,
+            "artifact_refs": artifact_refs,
+            "card": _workbench_card_api_payload(card_doc),
+        }
+        if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
+            return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+        return out
 
     current_step = str(session.get("current_step") or WORKBENCH_PHASE_STEPS[0])
     if current_step not in WORKBENCH_PHASE_STEPS:
@@ -5466,6 +6088,102 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
     session_id = require_safe_id(session_id, kind="session_id")
     payload = await _read_workbench_payload(request)
     session = _load_workbench_session(session_id)
+
+    if _workbench_real_jobs_enabled():
+        job_id = str(session.get("job_id") or "").strip()
+        if not job_id:
+            raise HTTPException(status_code=409, detail="workbench session missing job_id")
+        try:
+            require_safe_job_id(job_id)
+        except HTTPException:
+            raise HTTPException(status_code=409, detail="workbench session job_id is not a real job id")
+
+        fetch_request = payload.get("fetch_request")
+        if not isinstance(fetch_request, dict):
+            fetch_request = session.get("fetch_request")
+        if not isinstance(fetch_request, dict):
+            intake_bundle = session.get("ui_intake_bundle")
+            if isinstance(intake_bundle, dict) and isinstance(intake_bundle.get("fetch_request"), dict):
+                fetch_request = intake_bundle.get("fetch_request")
+        if not isinstance(fetch_request, dict):
+            raise HTTPException(status_code=422, detail="fetch_request is required for fetch-probe")
+        if _contains_forbidden_fetch_function_fields(fetch_request):
+            raise HTTPException(status_code=422, detail="fetch_request must be intent-first (no function/function_override)")
+
+        symbols = _coerce_symbol_list(payload.get("symbols"))
+        if symbols:
+            req_copy = json.loads(json.dumps(fetch_request))
+            intent = req_copy.get("intent") if isinstance(req_copy.get("intent"), dict) else {}
+            req_copy["intent"] = intent
+            intent["symbols"] = symbols
+            intent["auto_symbols"] = False
+            req_copy["auto_symbols"] = False
+            fetch_request = req_copy
+
+        from quant_eam.qa_fetch.runtime import execute_ui_llm_query
+
+        query_result = execute_ui_llm_query(
+            {
+                "query_id": f"workbench_{session_id}_fetch_probe",
+                "query_text": str(session.get("message") or ""),
+                "fetch_request": fetch_request,
+            },
+            out_dir=_workbench_fetch_evidence_root_for_job(job_id),
+        )
+        fetch_evidence_paths = query_result.get("fetch_evidence_paths") if isinstance(query_result.get("fetch_evidence_paths"), dict) else {}
+        fetch_review_checkpoint = (
+            query_result.get("fetch_review_checkpoint") if isinstance(query_result.get("fetch_review_checkpoint"), dict) else {}
+        )
+        query_doc = query_result.get("query_result") if isinstance(query_result.get("query_result"), dict) else {}
+        sample_rows = query_doc.get("preview") if isinstance(query_doc.get("preview"), list) else []
+        sample_rows = [row for row in sample_rows if isinstance(row, dict)][:20]
+
+        session["fetch_request"] = fetch_request
+        session["fetch_evidence_paths"] = fetch_evidence_paths
+        session["fetch_review_checkpoint"] = fetch_review_checkpoint
+        session["fetch_probe_preview_rows"] = sample_rows
+        if isinstance(fetch_evidence_paths.get("fetch_result_meta_path"), str):
+            session["last_fetch_probe"] = str(fetch_evidence_paths.get("fetch_result_meta_path"))
+        _bump_workbench_revision(session)
+        session["updated_at"] = _now_iso()
+        ev = _append_workbench_event(
+            session_id=session_id,
+            step="trace_preview",
+            action="fetch_probe_real",
+            payload={"job_id": job_id, "fetch_evidence_paths": fetch_evidence_paths},
+        )
+        summary_lines, details, artifacts = _workbench_step_summary(session, step="trace_preview")
+        details = dict(details)
+        details["fetch_evidence_paths"] = fetch_evidence_paths
+        details["fetch_review_checkpoint"] = fetch_review_checkpoint
+        if sample_rows:
+            details["sample_rows"] = sample_rows
+        artifacts = [*artifacts, *[str(v) for v in fetch_evidence_paths.values() if isinstance(v, str)]]
+        card_doc = _ensure_workbench_phase_card(
+            session_id=session_id,
+            session=session,
+            step="trace_preview",
+            trigger_event=ev,
+            summary_lines=summary_lines,
+            details=details,
+            artifacts=artifacts,
+            force_new=True,
+        )
+        _write_workbench_session(session_id, session)
+
+        out = {
+            "session_id": session_id,
+            "job_id": job_id,
+            "status": "ok",
+            "fetch_evidence_paths": fetch_evidence_paths,
+            "fetch_review_checkpoint": fetch_review_checkpoint,
+            "probe_rows": sample_rows,
+            "card": _workbench_card_api_payload(card_doc),
+        }
+        if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
+            return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+        return out
+
     symbols = _coerce_symbol_list(payload.get("symbols"))
     if not symbols:
         idea = session.get("idea")
@@ -6185,6 +6903,58 @@ async def ui_submit_idea_job(request: Request):
         )
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(e))
+
+    job_id = str(res.get("job_id") or "").strip()
+    if job_id and str(res.get("status") or "") == "created":
+        try:
+            jr = _job_root()
+            paths = jobs_job_paths(job_id, job_root=jr)
+            events = jobs_load_events(job_id, job_root=jr)
+
+            has_blueprint_proposed = any(str(ev.get("event_type") or "") == "BLUEPRINT_PROPOSED" for ev in events)
+            if not has_blueprint_proposed:
+                spec = jobs_load_spec(job_id, job_root=jr)
+                if isinstance(spec, dict):
+                    blueprint_draft = _seed_blueprint_from_idea_spec(spec, job_id=job_id)
+                    blueprint_draft_path = paths.outputs_dir / "agents" / "intent" / "blueprint_draft.json"
+                    _write_json(blueprint_draft_path, blueprint_draft)
+
+                    outputs_path = paths.outputs_dir / "outputs.json"
+                    outputs_doc: dict[str, Any] = {}
+                    if outputs_path.is_file():
+                        try:
+                            existing = _load_json(outputs_path)
+                            if isinstance(existing, dict):
+                                outputs_doc = existing
+                        except Exception:
+                            outputs_doc = {}
+                    outputs_doc["blueprint_draft_path"] = blueprint_draft_path.as_posix()
+                    outputs_doc["snapshot_id"] = str(spec.get("snapshot_id") or sid)
+                    outputs_doc["policy_bundle_path"] = str(spec.get("policy_bundle_path") or pb)
+                    _write_json(outputs_path, outputs_doc)
+
+                    jobs_append_event(
+                        job_id=job_id,
+                        event_type="BLUEPRINT_PROPOSED",
+                        outputs={"blueprint_draft_path": blueprint_draft_path.as_posix()},
+                        job_root=jr,
+                    )
+
+            has_blueprint_waiting = any(
+                str(ev.get("event_type") or "") == "WAITING_APPROVAL"
+                and isinstance(ev.get("outputs"), dict)
+                and str((ev.get("outputs") or {}).get("step") or "") == "blueprint"
+                for ev in events
+            )
+            if not has_blueprint_waiting:
+                jobs_append_event(
+                    job_id=job_id,
+                    event_type="WAITING_APPROVAL",
+                    outputs={"step": "blueprint"},
+                    job_root=jr,
+                )
+        except Exception:
+            pass
 
     return RedirectResponse(url=f"/ui/jobs/{res['job_id']}", status_code=303)
 

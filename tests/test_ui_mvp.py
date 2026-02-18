@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
+from typing import Any
 
+import httpx
 from fastapi.testclient import TestClient
 
 from quant_eam.api.app import app
@@ -16,6 +19,15 @@ from quant_eam.worker.main import main as worker_main
 
 def _repo_root() -> Path:
     return Path(__file__).resolve().parents[1]
+
+
+def _request_via_asgi(method: str, path: str, **kwargs: Any) -> httpx.Response:
+    async def _run() -> httpx.Response:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+            return await client.request(method, path, **kwargs)
+
+    return asyncio.run(_run())
 
 
 def _build_demo_evidence(tmp_path: Path, monkeypatch) -> tuple[str, str]:
@@ -337,6 +349,7 @@ def test_readonly_api_and_ui_pages_200(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_ui_create_idea_job_from_form(tmp_path: Path, monkeypatch) -> None:
+    print("DBG: setup start")
     data_root = tmp_path / "data"
     art_root = tmp_path / "artifacts"
     reg_root = tmp_path / "registry"
@@ -355,10 +368,11 @@ def test_ui_create_idea_job_from_form(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("SOURCE_DATE_EPOCH", "1700000000")
 
     snapshot_id = "demo_snap_ui_idea_001"
+    print("DBG: ingest")
     assert demo_ingest_main(["--root", str(data_root), "--snapshot-id", snapshot_id]) == 0
 
-    client = TestClient(app)
-    r = client.get("/ui")
+    print("DBG: GET /ui")
+    r = _request_via_asgi("GET", "/ui")
     assert r.status_code == 200
     assert "Create Idea Job" in r.text
     assert 'class="btn"' in r.text
@@ -374,7 +388,8 @@ def test_ui_create_idea_job_from_form(tmp_path: Path, monkeypatch) -> None:
         "snapshot_id": snapshot_id,
         "policy_bundle_path": "policies/policy_bundle_v1.yaml",
     }
-    r = client.post("/ui/jobs/idea", data=form, follow_redirects=False)
+    print("DBG: POST /ui/jobs/idea")
+    r = _request_via_asgi("POST", "/ui/jobs/idea", data=form, follow_redirects=False)
     assert r.status_code == 303, r.text
     loc = r.headers.get("location", "")
     assert loc.startswith("/ui/jobs/")
@@ -391,6 +406,7 @@ def test_ui_create_idea_job_from_form(tmp_path: Path, monkeypatch) -> None:
     assert any(str(ev.get("event_type")) == "IDEA_SUBMITTED" for ev in events)
 
     # After worker advance, the workflow should stop at blueprint checkpoint.
+    print("DBG: worker once")
     assert worker_main(["--run-jobs", "--once"]) == 0
     lines2 = [ln for ln in (job_dir / "events.jsonl").read_text(encoding="utf-8").splitlines() if ln.strip()]
     events2 = [json.loads(ln) for ln in lines2]
@@ -401,14 +417,14 @@ def test_ui_create_idea_job_from_form(tmp_path: Path, monkeypatch) -> None:
         for ev in events2
     )
 
-    rd = client.get(loc)
+    print("DBG: final GET job page")
+    rd = _request_via_asgi("GET", loc)
     assert rd.status_code == 200
     assert job_id in rd.text
 
 
 def test_path_traversal_blocked() -> None:
-    client = TestClient(app)
-    r = client.get("/runs/../../etc/passwd")
+    r = _request_via_asgi("GET", "/runs/../../etc/passwd")
     assert r.status_code in (400, 404)
 
 
