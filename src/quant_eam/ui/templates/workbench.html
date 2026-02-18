@@ -621,24 +621,19 @@
             {% endif %}
           {% endif %}
           {% if card.phase == "runspec" and card.details %}
-            {% set signal = card.details.get("signal_summary", {}) %}
-            {% set perf = card.details.get("performance_summary", {}) %}
-            {% set gate = card.details.get("gate_summary", {}) %}
-            {% set trade_rows = card.details.get("trade_samples", []) %}
-            <p><strong>Signal summary</strong></p>
-            <div class="table-wrap">
-              <table class="table">
-                <tbody>
-                  <tr><th>pseudocode_lines</th><td>{{ signal.get("pseudocode_lines", []) | length }}</td></tr>
-                  <tr><th>variable_count</th><td>{{ signal.get("variable_count", 0) }}</td></tr>
-                  <tr><th>assertion_count</th><td>{{ signal.get("assertion_count", 0) }}</td></tr>
-                </tbody>
-              </table>
-            </div>
-            {% if signal.get("pseudocode_lines") and signal.get("pseudocode_lines")|length > 0 %}
-              <pre class="code">{{ signal.get("pseudocode_lines", []) | join("\n") }}</pre>
-            {% endif %}
-            <p><strong>Return/Drawdown/Gate summary</strong></p>
+            {% set phase3 = card.details.get("phase3_cards", {}) %}
+            {% set backtest = phase3.get("backtest_summary", {}) %}
+            {% set trade = phase3.get("trade_sample", {}) %}
+            {% set signal_card = phase3.get("signal_summary", {}) %}
+            {% set gate_card = phase3.get("gate_summary", {}) %}
+            {% set run_jump = phase3.get("run_jump", {}) %}
+            {% set perf = backtest.get("summary", {}) %}
+            {% set signal = signal_card.get("summary", {}) %}
+            {% set gate = gate_card.get("summary", {}) %}
+            {% set trade_rows = trade.get("rows", []) %}
+
+            <p><strong>backtest summary card</strong></p>
+            <p class="muted" data-testid="wb059-card-backtest-summary">status={{ backtest.get("status", "missing") }} | reason={{ backtest.get("reason", "") }} | source=<code>{{ backtest.get("source_path", "") }}</code></p>
             <div class="table-wrap">
               <table class="table">
                 <tbody>
@@ -647,12 +642,17 @@
                   <tr><th>max_drawdown</th><td>{{ perf.get("max_drawdown", "") }}</td></tr>
                   <tr><th>sharpe</th><td>{{ perf.get("sharpe", "") }}</td></tr>
                   <tr><th>trade_count</th><td>{{ perf.get("trade_count", "") }}</td></tr>
-                  <tr><th>overall_pass</th><td>{{ gate.get("overall_pass", false) }}</td></tr>
-                  <tr><th>failed_gates</th><td>{{ gate.get("failed_gate_ids", []) | join(", ") }}</td></tr>
                 </tbody>
               </table>
             </div>
-            <p><strong>Trade samples</strong></p>
+            {% if backtest.get("status") == "missing" %}
+              <div class="plot-fallback">backtest summary unavailable: metrics.json is missing.</div>
+            {% elif backtest.get("status") == "error" %}
+              <div class="plot-fallback">backtest summary unavailable: {{ backtest.get("reason", "invalid_metrics_json") }}.</div>
+            {% endif %}
+
+            <p><strong>trade sample card</strong></p>
+            <p class="muted" data-testid="wb059-card-trade-sample">status={{ trade.get("status", "missing") }} | reason={{ trade.get("reason", "") }} | source=<code>{{ trade.get("source_path", "") }}</code></p>
             {% if trade_rows and trade_rows|length > 0 %}
               {% set trade_cols = trade_rows[0].keys() %}
               <div class="table-wrap">
@@ -675,8 +675,66 @@
                   </tbody>
                 </table>
               </div>
+            {% elif trade.get("status") == "missing" %}
+              <div class="plot-fallback">trade sample unavailable: trades.csv is missing.</div>
+            {% elif trade.get("status") == "error" %}
+              <div class="plot-fallback">trade sample unavailable: {{ trade.get("reason", "invalid_trades_csv") }}.</div>
+            {% elif trade.get("status") == "empty" %}
+              <div class="plot-fallback">trade sample empty: no trade rows were generated.</div>
             {% else %}
-              <div class="plot-fallback">No trade sample rows yet.</div>
+              <div class="plot-fallback">trade sample pending: waiting for dossier trades evidence.</div>
+            {% endif %}
+
+            <p><strong>signal summary card</strong></p>
+            <p class="muted" data-testid="wb059-card-signal-summary">status={{ signal_card.get("status", "missing") }} | reason={{ signal_card.get("reason", "") }} | source=<code>{{ signal_card.get("source_path", "") }}</code></p>
+            <div class="table-wrap">
+              <table class="table">
+                <tbody>
+                  <tr><th>pseudocode_lines</th><td>{{ signal.get("pseudocode_lines", []) | length }}</td></tr>
+                  <tr><th>variable_count</th><td>{{ signal.get("variable_count", 0) }}</td></tr>
+                  <tr><th>assertion_count</th><td>{{ signal.get("assertion_count", 0) }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            {% if signal.get("pseudocode_lines") and signal.get("pseudocode_lines")|length > 0 %}
+              <pre class="code">{{ signal.get("pseudocode_lines", []) | join("\n") }}</pre>
+            {% elif signal_card.get("status") == "missing" %}
+              <div class="plot-fallback">signal summary unavailable: strategy signal evidence is missing.</div>
+            {% elif signal_card.get("status") == "error" %}
+              <div class="plot-fallback">signal summary unavailable: {{ signal_card.get("reason", "signal_source_error") }}.</div>
+            {% elif signal_card.get("status") == "empty" %}
+              <div class="plot-fallback">signal summary empty: no pseudocode lines were produced.</div>
+            {% endif %}
+
+            <p><strong>gate summary card</strong></p>
+            <p class="muted" data-testid="wb059-card-gate-summary">status={{ gate_card.get("status", "missing") }} | reason={{ gate_card.get("reason", "") }} | source=<code>{{ gate_card.get("source_path", "") }}</code></p>
+            <div class="table-wrap">
+              <table class="table">
+                <tbody>
+                  <tr><th>overall_pass</th><td>{{ gate.get("overall_pass", false) }}</td></tr>
+                  <tr><th>failed_gates</th><td>{{ gate.get("failed_gate_ids", []) | join(", ") }}</td></tr>
+                  <tr><th>gate_count</th><td>{{ gate.get("gate_count", 0) }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            {% if gate_card.get("status") == "missing" %}
+              <div class="plot-fallback">gate summary unavailable: gate_results.json is missing.</div>
+            {% elif gate_card.get("status") == "error" %}
+              <div class="plot-fallback">gate summary unavailable: {{ gate_card.get("reason", "invalid_gate_results_json") }}.</div>
+            {% endif %}
+
+            <p><strong>run jump card</strong></p>
+            <p class="muted" data-testid="wb059-card-run-jump">status={{ run_jump.get("status", "missing") }} | reason={{ run_jump.get("reason", "") }} | run_id={{ run_jump.get("run_id", "") }}</p>
+            {% if run_jump.get("status") == "ready" %}
+              <p>
+                <a href="{{ run_jump.get("run_url", "") }}">Open Run</a>
+                |
+                <a href="{{ run_jump.get("gates_url", "") }}">Open Gate Detail</a>
+              </p>
+            {% elif run_jump.get("status") == "missing" %}
+              <div class="plot-fallback">run jump unavailable: run_id is missing.</div>
+            {% elif run_jump.get("status") == "error" %}
+              <div class="plot-fallback">run jump unavailable: run_id failed safety validation.</div>
             {% endif %}
           {% endif %}
           {% if card.phase == "improvements" and card.details %}

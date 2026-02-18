@@ -175,6 +175,8 @@ IA_ROUTE_VIEW_CATALOG: dict[str, dict[str, str]] = {
     "/ui/workbench/req/wb-055": {"view_name": "Workbench phase-2 skeleton entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-056": {"view_name": "Workbench phase-2 result cards entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-057": {"view_name": "Workbench phase-2 rollback+rerun entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-058": {"view_name": "Workbench phase-3 skeleton entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-059": {"view_name": "Workbench phase-3 cards entry", "template": "workbench.html"},
     "/ui/workbench/{session_id}": {"view_name": "Workbench session", "template": "workbench.html"},
 }
 IA_CHECKLIST_ROUTE_BINDINGS: dict[int, list[str]] = {
@@ -426,6 +428,8 @@ WORKBENCH_REQUIREMENT_ENTRY_ALIASES: tuple[str, ...] = (
     "/ui/workbench/req/wb-055",
     "/ui/workbench/req/wb-056",
     "/ui/workbench/req/wb-057",
+    "/ui/workbench/req/wb-058",
+    "/ui/workbench/req/wb-059",
 )
 WORKBENCH_EVIDENCE_MAX_BYTES = 262_144
 WORKBENCH_EVIDENCE_MAX_CSV_ROWS = 24
@@ -2168,14 +2172,40 @@ def _workbench_runspec_feedback(session: dict[str, Any]) -> tuple[dict[str, Any]
     if gate_results_path is None and dossier_path is not None:
         gate_results_path = _resolve_existing_evidence_path((dossier_path / "gate_results.json").as_posix())
 
-    metrics_path = _resolve_existing_evidence_path((dossier_path / "metrics.json").as_posix()) if dossier_path is not None else None
-    trades_path = _resolve_existing_evidence_path((dossier_path / "trades.csv").as_posix()) if dossier_path is not None else None
+    metrics_candidate = (dossier_path / "metrics.json") if dossier_path is not None else None
+    trades_candidate = (dossier_path / "trades.csv") if dossier_path is not None else None
+    gate_candidate = (dossier_path / "gate_results.json") if dossier_path is not None else None
 
-    metrics_doc = _load_json_dict(metrics_path.as_posix()) if metrics_path is not None else {}
-    gate_doc = _load_json_dict(gate_results_path.as_posix()) if gate_results_path is not None else {}
-    trade_samples = _read_csv_rows_limited(trades_path, max_rows=12) if trades_path is not None else []
+    metrics_path = _resolve_existing_evidence_path(metrics_candidate.as_posix()) if metrics_candidate is not None else None
+    trades_path = _resolve_existing_evidence_path(trades_candidate.as_posix()) if trades_candidate is not None else None
 
-    results = gate_doc.get("results") if isinstance(gate_doc.get("results"), list) else []
+    metrics_doc = _load_json_dict(metrics_path.as_posix()) if metrics_path is not None else None
+    gate_doc = _load_json_dict(gate_results_path.as_posix()) if gate_results_path is not None else None
+
+    trade_samples: list[dict[str, str]] = []
+    trade_status = "missing"
+    trade_reason = "missing_dossier_path"
+    if trades_path is not None:
+        try:
+            trade_samples = _read_csv_rows_limited(trades_path, max_rows=12)
+            if trade_samples:
+                trade_status = "ready"
+                trade_reason = ""
+            else:
+                trade_status = "empty"
+                trade_reason = "no_trade_rows"
+        except Exception:
+            trade_status = "error"
+            trade_reason = "invalid_trades_csv"
+            trade_samples = []
+    elif trades_candidate is not None:
+        trade_status = "missing"
+        trade_reason = "trades_csv_not_found"
+    elif dossier_token:
+        trade_status = "missing"
+        trade_reason = "dossier_path_not_found"
+
+    results = gate_doc.get("results") if isinstance(gate_doc, dict) and isinstance(gate_doc.get("results"), list) else []
     failed_gate_ids: list[str] = []
     for row in results:
         if not isinstance(row, dict):
@@ -2187,38 +2217,141 @@ def _workbench_runspec_feedback(session: dict[str, Any]) -> tuple[dict[str, Any]
 
     var_summary = readable.get("variable_dictionary_summary") if isinstance(readable, dict) else {}
     trace_summary = readable.get("trace_plan_summary") if isinstance(readable, dict) else {}
+    wb052_cards = readable.get("wb052_cards") if isinstance(readable.get("wb052_cards"), dict) else {}
+    strategy_card = wb052_cards.get("strategy_pseudocode") if isinstance(wb052_cards.get("strategy_pseudocode"), dict) else {}
     signal_summary = {
         "pseudocode_lines": readable.get("pseudocode_lines") if isinstance(readable.get("pseudocode_lines"), list) else [],
         "variable_count": int(var_summary.get("variable_count") or 0) if isinstance(var_summary, dict) else 0,
         "assertion_count": int(trace_summary.get("assertion_count") or 0) if isinstance(trace_summary, dict) else 0,
         "source_paths": readable.get("source_paths") if isinstance(readable.get("source_paths"), dict) else {},
     }
+    signal_status = str(strategy_card.get("status") or "missing")
+    signal_reason = str(strategy_card.get("reason") or "")
+    if signal_status == "ready" and not signal_summary["pseudocode_lines"] and signal_summary["variable_count"] <= 0:
+        signal_status = "empty"
+        signal_reason = "signal_summary_empty"
+
+    backtest_status = "missing"
+    backtest_reason = "missing_dossier_path"
+    if metrics_path is not None:
+        if isinstance(metrics_doc, dict):
+            backtest_status = "ready"
+            backtest_reason = ""
+        else:
+            backtest_status = "error"
+            backtest_reason = "invalid_metrics_json"
+    elif metrics_candidate is not None:
+        backtest_status = "missing"
+        backtest_reason = "metrics_json_not_found"
+    elif dossier_token:
+        backtest_status = "missing"
+        backtest_reason = "dossier_path_not_found"
+
+    gate_status = "missing"
+    gate_reason = "missing_gate_results_path"
+    if gate_results_path is not None:
+        if isinstance(gate_doc, dict):
+            gate_status = "ready"
+            gate_reason = ""
+        else:
+            gate_status = "error"
+            gate_reason = "invalid_gate_results_json"
+    elif gate_token or gate_candidate is not None:
+        gate_status = "missing"
+        gate_reason = "gate_results_json_not_found"
+
     performance_summary = {
         "run_id": run_id,
-        "total_return": metrics_doc.get("total_return"),
-        "max_drawdown": metrics_doc.get("max_drawdown"),
-        "sharpe": metrics_doc.get("sharpe"),
-        "trade_count": metrics_doc.get("trade_count"),
+        "total_return": metrics_doc.get("total_return") if isinstance(metrics_doc, dict) else None,
+        "max_drawdown": metrics_doc.get("max_drawdown") if isinstance(metrics_doc, dict) else None,
+        "sharpe": metrics_doc.get("sharpe") if isinstance(metrics_doc, dict) else None,
+        "trade_count": metrics_doc.get("trade_count") if isinstance(metrics_doc, dict) else None,
     }
     gate_summary = {
         "overall_pass": bool(gate_doc.get("overall_pass")) if isinstance(gate_doc, dict) else False,
         "failed_gate_ids": failed_gate_ids,
         "gate_count": len(results),
     }
+    safe_run_id = ""
+    run_jump_status = "missing"
+    run_jump_reason = "missing_run_id"
+    run_url = ""
+    gates_url = ""
+    if run_id:
+        try:
+            safe_run_id = require_safe_id(run_id, kind="run_id")
+            run_jump_status = "ready"
+            run_jump_reason = ""
+            run_url = f"/ui/runs/{safe_run_id}"
+            gates_url = f"/ui/runs/{safe_run_id}/gates"
+        except HTTPException:
+            run_jump_status = "error"
+            run_jump_reason = "invalid_run_id"
+
+    phase3_cards = {
+        "backtest_summary": {
+            "status": backtest_status,
+            "reason": backtest_reason,
+            "source_path": metrics_path.as_posix() if metrics_path is not None else (metrics_candidate.as_posix() if metrics_candidate is not None else ""),
+            "summary": performance_summary,
+        },
+        "trade_sample": {
+            "status": trade_status,
+            "reason": trade_reason,
+            "source_path": trades_path.as_posix() if trades_path is not None else (trades_candidate.as_posix() if trades_candidate is not None else ""),
+            "rows": trade_samples,
+            "row_count": len(trade_samples),
+        },
+        "signal_summary": {
+            "status": signal_status,
+            "reason": signal_reason,
+            "source_path": str(strategy_card.get("source_path") or ""),
+            "summary": signal_summary,
+        },
+        "gate_summary": {
+            "status": gate_status,
+            "reason": gate_reason,
+            "source_path": (
+                gate_results_path.as_posix()
+                if gate_results_path is not None
+                else (gate_token or (gate_candidate.as_posix() if gate_candidate is not None else ""))
+            ),
+            "summary": gate_summary,
+        },
+        "run_jump": {
+            "status": run_jump_status,
+            "reason": run_jump_reason,
+            "run_id": run_id,
+            "safe_run_id": safe_run_id,
+            "run_url": run_url,
+            "gates_url": gates_url,
+        },
+    }
     summary_lines = [
-        "Backtest feedback card assembled from run dossier outputs.",
+        "Phase-3 feedback assembled as WB-059 five cards.",
+        (
+            "Backtest summary card: "
+            f"status={phase3_cards['backtest_summary']['status']}, "
+            f"trade_count={performance_summary['trade_count']}"
+        ),
         (
             "Signal summary: "
             f"{len(signal_summary['pseudocode_lines'])} pseudocode lines, "
             f"{signal_summary['variable_count']} vars, "
             f"{signal_summary['assertion_count']} assertions."
         ),
-        f"Trade samples: {len(trade_samples)} rows.",
         (
-            "Return/Drawdown/Gate: "
-            f"total_return={performance_summary['total_return']}, "
-            f"max_drawdown={performance_summary['max_drawdown']}, "
+            "Trade sample card: "
+            f"status={phase3_cards['trade_sample']['status']}, rows={len(trade_samples)}"
+        ),
+        (
+            "Gate summary card: "
+            f"status={phase3_cards['gate_summary']['status']}, "
             f"overall_pass={gate_summary['overall_pass']}"
+        ),
+        (
+            "Run jump card: "
+            f"status={phase3_cards['run_jump']['status']}, run_id={run_id or '(missing)'}"
         ),
     ]
     artifacts = [
@@ -2242,6 +2375,7 @@ def _workbench_runspec_feedback(session: dict[str, Any]) -> tuple[dict[str, Any]
         "trade_samples": trade_samples,
         "performance_summary": performance_summary,
         "gate_summary": gate_summary,
+        "phase3_cards": phase3_cards,
         "g356_dependency_field_map": _workbench_dependency_field_map(outputs_index),
     }
     return details, summary_lines, artifacts
@@ -3795,6 +3929,64 @@ def _ensure_real_job_phase2_trace_preview_checkpoint(
         "trace_meta_path": trace_meta_path,
         "calc_trace_preview_path_exists": trace_preview_path_exists,
         "trace_meta_path_exists": trace_meta_path_exists,
+        "evidence_stable": evidence_stable,
+    }
+    _write_json(checkpoint_path, checkpoint_doc)
+    out = dict(checkpoint_doc)
+    out["checkpoint_path"] = checkpoint_path.as_posix()
+    return out
+
+
+def _ensure_real_job_phase3_runspec_checkpoint(
+    *,
+    job_id: str,
+    job_root: Path,
+) -> dict[str, Any]:
+    """Capture deterministic WB-058 Phase-3 evidence at runspec checkpoint."""
+    safe_job_id = require_safe_job_id(job_id)
+    paths = jobs_job_paths(safe_job_id, job_root=job_root)
+    events = jobs_load_events(safe_job_id, job_root=job_root)
+
+    strategy_spec_approved_event_offset = 0
+    runspec_waiting_event_offset = 0
+    for idx, ev in enumerate(events, start=1):
+        event_type = str(ev.get("event_type") or "")
+        outputs = ev.get("outputs") if isinstance(ev.get("outputs"), dict) else {}
+        step = str(outputs.get("step") or "").strip()
+        if event_type == "APPROVED" and step == "strategy_spec":
+            strategy_spec_approved_event_offset = idx
+        if event_type == "WAITING_APPROVAL" and step == "runspec":
+            runspec_waiting_event_offset = idx
+
+    outputs_path = paths.outputs_dir / "outputs.json"
+    outputs_doc: dict[str, Any] = {}
+    if outputs_path.is_file():
+        try:
+            loaded = _load_json(outputs_path)
+            if isinstance(loaded, dict):
+                outputs_doc = loaded
+        except Exception:
+            outputs_doc = {}
+
+    runspec_path = str(outputs_doc.get("runspec_path") or "").strip()
+    runspec_path_exists = bool(runspec_path and _resolve_existing_evidence_path(runspec_path) is not None)
+
+    ordering_ok = strategy_spec_approved_event_offset <= runspec_waiting_event_offset if strategy_spec_approved_event_offset else True
+    evidence_stable = bool(runspec_waiting_event_offset and ordering_ok)
+
+    checkpoint_path = paths.outputs_dir / "workbench" / "phase3_runspec_checkpoint.json"
+    checkpoint_doc = {
+        "schema_version": "workbench_phase3_runspec_checkpoint_v1",
+        "job_id": safe_job_id,
+        "waiting_step": "runspec",
+        "events_path": paths.events.as_posix(),
+        "outputs_index_path": outputs_path.as_posix(),
+        "strategy_spec_approved_event_offset": strategy_spec_approved_event_offset,
+        "runspec_waiting_event_offset": runspec_waiting_event_offset,
+        "runspec_waiting_present": runspec_waiting_event_offset > 0,
+        "strategy_spec_approved_before_runspec_waiting": ordering_ok,
+        "runspec_path": runspec_path,
+        "runspec_path_exists": runspec_path_exists,
         "evidence_stable": evidence_stable,
     }
     _write_json(checkpoint_path, checkpoint_doc)
@@ -8535,6 +8727,18 @@ async def workbench_session_continue(session_id: str, request: Request) -> Any:
             outputs_index = _load_job_outputs_index(job_id)
             artifact_refs = [str(v).strip() for v in outputs_index.values() if isinstance(v, str) and str(v).strip()]
             phase2_checkpoint: dict[str, Any] = {}
+            phase3_checkpoint: dict[str, Any] = {}
+            if checkpoint == "runspec":
+                phase3_checkpoint = _ensure_real_job_phase3_runspec_checkpoint(
+                    job_id=job_id,
+                    job_root=default_job_root(),
+                )
+                session["phase3_checkpoint"] = phase3_checkpoint
+                if not bool(phase3_checkpoint.get("runspec_waiting_present")):
+                    raise HTTPException(
+                        status_code=409,
+                        detail="runspec checkpoint missing WAITING_APPROVAL(step=runspec)",
+                    )
             if checkpoint == "trace_preview":
                 phase2_checkpoint = _ensure_real_job_phase2_trace_preview_checkpoint(
                     job_id=job_id,
@@ -8585,6 +8789,8 @@ async def workbench_session_continue(session_id: str, request: Request) -> Any:
             details["job_advance_result"] = advance_result
             if phase2_checkpoint:
                 details["phase2_checkpoint"] = phase2_checkpoint
+            if phase3_checkpoint:
+                details["phase3_checkpoint"] = phase3_checkpoint
             artifacts = [*artifacts, *artifact_refs]
             card_doc = _ensure_workbench_phase_card(
                 session_id=session_id,
@@ -9877,6 +10083,18 @@ def ui_workbench_req_wb056(request: Request) -> HTMLResponse:
 @router.api_route("/ui/workbench/req/wb-057", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_workbench_req_wb057(request: Request) -> HTMLResponse:
     # Stable requirement-bound entry path used by SSOT ui_path for G380.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-058", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb058(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G382.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-059", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb059(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G383.
     return ui_workbench(request)
 
 
