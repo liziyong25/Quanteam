@@ -177,6 +177,10 @@ IA_ROUTE_VIEW_CATALOG: dict[str, dict[str, str]] = {
     "/ui/workbench/req/wb-057": {"view_name": "Workbench phase-2 rollback+rerun entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-058": {"view_name": "Workbench phase-3 skeleton entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-059": {"view_name": "Workbench phase-3 cards entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-060": {"view_name": "Workbench phase-3 actions entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-061": {"view_name": "Workbench phase-4 skeleton entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-064": {"view_name": "Workbench Subagent-A API/session-store entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-065": {"view_name": "Workbench DoD baseline entry", "template": "workbench.html"},
     "/ui/workbench/{session_id}": {"view_name": "Workbench session", "template": "workbench.html"},
 }
 IA_CHECKLIST_ROUTE_BINDINGS: dict[int, list[str]] = {
@@ -282,6 +286,15 @@ WORKBENCH_ENDPOINT_SCHEMA_VERSIONS: dict[str, str] = {
     "draft_rollback_response": "workbench_step_draft_rollback_response_v1",
     "step_rerun_response": "workbench_step_rerun_response_v1",
     "phase2_rollback_rerun_response": "workbench_phase2_rollback_rerun_response_v1",
+}
+WORKBENCH_SESSION_STORE_CONTRACT_VERSION = "workbench_session_store_contract_v1"
+WORKBENCH_SESSION_STORE_PATH_TEMPLATES: dict[str, str] = {
+    "session_json_path": "artifacts/workbench/sessions/<session_id>/session.json",
+    "events_jsonl_path": "artifacts/workbench/sessions/<session_id>/events.jsonl",
+    "cards_index_path": "artifacts/jobs/<job_id>/outputs/workbench/cards/cards_index.jsonl",
+    "cards_glob_path": "artifacts/jobs/<job_id>/outputs/workbench/cards/*.json",
+    "step_draft_path_template": "artifacts/jobs/<job_id>/outputs/workbench/step_drafts/<step>/draft_vNN.json",
+    "step_selected_path_template": "artifacts/jobs/<job_id>/outputs/workbench/step_drafts/<step>/selected.json",
 }
 WORKBENCH_PHASE_RESULT_CARD_MATRIX: dict[str, dict[str, Any]] = {
     "idea": {
@@ -430,6 +443,10 @@ WORKBENCH_REQUIREMENT_ENTRY_ALIASES: tuple[str, ...] = (
     "/ui/workbench/req/wb-057",
     "/ui/workbench/req/wb-058",
     "/ui/workbench/req/wb-059",
+    "/ui/workbench/req/wb-060",
+    "/ui/workbench/req/wb-061",
+    "/ui/workbench/req/wb-064",
+    "/ui/workbench/req/wb-065",
 )
 WORKBENCH_EVIDENCE_MAX_BYTES = 262_144
 WORKBENCH_EVIDENCE_MAX_CSV_ROWS = 24
@@ -847,6 +864,42 @@ def _workbench_record_last_failure(
     return failure
 
 
+def _workbench_session_store_contract(session_id: str, *, job_id: str) -> dict[str, Any]:
+    sid = require_safe_id(session_id, kind="session_id")
+    raw_job_id = str(job_id).strip() or f"job_{sid}"
+    safe_job_id = require_safe_id(raw_job_id, kind="job_id")
+    cards_root = _workbench_cards_root(sid, job_id=safe_job_id)
+    cards_index_path = _workbench_cards_index_path(sid, job_id=safe_job_id)
+    step_drafts_root = _workbench_job_outputs_root(sid, job_id=safe_job_id) / "step_drafts"
+    return {
+        "schema_version": WORKBENCH_SESSION_STORE_CONTRACT_VERSION,
+        "session_schema_version": "workbench_session_v1",
+        "event_schema_version": "workbench_event_v1",
+        "append_only_events": True,
+        "session_id": sid,
+        "job_id": safe_job_id,
+        "paths": {
+            "session_json_path": _workbench_session_path(sid).as_posix(),
+            "events_jsonl_path": _workbench_events_path(sid).as_posix(),
+            "cards_index_path": cards_index_path.as_posix(),
+            "cards_glob_path": (cards_root / "*.json").as_posix(),
+            "step_draft_path_template": (step_drafts_root / "<step>" / "draft_vNN.json").as_posix(),
+            "step_selected_path_template": (step_drafts_root / "<step>" / "selected.json").as_posix(),
+        },
+        "path_templates": dict(WORKBENCH_SESSION_STORE_PATH_TEMPLATES),
+        "api_paths": {
+            "create": "/workbench/sessions",
+            "get": f"/workbench/sessions/{sid}",
+            "events": f"/workbench/sessions/{sid}/events",
+        },
+        "ui_paths": {
+            "entry": "/ui/workbench",
+            "session": f"/ui/workbench/{sid}",
+            "requirement_entry_alias": "/ui/workbench/req/wb-064",
+        },
+    }
+
+
 def _workbench_persistence_baseline(session_id: str, *, job_id: str) -> dict[str, Any]:
     sid = require_safe_id(session_id, kind="session_id")
     raw_job_id = str(job_id).strip() or f"job_{sid}"
@@ -856,6 +909,7 @@ def _workbench_persistence_baseline(session_id: str, *, job_id: str) -> dict[str
     step_drafts_root = _workbench_job_outputs_root(sid, job_id=safe_job_id) / "step_drafts"
     return {
         "artifact_contract_version": "workbench_data_persistence_v44",
+        "session_store_contract_version": WORKBENCH_SESSION_STORE_CONTRACT_VERSION,
         "session_id": sid,
         "job_id": safe_job_id,
         "session_json_path": _workbench_session_path(sid).as_posix(),
@@ -2598,11 +2652,13 @@ def _workbench_cards_for_view(session: dict[str, Any]) -> list[dict[str, Any]]:
 def _initial_workbench_session(*, session_id: str, idea: dict[str, Any], job_id: str, owner_id: str) -> dict[str, Any]:
     now = _now_iso()
     safe_owner_id = require_safe_id(owner_id, kind="workbench_owner_id")
-    persistence = _workbench_persistence_baseline(session_id, job_id=job_id)
+    safe_job_id = require_safe_id(str(job_id).strip() or f"job_{session_id}", kind="job_id")
+    persistence = _workbench_persistence_baseline(session_id, job_id=safe_job_id)
+    session_store_contract = _workbench_session_store_contract(session_id, job_id=safe_job_id)
     return {
         "schema_version": "workbench_session_v1",
         "session_id": session_id,
-        "job_id": job_id,
+        "job_id": safe_job_id,
         "owner_id": safe_owner_id,
         "created_at": now,
         "updated_at": now,
@@ -2638,6 +2694,7 @@ def _initial_workbench_session(*, session_id: str, idea: dict[str, Any], job_id:
             "session_event_schema_version": "workbench_event_v1",
             "job_event_schema_version": "job_event_v2",
             "route_interface_version": "workbench_route_interface_v43",
+            "session_store_contract_version": WORKBENCH_SESSION_STORE_CONTRACT_VERSION,
             "endpoint_schema_versions": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS,
         },
         "revision": 1,
@@ -2650,6 +2707,7 @@ def _initial_workbench_session(*, session_id: str, idea: dict[str, Any], job_id:
             persistence.get("artifacts_session_json_path") or f"artifacts/workbench/sessions/{session_id}/session.json"
         ),
         "persistence": persistence,
+        "session_store_contract": session_store_contract,
     }
 
 
@@ -8278,6 +8336,11 @@ async def workbench_session_create(request: Request) -> Any:
                 if isinstance(session_doc.get("persistence"), dict)
                 else _workbench_persistence_baseline(session_id, job_id=job_id)
             ),
+            "session_store_contract": (
+                session_doc.get("session_store_contract")
+                if isinstance(session_doc.get("session_store_contract"), dict)
+                else _workbench_session_store_contract(session_id, job_id=job_id)
+            ),
             "card": _workbench_card_api_payload(card_doc),
             "contract": {
                 "request_schema_version": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS["create_request"],
@@ -8507,6 +8570,11 @@ async def workbench_session_create(request: Request) -> Any:
             if isinstance(session_doc.get("persistence"), dict)
             else _workbench_persistence_baseline(session_id, job_id=job_id)
         ),
+        "session_store_contract": (
+            session_doc.get("session_store_contract")
+            if isinstance(session_doc.get("session_store_contract"), dict)
+            else _workbench_session_store_contract(session_id, job_id=job_id)
+        ),
         "card": _workbench_card_api_payload(card_doc),
         "sampled_symbols": sampled_symbols,
         "fetch_evidence_paths": fetch_evidence_paths,
@@ -8538,6 +8606,12 @@ def workbench_session_get(session_id: str, request: Request) -> Any:
             session_id,
             job_id=str(payload.get("job_id") or f"job_{session_id}"),
         )
+    session_store_contract = payload.get("session_store_contract")
+    if not isinstance(session_store_contract, dict):
+        session_store_contract = _workbench_session_store_contract(
+            session_id,
+            job_id=str(payload.get("job_id") or f"job_{session_id}"),
+        )
     events = _read_workbench_events(session_id)
     cards = _workbench_cards_for_view(payload)
     return {
@@ -8546,6 +8620,7 @@ def workbench_session_get(session_id: str, request: Request) -> Any:
         "owner_id": owner_id,
         "session": payload,
         "persistence": persistence,
+        "session_store_contract": session_store_contract,
         "cards": cards,
         "cards_count": len(cards),
         "event_count": len(events),
@@ -8662,7 +8737,10 @@ async def workbench_session_continue(session_id: str, request: Request) -> Any:
             except HTTPException:
                 raise HTTPException(status_code=409, detail="workbench session job_id is not a real job id")
             if requested and requested != current_step:
-                raise HTTPException(status_code=409, detail="target_step must match current_step in real jobs mode")
+                # WB-060: allow explicit "continue to Phase-4" request from Phase-3,
+                # while still keeping real-jobs mode strict for other jump attempts.
+                if not (current_step == "runspec" and requested == "improvements"):
+                    raise HTTPException(status_code=409, detail="target_step must match current_step in real jobs mode")
 
             from quant_eam.orchestrator.workflow import advance_job_once
 
@@ -10095,6 +10173,30 @@ def ui_workbench_req_wb058(request: Request) -> HTMLResponse:
 @router.api_route("/ui/workbench/req/wb-059", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_workbench_req_wb059(request: Request) -> HTMLResponse:
     # Stable requirement-bound entry path used by SSOT ui_path for G383.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-060", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb060(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G384.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-061", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb061(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G385.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-064", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb064(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G386.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-065", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb065(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G387.
     return ui_workbench(request)
 
 

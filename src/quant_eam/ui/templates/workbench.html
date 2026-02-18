@@ -118,6 +118,35 @@
     </div>
   </div>
 
+  <div class="card">
+    <h2>Phase-4 Baseline (WB-061)</h2>
+    <p class="muted">
+      WB-061 locks the stable Phase-4 entry alias and keeps the Phase-3 <code>runspec</code> to Phase-4 <code>improvements</code> transition baseline intact.
+    </p>
+    <p class="muted">
+      Deferred in this phase: WB-062 result-card deepening and WB-063 action deepening.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Subagent-A API + Session Store Skeleton (WB-064)</h2>
+    <p class="muted">
+      WB-064 freezes the API/session-store boundary with <code>workbench_session_store_contract_v1</code> and the stable requirement alias
+      <code>/ui/workbench/req/wb-064</code> for downstream UI goals.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>DoD Baseline Anchor (WB-065)</h2>
+    <p class="muted">
+      WB-065 adds a stable requirement entry alias <code>/ui/workbench/req/wb-065</code> and freezes a DoD baseline marker only;
+      the WB-064 contract and session-store behavior stay unchanged in this phase.
+    </p>
+    <p class="muted">
+      Explicitly deferred to downstream requirements: WB-066, WB-067, WB-068, WB-069, WB-070, WB-071, and WB-072.
+    </p>
+  </div>
+
   {% if selected_session %}
       {% set s = selected_session.session %}
     <div class="card" id="workbench-session-detail" data-session-id="{{ s.session_id }}" data-event-count="{{ selected_session.event_count }}">
@@ -202,6 +231,31 @@
           </form>
         </div>
       </div>
+
+      {% if s.current_step == "runspec" %}
+      <h3>Phase-3 Actions (WB-060)</h3>
+      <div class="grid">
+        <div>
+          <form method="post" action="/workbench/sessions/{{ s.session_id }}/continue" class="form-grid" data-loading-form="1">
+            <input type="hidden" name="_ui" value="1"/>
+            <input type="hidden" name="idempotency_key" value="" data-idempotency-input="phase3_continue_phase4" data-session-id="{{ s.session_id }}"/>
+            <input type="hidden" name="target_step" value="improvements"/>
+            <div class="full">
+              <button type="submit" class="btn" data-loading-label="Continuing to Phase-4...">Continue To Phase-4</button>
+            </div>
+          </form>
+        </div>
+        <div>
+          <form method="post" action="/workbench/sessions/{{ s.session_id }}/steps/runspec/rerun" class="form-grid" data-loading-form="1">
+            <input type="hidden" name="_ui" value="1"/>
+            <input type="hidden" name="idempotency_key" value="" data-idempotency-input="phase3_rerun_step" data-session-id="{{ s.session_id }}"/>
+            <div class="full">
+              <button type="submit" class="btn" data-loading-label="Rerunning Phase-3...">Rerun Current Step</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% endif %}
 
       <h3>Recovery Loop (FR-009)</h3>
       {% set recovery = selected_session.current_step_recovery if selected_session.current_step_recovery else {} %}

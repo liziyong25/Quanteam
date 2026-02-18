@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 from quant_eam.api.app import app
 from quant_eam.api.ui_routes import (
     WORKBENCH_ROUTE_INTERFACE_V43,
+    WORKBENCH_SESSION_STORE_CONTRACT_VERSION,
     _workbench_missing_route_pairs,
     _workbench_strategy_readable_summary,
 )
@@ -747,6 +748,64 @@ def test_ui_create_idea_job_from_form(tmp_path: Path, monkeypatch) -> None:
     assert isinstance(wb057_last_rerun, dict)
     assert str(wb057_last_rerun.get("step") or "") == "strategy_spec"
 
+    # WB-060: Phase-3 exposes actionable controls to continue to Phase-4 and rerun current step.
+    wb060 = _request_via_asgi(
+        "POST",
+        "/workbench/sessions",
+        json={
+            "title": "wb060-phase3-actions",
+            "symbols": "AAA,BBB",
+            "hypothesis_text": "phase3 continue and rerun controls",
+        },
+    )
+    assert wb060.status_code == 201, wb060.text
+    wb060_session_id = str(wb060.json()["session_id"])
+
+    wb060_current_step = "idea"
+    for _ in range(4):
+        cont = _request_via_asgi("POST", f"/workbench/sessions/{wb060_session_id}/continue", json={})
+        assert cont.status_code == 200, cont.text
+        wb060_current_step = str(cont.json().get("current_step") or "")
+        if wb060_current_step == "runspec":
+            break
+    assert wb060_current_step == "runspec"
+
+    wb060_ui = _request_via_asgi("GET", f"/ui/workbench/{wb060_session_id}")
+    assert wb060_ui.status_code == 200, wb060_ui.text
+    assert "Phase-3 Actions (WB-060)" in wb060_ui.text
+    assert "Continue To Phase-4" in wb060_ui.text
+    assert "Rerun Current Step" in wb060_ui.text
+
+    wb060_rerun = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{wb060_session_id}/steps/runspec/rerun",
+        json={},
+    )
+    assert wb060_rerun.status_code == 200, wb060_rerun.text
+    wb060_rerun_doc = wb060_rerun.json()
+    assert str(wb060_rerun_doc.get("status") or "") in {"rerun_requested", "simulated"}
+    assert str(wb060_rerun_doc.get("step") or "") == "runspec"
+    assert str(wb060_rerun_doc.get("current_step") or "") == "runspec"
+
+    wb060_continue_phase4 = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{wb060_session_id}/continue",
+        json={"target_step": "improvements"},
+    )
+    assert wb060_continue_phase4.status_code == 200, wb060_continue_phase4.text
+    wb060_continue_doc = wb060_continue_phase4.json()
+    assert str(wb060_continue_doc.get("current_step") or "") == "improvements"
+    assert str(wb060_continue_doc.get("previous_step") or "") == "runspec"
+
+    wb060_get = _request_via_asgi("GET", f"/workbench/sessions/{wb060_session_id}")
+    assert wb060_get.status_code == 200, wb060_get.text
+    wb060_session_payload = wb060_get.json().get("session")
+    assert isinstance(wb060_session_payload, dict)
+    assert str(wb060_session_payload.get("current_step") or "") == "improvements"
+    wb060_last_rerun = wb060_session_payload.get("last_rerun")
+    assert isinstance(wb060_last_rerun, dict)
+    assert str(wb060_last_rerun.get("step") or "") == "runspec"
+
 
 def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     art_root = tmp_path / "artifacts"
@@ -802,6 +861,21 @@ def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     req_alias_phase3_cards = _request_via_asgi("GET", "/ui/workbench/req/wb-059")
     assert req_alias_phase3_cards.status_code == 200
     assert "Requirement entry alias" in req_alias_phase3_cards.text
+    req_alias_phase3_actions = _request_via_asgi("GET", "/ui/workbench/req/wb-060")
+    assert req_alias_phase3_actions.status_code == 200
+    assert "Requirement entry alias" in req_alias_phase3_actions.text
+    req_alias_phase4_skeleton = _request_via_asgi("GET", "/ui/workbench/req/wb-061")
+    assert req_alias_phase4_skeleton.status_code == 200
+    assert "Requirement entry alias" in req_alias_phase4_skeleton.text
+    assert "Phase-4 Baseline (WB-061)" in req_alias_phase4_skeleton.text
+    req_alias_subagent_a = _request_via_asgi("GET", "/ui/workbench/req/wb-064")
+    assert req_alias_subagent_a.status_code == 200
+    assert "Requirement entry alias" in req_alias_subagent_a.text
+    assert "Subagent-A API + Session Store Skeleton (WB-064)" in req_alias_subagent_a.text
+    req_alias_dod_baseline = _request_via_asgi("GET", "/ui/workbench/req/wb-065")
+    assert req_alias_dod_baseline.status_code == 200
+    assert "Requirement entry alias" in req_alias_dod_baseline.text
+    assert "DoD Baseline Anchor (WB-065)" in req_alias_dod_baseline.text
 
     # WB-039 baseline: create flow exposes stable persistence contracts and writes session artifacts.
     created = _request_via_asgi(
@@ -830,16 +904,35 @@ def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     assert "<step>" in str(persistence["step_selected_path_template"])
     assert ".." not in str(persistence["session_json_path"])
     assert ".." not in str(persistence["cards_glob_path"])
+    session_store_contract = created_doc.get("session_store_contract")
+    assert isinstance(session_store_contract, dict)
+    assert session_store_contract["schema_version"] == WORKBENCH_SESSION_STORE_CONTRACT_VERSION
+    assert session_store_contract["append_only_events"] is True
+    assert session_store_contract["api_paths"] == {
+        "create": "/workbench/sessions",
+        "get": f"/workbench/sessions/{session_id}",
+        "events": f"/workbench/sessions/{session_id}/events",
+    }
+    assert session_store_contract["ui_paths"] == {
+        "entry": "/ui/workbench",
+        "session": f"/ui/workbench/{session_id}",
+        "requirement_entry_alias": "/ui/workbench/req/wb-064",
+    }
+    assert session_store_contract["path_templates"]["session_json_path"] == "artifacts/workbench/sessions/<session_id>/session.json"
+    assert str(session_store_contract["paths"]["session_json_path"]).endswith(f"/workbench/sessions/{session_id}/session.json")
+    assert str(session_store_contract["paths"]["events_jsonl_path"]).endswith(f"/workbench/sessions/{session_id}/events.jsonl")
 
     persisted_session_path = art_root / "workbench" / "sessions" / session_id / "session.json"
     assert persisted_session_path.is_file()
     persisted_session = json.loads(persisted_session_path.read_text(encoding="utf-8"))
     assert persisted_session.get("persistence") == persistence
+    assert persisted_session.get("session_store_contract") == session_store_contract
 
     get_session = _request_via_asgi("GET", f"/workbench/sessions/{session_id}")
     assert get_session.status_code == 200, get_session.text
     get_doc = get_session.json()
     assert get_doc.get("persistence") == persistence
+    assert get_doc.get("session_store_contract") == session_store_contract
 
     # WB-053 hardening: draft handlers must reject traversal-like step ids.
     bad_draft_step_save = _request_via_asgi(
@@ -1030,6 +1123,17 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert r.status_code == 200
     r = client.get("/ui/workbench/req/wb-059")
     assert r.status_code == 200
+    r = client.get("/ui/workbench/req/wb-060")
+    assert r.status_code == 200
+    r = client.get("/ui/workbench/req/wb-061")
+    assert r.status_code == 200
+    assert "Phase-4 Baseline (WB-061)" in r.text
+    r = client.get("/ui/workbench/req/wb-064")
+    assert r.status_code == 200
+    assert "Subagent-A API + Session Store Skeleton (WB-064)" in r.text
+    r = client.get("/ui/workbench/req/wb-065")
+    assert r.status_code == 200
+    assert "DoD Baseline Anchor (WB-065)" in r.text
     expected_route_contract = (
         ("POST", "/workbench/sessions"),
         ("GET", "/workbench/sessions/{session_id}"),
@@ -1063,6 +1167,10 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert route_paths.index("/ui/workbench/req/wb-057") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-058") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-059") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-060") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-061") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-064") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-065") < session_route_idx
     assert client.get("/ui/jobs").status_code == 200
     assert client.get("/ui/qa-fetch").status_code == 200
 
