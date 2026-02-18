@@ -214,13 +214,21 @@
 4. `FR-004` 已实现：
    - Strategy checkpoint 展示 pseudocode、variable dictionary 摘要、trace plan 摘要（基于 job outputs 组装）。
    - 代码：`src/quant_eam/api/ui_routes.py`、`src/quant_eam/ui/templates/workbench.html`
-5. `FR-005/FR-006/FR-007` 未完成：
-   - demo/backtest/attribution/composer 卡片未通过 workbench 真实链路驱动。
-6. `FR-008` 基础实现：
-   - 卡片详情支持 `<details>` 展开 evidence。
-7. `FR-009` 未完成：
+5. `FR-005` 已实现：
+   - Demo 阶段卡片展示 K 线叠加（基于 trace preview 采样）、trace assertion 摘要与 sanity metrics。
+   - 代码：`src/quant_eam/api/ui_routes.py`、`src/quant_eam/ui/templates/workbench.html`
+6. `FR-006` 已实现：
+   - Backtest 阶段卡片展示 signal summary、trade samples、return/drawdown/Gate 摘要。
+   - 代码：`src/quant_eam/api/ui_routes.py`、`src/quant_eam/ui/templates/workbench.html`
+7. `FR-007` 已实现：
+   - Improvements 阶段卡片展示 attribution 摘要、improvement 候选、registry/card 状态、composer 结果。
+   - 代码：`src/quant_eam/api/ui_routes.py`、`src/quant_eam/ui/templates/workbench.html`
+8. `FR-008` 已实现：
+   - 每张卡片支持安全路径约束下的 evidence 展开，并提供 JSON/CSV 明细预览视图。
+   - 代码：`src/quant_eam/api/ui_routes.py`、`src/quant_eam/ui/templates/workbench.html`
+9. `FR-009` 未完成：
    - 未形成“失败后重跑当前 step / 回退到上一步草稿并重跑 job”的闭环控制。
-8. `FR-010` 已实现（会话侧）：
+10. `FR-010` 已实现（会话侧）：
    - 用户动作（create/message/continue/fetch-probe/draft）与系统动作（auto-approve/advance/fetch success|failed）均写入 session 事件日志。
    - 代码：`src/quant_eam/api/ui_routes.py`
 

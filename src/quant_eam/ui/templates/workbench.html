@@ -263,29 +263,258 @@
               </div>
             {% endif %}
           {% endif %}
-          {% if card.phase == "trace_preview" and card.details and card.details.get("sample_rows") %}
-            {% set card_rows = card.details.get("sample_rows", []) %}
-            {% set card_cols = card_rows[0].keys() %}
+          {% if card.phase == "trace_preview" and card.details %}
+            {% set overlay = card.details.get("kline_overlay", {}) %}
+            <p><strong>K-line overlay</strong></p>
             <div class="table-wrap">
               <table class="table">
-                <thead>
-                  <tr>
-                    {% for c in card_cols %}
-                    <th>{{ c }}</th>
-                    {% endfor %}
-                  </tr>
-                </thead>
                 <tbody>
-                  {% for row in card_rows %}
-                  <tr>
-                    {% for c in card_cols %}
-                    <td>{{ row.get(c, "") }}</td>
+                  <tr><th>bars</th><td>{{ overlay.get("bars", 0) }}</td></tr>
+                  <tr><th>symbols</th><td>{{ overlay.get("symbols", []) | join(", ") }}</td></tr>
+                  <tr><th>window</th><td>{{ overlay.get("dt_start", "?") }} -> {{ overlay.get("dt_end", "?") }}</td></tr>
+                  <tr><th>entry_lagged_true</th><td>{{ overlay.get("entry_lagged_true_count", 0) }}</td></tr>
+                  <tr><th>exit_lagged_true</th><td>{{ overlay.get("exit_lagged_true_count", 0) }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            {% set card_rows = card.details.get("sample_rows", []) %}
+            <p><strong>K-line overlay sample rows</strong></p>
+            {% if card_rows and card_rows|length > 0 %}
+              {% set card_cols = card_rows[0].keys() %}
+              <div class="table-wrap">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      {% for c in card_cols %}
+                      <th>{{ c }}</th>
+                      {% endfor %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in card_rows %}
+                    <tr>
+                      {% for c in card_cols %}
+                      <td>{{ row.get(c, "") }}</td>
+                      {% endfor %}
+                    </tr>
                     {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="plot-fallback">No K-line overlay sample rows yet.</div>
+            {% endif %}
+            {% set assertions = card.details.get("trace_assertions", {}) %}
+            <p><strong>Trace assertions</strong></p>
+            {% if assertions.get("samples") and assertions.get("samples")|length > 0 %}
+            <ul>
+              {% for row in assertions.get("samples", []) %}
+              <li>{{ row }}</li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <div class="plot-fallback">No trace assertion samples.</div>
+            {% endif %}
+            {% set sanity = card.details.get("sanity_metrics", {}) %}
+            {% set fetch_sanity = sanity.get("fetch_sanity", {}) %}
+            {% set trace_meta = sanity.get("trace_meta", {}) %}
+            <p><strong>Sanity metrics</strong></p>
+            <div class="table-wrap">
+              <table class="table">
+                <tbody>
+                  <tr><th>trace_rows_written</th><td>{{ trace_meta.get("rows_written", 0) }}</td></tr>
+                  <tr><th>lag_bars_used</th><td>{{ trace_meta.get("lag_bars_used", 0) }}</td></tr>
+                  <tr><th>fetch_preview_row_count</th><td>{{ fetch_sanity.get("preview_row_count", 0) }}</td></tr>
+                  <tr><th>timestamp_duplicate_count</th><td>{{ fetch_sanity.get("timestamp_duplicate_count", 0) }}</td></tr>
+                  <tr><th>timestamp_monotonic_non_decreasing</th><td>{{ fetch_sanity.get("timestamp_monotonic_non_decreasing", false) }}</td></tr>
+                  <tr><th>dtype_reasonable</th><td>{{ fetch_sanity.get("dtype_reasonable", true) }}</td></tr>
+                  <tr><th>nonzero_missing_ratio_columns</th><td>{{ fetch_sanity.get("nonzero_missing_ratio_columns", []) | join(", ") }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+          {% if card.phase == "runspec" and card.details %}
+            {% set signal = card.details.get("signal_summary", {}) %}
+            {% set perf = card.details.get("performance_summary", {}) %}
+            {% set gate = card.details.get("gate_summary", {}) %}
+            {% set trade_rows = card.details.get("trade_samples", []) %}
+            <p><strong>Signal summary</strong></p>
+            <div class="table-wrap">
+              <table class="table">
+                <tbody>
+                  <tr><th>pseudocode_lines</th><td>{{ signal.get("pseudocode_lines", []) | length }}</td></tr>
+                  <tr><th>variable_count</th><td>{{ signal.get("variable_count", 0) }}</td></tr>
+                  <tr><th>assertion_count</th><td>{{ signal.get("assertion_count", 0) }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            {% if signal.get("pseudocode_lines") and signal.get("pseudocode_lines")|length > 0 %}
+              <pre class="code">{{ signal.get("pseudocode_lines", []) | join("\n") }}</pre>
+            {% endif %}
+            <p><strong>Return/Drawdown/Gate summary</strong></p>
+            <div class="table-wrap">
+              <table class="table">
+                <tbody>
+                  <tr><th>run_id</th><td>{{ perf.get("run_id", "") }}</td></tr>
+                  <tr><th>total_return</th><td>{{ perf.get("total_return", "") }}</td></tr>
+                  <tr><th>max_drawdown</th><td>{{ perf.get("max_drawdown", "") }}</td></tr>
+                  <tr><th>sharpe</th><td>{{ perf.get("sharpe", "") }}</td></tr>
+                  <tr><th>trade_count</th><td>{{ perf.get("trade_count", "") }}</td></tr>
+                  <tr><th>overall_pass</th><td>{{ gate.get("overall_pass", false) }}</td></tr>
+                  <tr><th>failed_gates</th><td>{{ gate.get("failed_gate_ids", []) | join(", ") }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p><strong>Trade samples</strong></p>
+            {% if trade_rows and trade_rows|length > 0 %}
+              {% set trade_cols = trade_rows[0].keys() %}
+              <div class="table-wrap">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      {% for c in trade_cols %}
+                      <th>{{ c }}</th>
+                      {% endfor %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for row in trade_rows %}
+                    <tr>
+                      {% for c in trade_cols %}
+                      <td>{{ row.get(c, "") }}</td>
+                      {% endfor %}
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="plot-fallback">No trade sample rows yet.</div>
+            {% endif %}
+          {% endif %}
+          {% if card.phase == "improvements" and card.details %}
+            {% set attr = card.details.get("attribution_summary", {}) %}
+            {% set candidates = card.details.get("improvement_candidates", []) %}
+            {% set registry_state = card.details.get("registry_state", {}) %}
+            {% set composer = card.details.get("composer_result", {}) %}
+            <p><strong>Attribution summary</strong></p>
+            <div class="table-wrap">
+              <table class="table">
+                <tbody>
+                  <tr><th>available</th><td>{{ attr.get("available", false) }}</td></tr>
+                  <tr><th>net_return</th><td>{{ attr.get("net_return", "") }}</td></tr>
+                  <tr><th>gross_return</th><td>{{ attr.get("gross_return", "") }}</td></tr>
+                  <tr><th>max_drawdown</th><td>{{ attr.get("max_drawdown", "") }}</td></tr>
+                  <tr><th>trade_count</th><td>{{ attr.get("trade_count", "") }}</td></tr>
+                  <tr><th>overall_pass</th><td>{{ attr.get("overall_pass", "") }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p><strong>Improvement candidates</strong></p>
+            {% if candidates and candidates|length > 0 %}
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>proposal_id</th><th>title</th><th>rationale_refs</th></tr></thead>
+                <tbody>
+                  {% for row in candidates %}
+                  <tr>
+                    <td>{{ row.get("proposal_id", "") }}</td>
+                    <td>{{ row.get("title", "") }}</td>
+                    <td>{{ row.get("rationale_ref_count", 0) }}</td>
                   </tr>
                   {% endfor %}
                 </tbody>
               </table>
             </div>
+            {% else %}
+              <div class="plot-fallback">No improvement candidates.</div>
+            {% endif %}
+            <p><strong>Registry/card state + composer result</strong></p>
+            <div class="table-wrap">
+              <table class="table">
+                <tbody>
+                  <tr><th>card_id</th><td>{{ registry_state.get("card_id", "") }}</td></tr>
+                  <tr><th>card_available</th><td>{{ registry_state.get("available", false) }}</td></tr>
+                  <tr><th>card_status</th><td>{{ registry_state.get("effective_status", "") }}</td></tr>
+                  <tr><th>eligible_for_compose</th><td>{{ composer.get("eligible_for_compose", false) }}</td></tr>
+                  <tr><th>compose_candidate_count</th><td>{{ composer.get("candidate_count", 0) }}</td></tr>
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+          {% if card.details and card.details.get("g356_dependency_field_map") %}
+            <details>
+              <summary>G356 dependency field map</summary>
+              <div class="table-wrap">
+                <table class="table">
+                  <thead><tr><th>field</th><th>required_by</th><th>present</th><th>path</th></tr></thead>
+                  <tbody>
+                    {% for row in card.details.get("g356_dependency_field_map", []) %}
+                    <tr>
+                      <td>{{ row.get("field", "") }}</td>
+                      <td>{{ row.get("required_by", "") }}</td>
+                      <td>{{ row.get("present", false) }}</td>
+                      <td><code>{{ row.get("path", "") }}</code></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          {% endif %}
+          {% if card.evidence_artifact_rows and card.evidence_artifact_rows|length > 0 %}
+            <p><strong>Expanded evidence</strong></p>
+            {% for ev in card.evidence_artifact_rows %}
+              <details>
+                <summary>Raw artifact path: <code>{{ ev.raw_path }}</code></summary>
+                <p class="muted">resolved: <code>{{ ev.resolved_path }}</code> | kind: {{ ev.kind }} | size: {{ ev.size_bytes }} bytes</p>
+                {% if not ev.safe %}
+                  <div class="plot-fallback">Blocked by safe path guard: {{ ev.blocked_reason }}</div>
+                {% elif not ev.exists %}
+                  <div class="plot-fallback">Artifact file does not exist.</div>
+                {% elif ev.kind == "json" %}
+                  <p><strong>JSON detail view</strong></p>
+                  {% if ev.preview_error %}
+                    <div class="plot-fallback">{{ ev.preview_error }}</div>
+                  {% else %}
+                    <pre class="code">{{ ev.preview_json }}</pre>
+                  {% endif %}
+                {% elif ev.kind == "csv" %}
+                  <p><strong>CSV detail view</strong></p>
+                  {% if ev.preview_rows and ev.preview_rows|length > 0 %}
+                    <div class="table-wrap">
+                      <table class="table">
+                        <thead>
+                          <tr>
+                            {% for c in ev.preview_columns %}
+                            <th>{{ c }}</th>
+                            {% endfor %}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {% for row in ev.preview_rows %}
+                          <tr>
+                            {% for c in ev.preview_columns %}
+                            <td>{{ row.get(c, "") }}</td>
+                            {% endfor %}
+                          </tr>
+                          {% endfor %}
+                        </tbody>
+                      </table>
+                    </div>
+                  {% else %}
+                    <div class="plot-fallback">CSV file has no preview rows.</div>
+                  {% endif %}
+                {% else %}
+                  <p><strong>Text detail view</strong></p>
+                  {% if ev.preview_error %}
+                    <div class="plot-fallback">{{ ev.preview_error }}</div>
+                  {% else %}
+                    <pre class="code">{{ ev.preview_text }}</pre>
+                  {% endif %}
+                {% endif %}
+              </details>
+            {% endfor %}
           {% endif %}
           <details>
             <summary>Evidence details (collapsed by default)</summary>

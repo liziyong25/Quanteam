@@ -456,6 +456,14 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
 
     client = TestClient(app)
 
+    # WB-037: direct workbench shell is reachable with stable markers.
+    r = client.get("/ui/workbench")
+    assert r.status_code == 200
+    assert "Workbench API Quick Start" in r.text
+    assert "Create Workbench Session" in r.text
+    assert "GET /ui/workbench" in r.text
+    assert client.head("/ui/workbench").status_code == 200
+
     # WB-002: dedicated requirement entry exists and existing review pages remain reachable.
     r = client.get("/ui/workbench/req/wb-002")
     assert r.status_code == 200
@@ -463,6 +471,19 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert "Requirement entry alias" in r.text
     r = client.get("/ui/workbench/req/wb-028")
     assert r.status_code == 200
+    expected_route_contract = (
+        ("POST", "/workbench/sessions"),
+        ("GET", "/workbench/sessions/{session_id}"),
+        ("POST", "/workbench/sessions/{session_id}/message"),
+        ("POST", "/workbench/sessions/{session_id}/continue"),
+        ("GET", "/workbench/sessions/{session_id}/events"),
+        ("POST", "/workbench/sessions/{session_id}/fetch-probe"),
+        ("POST", "/workbench/sessions/{session_id}/steps/{step}/drafts"),
+        ("POST", "/workbench/sessions/{session_id}/steps/{step}/drafts/{version}/apply"),
+        ("GET", "/ui/workbench"),
+        ("GET", "/ui/workbench/{session_id}"),
+    )
+    assert WORKBENCH_ROUTE_INTERFACE_V43 == expected_route_contract
     for method, path in WORKBENCH_ROUTE_INTERFACE_V43:
         assert f"{method} {path}" in r.text
     assert _workbench_missing_route_pairs() == []
@@ -525,6 +546,16 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert "<details>" in page.text
     assert "Phase-0" in page.text
     assert "Phase-4" in page.text
+    assert "K-line overlay" in page.text
+    assert "Trace assertions" in page.text
+    assert "Sanity metrics" in page.text
+    assert "Signal summary" in page.text
+    assert "Trade samples" in page.text
+    assert "Return/Drawdown/Gate summary" in page.text
+    assert "Attribution summary" in page.text
+    assert "Improvement candidates" in page.text
+    assert "Registry/card state + composer result" in page.text
+    assert "Raw artifact path" in page.text
 
     sess_doc = client.get(f"/workbench/sessions/{session_id}").json()
     cards = sess_doc.get("cards")

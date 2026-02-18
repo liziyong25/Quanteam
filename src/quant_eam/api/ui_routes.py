@@ -164,6 +164,7 @@ IA_ROUTE_VIEW_CATALOG: dict[str, dict[str, str]] = {
     "/ui/cards/{card_id}": {"view_name": "Registry card detail", "template": "card.html"},
     "/ui/composer": {"view_name": "Composer", "template": "composer.html"},
     "/ui/workbench": {"view_name": "Workbench", "template": "workbench.html"},
+    "/ui/workbench/req/wb-015": {"view_name": "Workbench requirement entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-002": {"view_name": "Workbench requirement entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-028": {"view_name": "Workbench route/interface entry", "template": "workbench.html"},
     "/ui/workbench/{session_id}": {"view_name": "Workbench session", "template": "workbench.html"},
@@ -286,13 +287,264 @@ WORKBENCH_ROUTE_INTERFACE_V43: tuple[tuple[str, str], ...] = (
     ("GET", "/ui/workbench/{session_id}"),
 )
 WORKBENCH_REQUIREMENT_ENTRY_ALIASES: tuple[str, ...] = (
+    "/ui/workbench/req/wb-015",
     "/ui/workbench/req/wb-002",
     "/ui/workbench/req/wb-028",
 )
+WORKBENCH_EVIDENCE_MAX_BYTES = 262_144
+WORKBENCH_EVIDENCE_MAX_CSV_ROWS = 24
+WORKBENCH_EVIDENCE_MAX_TEXT_CHARS = 8192
+WORKBENCH_EVIDENCE_MAX_JSON_ITEMS = 24
+WORKBENCH_G356_REQUIRED_OUTPUT_FIELDS: dict[str, str] = {
+    "signal_dsl_path": "Signal summary source for WB-016.",
+    "calc_trace_plan_path": "Trace assertions source for WB-015.",
+    "calc_trace_preview_path": "K-line overlay source for WB-015.",
+    "trace_meta_path": "Trace sanity metrics source for WB-015.",
+    "dossier_path": "Backtest/attribution evidence root for WB-016/WB-017.",
+    "gate_results_path": "Gate summary source for WB-016.",
+    "improvement_proposals_path": "Improvement candidates source for WB-017.",
+    "report_summary_path": "Report summary source for WB-017.",
+    "composer_agent_plan_path": "Composer result source for WB-017.",
+}
 
 
 def _workbench_root() -> Path:
     return Path(os.getenv("EAM_ARTIFACT_ROOT", "/artifacts")) / "workbench"
+
+
+def _artifact_root() -> Path:
+    return Path(os.getenv("EAM_ARTIFACT_ROOT", "/artifacts"))
+
+
+def _path_within_root(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+    except Exception:
+        return False
+    return True
+
+
+def _read_csv_rows_limited(path: Path, *, max_rows: int = 20) -> list[dict[str, str]]:
+    if not path.is_file():
+        return []
+    out: list[dict[str, str]] = []
+    with path.open("r", newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            if not isinstance(row, dict):
+                continue
+            out.append({str(k): str(v) for k, v in row.items()})
+            if len(out) >= max_rows:
+                break
+    return out
+
+
+def _coerce_truthy(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    token = str(value or "").strip().lower()
+    return token in {"1", "true", "yes", "on", "y", "t"}
+
+
+def _trim_preview_json_value(value: Any, *, depth: int = 0) -> Any:
+    if depth >= 4:
+        return "<trimmed_depth>"
+    if isinstance(value, dict):
+        out: dict[str, Any] = {}
+        keys = sorted(value.keys(), key=lambda item: str(item))
+        for key in keys[:WORKBENCH_EVIDENCE_MAX_JSON_ITEMS]:
+            out[str(key)] = _trim_preview_json_value(value[key], depth=depth + 1)
+        remaining = len(keys) - WORKBENCH_EVIDENCE_MAX_JSON_ITEMS
+        if remaining > 0:
+            out["__trimmed_key_count__"] = remaining
+        return out
+    if isinstance(value, list):
+        rows = [_trim_preview_json_value(item, depth=depth + 1) for item in value[:WORKBENCH_EVIDENCE_MAX_JSON_ITEMS]]
+        remaining = len(value) - WORKBENCH_EVIDENCE_MAX_JSON_ITEMS
+        if remaining > 0:
+            rows.append(f"... (+{remaining} items)")
+        return rows
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return repr(value)
+
+
+def _safe_resolve_path(path: Path) -> Path | None:
+    try:
+        return path.resolve(strict=False)
+    except Exception:
+        return None
+
+
+def _resolve_workbench_evidence_path(path_text: str) -> tuple[Path | None, str]:
+    raw = str(path_text or "").strip()
+    if not raw:
+        return None, "empty_path"
+    candidate = Path(raw)
+    repo_root = _repo_root().resolve()
+    artifact_root = _artifact_root().resolve()
+    allowed_roots = (artifact_root, repo_root)
+
+    candidate_paths: list[Path] = []
+    if candidate.is_absolute():
+        candidate_paths.append(candidate)
+    else:
+        candidate_paths.append(repo_root / candidate)
+        candidate_paths.append(artifact_root / candidate)
+
+    first_safe: Path | None = None
+    first_existing_safe: Path | None = None
+    for item in candidate_paths:
+        resolved = _safe_resolve_path(item)
+        if resolved is None:
+            continue
+        if not any(_path_within_root(resolved, root) for root in allowed_roots):
+            continue
+        if first_safe is None:
+            first_safe = resolved
+        if resolved.is_file():
+            first_existing_safe = resolved
+            break
+
+    if first_existing_safe is not None:
+        return first_existing_safe, ""
+    if first_safe is not None:
+        return first_safe, ""
+    return None, "path_outside_allowed_roots"
+
+
+def _json_preview_from_path(path: Path) -> tuple[str, bool, str]:
+    size = path.stat().st_size if path.is_file() else 0
+    if size > WORKBENCH_EVIDENCE_MAX_BYTES:
+        return "", True, "json_too_large_for_preview"
+    try:
+        payload = _load_json(path)
+    except Exception:
+        return "", False, "invalid_json"
+    trimmed = _trim_preview_json_value(payload)
+    rendered = json.dumps(trimmed, ensure_ascii=True, indent=2, sort_keys=True)
+    return rendered, False, ""
+
+
+def _csv_preview_from_path(path: Path) -> tuple[list[dict[str, str]], list[str], bool]:
+    rows = _read_csv_rows_limited(path, max_rows=WORKBENCH_EVIDENCE_MAX_CSV_ROWS)
+    columns: list[str] = []
+    if rows:
+        columns = [str(k) for k in rows[0].keys()]
+    total_line_count = 0
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            total_line_count = max(0, sum(1 for _ in f) - 1)
+    except Exception:
+        total_line_count = len(rows)
+    return rows, columns, total_line_count > len(rows)
+
+
+def _text_preview_from_path(path: Path) -> tuple[str, bool]:
+    with path.open("r", encoding="utf-8", errors="replace") as f:
+        content = f.read(WORKBENCH_EVIDENCE_MAX_TEXT_CHARS + 1)
+    truncated = len(content) > WORKBENCH_EVIDENCE_MAX_TEXT_CHARS
+    if truncated:
+        content = content[:WORKBENCH_EVIDENCE_MAX_TEXT_CHARS]
+    return content, truncated
+
+
+def _collect_workbench_evidence_artifact_rows(card_doc: dict[str, Any]) -> list[dict[str, Any]]:
+    evidence = card_doc.get("evidence") if isinstance(card_doc.get("evidence"), dict) else {}
+    refs: list[str] = []
+
+    card_path = str(card_doc.get("artifact_path") or "").strip()
+    if card_path:
+        refs.append(card_path)
+    for key in ("events_path", "session_path", "cards_index_path"):
+        token = str(evidence.get(key) or "").strip()
+        if token:
+            refs.append(token)
+    artifacts_raw = evidence.get("artifacts") if isinstance(evidence.get("artifacts"), list) else []
+    for item in artifacts_raw:
+        token = str(item).strip()
+        if token:
+            refs.append(token)
+
+    seen: set[str] = set()
+    unique_refs: list[str] = []
+    for ref in refs:
+        if ref in seen:
+            continue
+        seen.add(ref)
+        unique_refs.append(ref)
+
+    rows: list[dict[str, Any]] = []
+    for ref in unique_refs[:WORKBENCH_EVIDENCE_MAX_JSON_ITEMS]:
+        resolved, error = _resolve_workbench_evidence_path(ref)
+        row: dict[str, Any] = {
+            "raw_path": ref,
+            "safe": resolved is not None,
+            "resolved_path": resolved.as_posix() if resolved is not None else "",
+            "exists": bool(resolved and resolved.is_file()),
+            "kind": "unavailable",
+            "size_bytes": 0,
+            "blocked_reason": error,
+            "truncated": False,
+            "preview_json": "",
+            "preview_rows": [],
+            "preview_columns": [],
+            "preview_text": "",
+            "preview_error": "",
+        }
+        if resolved is None or (not resolved.is_file()):
+            rows.append(row)
+            continue
+
+        try:
+            row["size_bytes"] = int(resolved.stat().st_size)
+        except Exception:
+            row["size_bytes"] = 0
+        suffix = resolved.suffix.lower()
+        if suffix == ".json":
+            row["kind"] = "json"
+            preview_json, truncated, preview_error = _json_preview_from_path(resolved)
+            row["preview_json"] = preview_json
+            row["truncated"] = truncated
+            row["preview_error"] = preview_error
+        elif suffix == ".csv":
+            row["kind"] = "csv"
+            preview_rows, preview_columns, truncated = _csv_preview_from_path(resolved)
+            row["preview_rows"] = preview_rows
+            row["preview_columns"] = preview_columns
+            row["truncated"] = truncated
+        else:
+            row["kind"] = "text"
+            try:
+                preview_text, truncated = _text_preview_from_path(resolved)
+                row["preview_text"] = preview_text
+                row["truncated"] = truncated
+            except Exception:
+                row["preview_error"] = "text_preview_failed"
+        rows.append(row)
+    return rows
+
+
+def _workbench_dependency_field_map(outputs_index: dict[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for field, usage in WORKBENCH_G356_REQUIRED_OUTPUT_FIELDS.items():
+        token = str(outputs_index.get(field) or "").strip()
+        rows.append(
+            {
+                "field": field,
+                "required_by": usage,
+                "present": bool(token),
+                "path": token,
+            }
+        )
+    return rows
+
+
+def _resolve_existing_evidence_path(path_text: str) -> Path | None:
+    resolved, _ = _resolve_workbench_evidence_path(path_text)
+    if resolved is None or (not resolved.is_file()):
+        return None
+    return resolved
 
 
 def _workbench_sessions_root() -> Path:
@@ -831,6 +1083,318 @@ def _ensure_workbench_phase_card(
     return card_doc
 
 
+def _workbench_trace_preview_feedback(session: dict[str, Any]) -> tuple[dict[str, Any], list[str], list[str]]:
+    job_id = str(session.get("job_id") or "").strip()
+    outputs_index = _load_job_outputs_index(job_id) if job_id else {}
+    fetch_paths = session.get("fetch_evidence_paths") if isinstance(session.get("fetch_evidence_paths"), dict) else {}
+
+    trace_csv_token = str(outputs_index.get("calc_trace_preview_path") or "").strip()
+    trace_meta_token = str(outputs_index.get("trace_meta_path") or "").strip()
+    trace_plan_token = str(outputs_index.get("calc_trace_plan_path") or "").strip()
+    fetch_meta_token = str(fetch_paths.get("fetch_result_meta_path") or session.get("last_fetch_probe") or "").strip()
+
+    trace_csv_path = _resolve_existing_evidence_path(trace_csv_token)
+    trace_meta_path = _resolve_existing_evidence_path(trace_meta_token)
+    trace_plan_path = _resolve_existing_evidence_path(trace_plan_token)
+    fetch_meta_path = _resolve_existing_evidence_path(fetch_meta_token)
+
+    sample_rows = _read_csv_rows_limited(trace_csv_path, max_rows=20) if trace_csv_path is not None else []
+    symbols = sorted({str(row.get("symbol") or "").strip() for row in sample_rows if str(row.get("symbol") or "").strip()})
+    dt_tokens = [str(row.get("dt") or "").strip() for row in sample_rows if str(row.get("dt") or "").strip()]
+    dt_start = min(dt_tokens) if dt_tokens else ""
+    dt_end = max(dt_tokens) if dt_tokens else ""
+    entry_lagged_true_count = len([row for row in sample_rows if _coerce_truthy(row.get("entry_lagged"))])
+    exit_lagged_true_count = len([row for row in sample_rows if _coerce_truthy(row.get("exit_lagged"))])
+
+    trace_meta_doc = _load_json_dict(trace_meta_path.as_posix()) if trace_meta_path is not None else {}
+    fetch_meta_doc = _load_json_dict(fetch_meta_path.as_posix()) if fetch_meta_path is not None else {}
+    trace_plan_doc = _load_json_dict(trace_plan_path.as_posix()) if trace_plan_path is not None else {}
+
+    assertion_rows = trace_plan_doc.get("assertions") if isinstance(trace_plan_doc.get("assertions"), list) else []
+    assertion_samples: list[str] = []
+    for row in assertion_rows[:6]:
+        if isinstance(row, dict):
+            label = str(row.get("assertion_id") or row.get("name") or row.get("check_id") or "").strip()
+            text = str(row.get("expression") or row.get("expr") or row.get("description") or "").strip()
+            if label and text:
+                assertion_samples.append(f"{label}: {text}")
+            elif label:
+                assertion_samples.append(label)
+            elif text:
+                assertion_samples.append(text)
+            else:
+                assertion_samples.append(json.dumps(row, ensure_ascii=True, sort_keys=True))
+        else:
+            token = str(row).strip()
+            if token:
+                assertion_samples.append(token)
+
+    fetch_sanity_raw = fetch_meta_doc.get("sanity_checks") if isinstance(fetch_meta_doc.get("sanity_checks"), dict) else {}
+    missing_ratio = fetch_sanity_raw.get("missing_ratio_by_column")
+    nonzero_missing_columns: list[str] = []
+    if isinstance(missing_ratio, dict):
+        for col, ratio in missing_ratio.items():
+            try:
+                ratio_value = float(ratio)
+            except Exception:
+                continue
+            if ratio_value > 0:
+                nonzero_missing_columns.append(str(col))
+    nonzero_missing_columns = sorted(set(nonzero_missing_columns))
+
+    sanity_metrics = {
+        "trace_meta": trace_meta_doc if isinstance(trace_meta_doc, dict) else {},
+        "fetch_sanity": {
+            "preview_row_count": int(fetch_sanity_raw.get("preview_row_count") or 0) if isinstance(fetch_sanity_raw, dict) else 0,
+            "timestamp_monotonic_non_decreasing": bool(fetch_sanity_raw.get("timestamp_monotonic_non_decreasing")) if isinstance(fetch_sanity_raw, dict) else False,
+            "timestamp_duplicate_count": int(fetch_sanity_raw.get("timestamp_duplicate_count") or 0) if isinstance(fetch_sanity_raw, dict) else 0,
+            "dtype_reasonable": bool(fetch_sanity_raw.get("dtype_reasonable", True)) if isinstance(fetch_sanity_raw, dict) else True,
+            "nonzero_missing_ratio_columns": nonzero_missing_columns,
+        },
+    }
+
+    kline_overlay = {
+        "trace_preview_path": trace_csv_path.as_posix() if trace_csv_path is not None else trace_csv_token,
+        "bars": len(sample_rows),
+        "symbols": symbols,
+        "dt_start": dt_start,
+        "dt_end": dt_end,
+        "entry_lagged_true_count": entry_lagged_true_count,
+        "exit_lagged_true_count": exit_lagged_true_count,
+        "sample_rows": sample_rows,
+    }
+    trace_assertions = {
+        "count": len(assertion_rows),
+        "source_path": trace_plan_path.as_posix() if trace_plan_path is not None else trace_plan_token,
+        "samples": assertion_samples,
+    }
+    summary_lines = [
+        "Demo feedback card assembled from trace preview artifacts.",
+        f"K-line overlay: {len(sample_rows)} bars across {len(symbols)} symbols ({dt_start or '?'} -> {dt_end or '?'})",
+        f"Trace assertions: {len(assertion_rows)} checks",
+        (
+            "Sanity metrics: "
+            f"preview_rows={sanity_metrics['fetch_sanity']['preview_row_count']}, "
+            f"duplicate_ts={sanity_metrics['fetch_sanity']['timestamp_duplicate_count']}, "
+            f"monotonic={sanity_metrics['fetch_sanity']['timestamp_monotonic_non_decreasing']}"
+        ),
+    ]
+    artifacts = [
+        token
+        for token in [
+            trace_csv_path.as_posix() if trace_csv_path is not None else trace_csv_token,
+            trace_meta_path.as_posix() if trace_meta_path is not None else trace_meta_token,
+            trace_plan_path.as_posix() if trace_plan_path is not None else trace_plan_token,
+            fetch_meta_path.as_posix() if fetch_meta_path is not None else fetch_meta_token,
+        ]
+        if token
+    ]
+    details = {
+        "kline_overlay": kline_overlay,
+        "trace_assertions": trace_assertions,
+        "sanity_metrics": sanity_metrics,
+        "sample_rows": sample_rows,
+        "g356_dependency_field_map": _workbench_dependency_field_map(outputs_index),
+    }
+    return details, summary_lines, artifacts
+
+
+def _workbench_runspec_feedback(session: dict[str, Any]) -> tuple[dict[str, Any], list[str], list[str]]:
+    job_id = str(session.get("job_id") or "").strip()
+    outputs_index = _load_job_outputs_index(job_id) if job_id else {}
+    readable = _workbench_strategy_readable_summary(job_id=job_id) if job_id else {}
+
+    dossier_token = str(outputs_index.get("dossier_path") or "").strip()
+    gate_token = str(outputs_index.get("gate_results_path") or "").strip()
+    run_id = str(outputs_index.get("run_id") or "").strip()
+
+    dossier_path = _resolve_existing_evidence_path(dossier_token)
+    gate_results_path = _resolve_existing_evidence_path(gate_token)
+    if gate_results_path is None and dossier_path is not None:
+        gate_results_path = _resolve_existing_evidence_path((dossier_path / "gate_results.json").as_posix())
+
+    metrics_path = _resolve_existing_evidence_path((dossier_path / "metrics.json").as_posix()) if dossier_path is not None else None
+    trades_path = _resolve_existing_evidence_path((dossier_path / "trades.csv").as_posix()) if dossier_path is not None else None
+
+    metrics_doc = _load_json_dict(metrics_path.as_posix()) if metrics_path is not None else {}
+    gate_doc = _load_json_dict(gate_results_path.as_posix()) if gate_results_path is not None else {}
+    trade_samples = _read_csv_rows_limited(trades_path, max_rows=12) if trades_path is not None else []
+
+    results = gate_doc.get("results") if isinstance(gate_doc.get("results"), list) else []
+    failed_gate_ids: list[str] = []
+    for row in results:
+        if not isinstance(row, dict):
+            continue
+        if row.get("pass") is True:
+            continue
+        gate_id = str(row.get("gate_id") or "").strip() or "unknown_gate"
+        failed_gate_ids.append(gate_id)
+
+    var_summary = readable.get("variable_dictionary_summary") if isinstance(readable, dict) else {}
+    trace_summary = readable.get("trace_plan_summary") if isinstance(readable, dict) else {}
+    signal_summary = {
+        "pseudocode_lines": readable.get("pseudocode_lines") if isinstance(readable.get("pseudocode_lines"), list) else [],
+        "variable_count": int(var_summary.get("variable_count") or 0) if isinstance(var_summary, dict) else 0,
+        "assertion_count": int(trace_summary.get("assertion_count") or 0) if isinstance(trace_summary, dict) else 0,
+        "source_paths": readable.get("source_paths") if isinstance(readable.get("source_paths"), dict) else {},
+    }
+    performance_summary = {
+        "run_id": run_id,
+        "total_return": metrics_doc.get("total_return"),
+        "max_drawdown": metrics_doc.get("max_drawdown"),
+        "sharpe": metrics_doc.get("sharpe"),
+        "trade_count": metrics_doc.get("trade_count"),
+    }
+    gate_summary = {
+        "overall_pass": bool(gate_doc.get("overall_pass")) if isinstance(gate_doc, dict) else False,
+        "failed_gate_ids": failed_gate_ids,
+        "gate_count": len(results),
+    }
+    summary_lines = [
+        "Backtest feedback card assembled from run dossier outputs.",
+        (
+            "Signal summary: "
+            f"{len(signal_summary['pseudocode_lines'])} pseudocode lines, "
+            f"{signal_summary['variable_count']} vars, "
+            f"{signal_summary['assertion_count']} assertions."
+        ),
+        f"Trade samples: {len(trade_samples)} rows.",
+        (
+            "Return/Drawdown/Gate: "
+            f"total_return={performance_summary['total_return']}, "
+            f"max_drawdown={performance_summary['max_drawdown']}, "
+            f"overall_pass={gate_summary['overall_pass']}"
+        ),
+    ]
+    artifacts = [
+        token
+        for token in [
+            dossier_path.as_posix() if dossier_path is not None else dossier_token,
+            metrics_path.as_posix() if metrics_path is not None else "",
+            trades_path.as_posix() if trades_path is not None else "",
+            gate_results_path.as_posix() if gate_results_path is not None else gate_token,
+        ]
+        if token
+    ]
+    source_paths = signal_summary.get("source_paths")
+    if isinstance(source_paths, dict):
+        for value in source_paths.values():
+            token = str(value or "").strip()
+            if token:
+                artifacts.append(token)
+    details = {
+        "signal_summary": signal_summary,
+        "trade_samples": trade_samples,
+        "performance_summary": performance_summary,
+        "gate_summary": gate_summary,
+        "g356_dependency_field_map": _workbench_dependency_field_map(outputs_index),
+    }
+    return details, summary_lines, artifacts
+
+
+def _workbench_improvements_feedback(session: dict[str, Any]) -> tuple[dict[str, Any], list[str], list[str]]:
+    job_id = str(session.get("job_id") or "").strip()
+    outputs_index = _load_job_outputs_index(job_id) if job_id else {}
+
+    dossier_token = str(outputs_index.get("dossier_path") or "").strip()
+    proposals_token = str(outputs_index.get("improvement_proposals_path") or "").strip()
+    composer_plan_token = str(outputs_index.get("composer_agent_plan_path") or "").strip()
+
+    dossier_path = _resolve_existing_evidence_path(dossier_token)
+    attribution_path = _resolve_existing_evidence_path((dossier_path / "attribution_report.json").as_posix()) if dossier_path is not None else None
+    proposals_path = _resolve_existing_evidence_path(proposals_token)
+    composer_plan_path = _resolve_existing_evidence_path(composer_plan_token)
+
+    attribution_doc = _load_json_dict(attribution_path.as_posix()) if attribution_path is not None else {}
+    proposals_doc = _load_json_dict(proposals_path.as_posix()) if proposals_path is not None else {}
+    composer_doc = _load_json_dict(composer_plan_path.as_posix()) if composer_plan_path is not None else {}
+
+    returns_doc = attribution_doc.get("returns") if isinstance(attribution_doc.get("returns"), dict) else {}
+    drawdown_doc = attribution_doc.get("drawdown") if isinstance(attribution_doc.get("drawdown"), dict) else {}
+    trades_doc = attribution_doc.get("trades") if isinstance(attribution_doc.get("trades"), dict) else {}
+    gate_summary_doc = attribution_doc.get("gate_summary") if isinstance(attribution_doc.get("gate_summary"), dict) else {}
+    attribution_summary = {
+        "available": bool(attribution_doc),
+        "net_return": returns_doc.get("net_return"),
+        "gross_return": returns_doc.get("gross_return"),
+        "max_drawdown": drawdown_doc.get("max_drawdown"),
+        "trade_count": trades_doc.get("trade_count"),
+        "overall_pass": gate_summary_doc.get("overall_pass"),
+    }
+
+    proposals = proposals_doc.get("proposals") if isinstance(proposals_doc.get("proposals"), list) else []
+    improvement_candidates: list[dict[str, Any]] = []
+    for row in proposals[:10]:
+        if not isinstance(row, dict):
+            continue
+        refs = row.get("rationale_refs") if isinstance(row.get("rationale_refs"), list) else []
+        improvement_candidates.append(
+            {
+                "proposal_id": str(row.get("proposal_id") or ""),
+                "title": str(row.get("title") or ""),
+                "rationale_ref_count": len(refs),
+            }
+        )
+
+    card_id = str(outputs_index.get("card_id") or "").strip()
+    registry_state: dict[str, Any] = {"card_id": card_id, "available": False}
+    if card_id:
+        try:
+            card_doc = reg_show_card(registry_root=registry_root(), card_id=card_id)
+        except Exception:
+            card_doc = {}
+        if isinstance(card_doc, dict):
+            registry_state = {
+                "card_id": card_id,
+                "available": True,
+                "title": str(card_doc.get("title") or ""),
+                "effective_status": str(card_doc.get("effective_status") or ""),
+                "primary_run_id": str(card_doc.get("primary_run_id") or ""),
+            }
+
+    compose_candidates = composer_doc.get("compose_candidates") if isinstance(composer_doc.get("compose_candidates"), list) else []
+    composer_result = {
+        "available": bool(composer_doc),
+        "eligible_for_compose": bool(composer_doc.get("eligible_for_compose")) if isinstance(composer_doc, dict) else False,
+        "candidate_count": len(compose_candidates),
+    }
+
+    summary_lines = [
+        "Improvement feedback card assembled from attribution/improvement/composer artifacts.",
+        (
+            "Attribution summary: "
+            f"net_return={attribution_summary['net_return']}, "
+            f"max_drawdown={attribution_summary['max_drawdown']}, "
+            f"trade_count={attribution_summary['trade_count']}"
+        ),
+        f"Improvement candidates: {len(improvement_candidates)}",
+        (
+            "Registry/card + composer: "
+            f"card={registry_state.get('card_id') or '(none)'}, "
+            f"status={registry_state.get('effective_status') or '(unknown)'}, "
+            f"eligible_for_compose={composer_result['eligible_for_compose']}"
+        ),
+    ]
+    artifacts = [
+        token
+        for token in [
+            attribution_path.as_posix() if attribution_path is not None else "",
+            proposals_path.as_posix() if proposals_path is not None else proposals_token,
+            composer_plan_path.as_posix() if composer_plan_path is not None else composer_plan_token,
+            str(outputs_index.get("report_summary_path") or "").strip(),
+        ]
+        if token
+    ]
+    details = {
+        "attribution_summary": attribution_summary,
+        "improvement_candidates": improvement_candidates,
+        "registry_state": registry_state,
+        "composer_result": composer_result,
+        "g356_dependency_field_map": _workbench_dependency_field_map(outputs_index),
+    }
+    return details, summary_lines, artifacts
+
+
 def _workbench_step_summary(session: dict[str, Any], *, step: str) -> tuple[list[str], dict[str, Any], list[str]]:
     idea = session.get("idea")
     idea_doc = idea if isinstance(idea, dict) else {}
@@ -886,27 +1450,13 @@ def _workbench_step_summary(session: dict[str, Any], *, step: str) -> tuple[list
             arts,
         )
     if step == "trace_preview":
-        probe_path = str(session.get("last_fetch_probe") or "").strip()
-        summary = [
-            "Demo trace preview checkpoint reached.",
-            f"Fetch probe artifact: {probe_path if probe_path else '(not generated yet)'}",
-            "Proceed after reviewing preview samples and assumptions.",
-        ]
-        arts = [probe_path] if probe_path else []
-        return summary, {"last_fetch_probe": probe_path}, arts
+        details, summary, artifacts = _workbench_trace_preview_feedback(session)
+        return summary, details, artifacts
     if step == "runspec":
-        summary = [
-            "Research backtest stage prepared.",
-            "RunSpec evidence remains deterministic and append-only.",
-            f"Job binding: {str(session.get('job_id') or '')}",
-        ]
-        return summary, {"job_id": str(session.get("job_id") or "")}, []
-    summary = [
-        "Improvement stage reached.",
-        "Artifacts remain traceable for approval and replay.",
-        "Session can be replayed from event log + card index.",
-    ]
-    return summary, {"status": str(session.get("status") or "active")}, []
+        details, summary, artifacts = _workbench_runspec_feedback(session)
+        return summary, details, artifacts
+    details, summary, artifacts = _workbench_improvements_feedback(session)
+    return summary, details, artifacts
 
 
 def _workbench_card_api_payload(card_doc: dict[str, Any]) -> dict[str, Any]:
@@ -945,6 +1495,7 @@ def _workbench_cards_for_view(session: dict[str, Any]) -> list[dict[str, Any]]:
         evidence = doc.get("evidence") if isinstance(doc.get("evidence"), dict) else {}
         details = doc.get("details") if isinstance(doc.get("details"), (dict, list)) else {}
         summary_lines = doc.get("summary_lines") if isinstance(doc.get("summary_lines"), list) else []
+        evidence_artifact_rows = _collect_workbench_evidence_artifact_rows(doc)
         out.append(
             {
                 "card_id": str(doc.get("card_id") or ""),
@@ -957,6 +1508,7 @@ def _workbench_cards_for_view(session: dict[str, Any]) -> list[dict[str, Any]]:
                 "details": details if isinstance(details, dict) else {},
                 "evidence_json": json.dumps(evidence, ensure_ascii=True, indent=2, sort_keys=True),
                 "details_json": json.dumps(details, ensure_ascii=True, indent=2, sort_keys=True),
+                "evidence_artifact_rows": evidence_artifact_rows,
                 "created_at": str(doc.get("created_at") or ""),
             }
         )
@@ -7172,6 +7724,12 @@ async def workbench_session_apply_draft(session_id: str, step: str, version: str
 def ui_workbench(request: Request) -> HTMLResponse:
     ctx = _workbench_index_context()
     return TEMPLATES.TemplateResponse(request, "workbench.html", ctx)
+
+
+@router.api_route("/ui/workbench/req/wb-015", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb015(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G364.
+    return ui_workbench(request)
 
 
 @router.api_route("/ui/workbench/req/wb-002", methods=["GET", "HEAD"], response_class=HTMLResponse)
