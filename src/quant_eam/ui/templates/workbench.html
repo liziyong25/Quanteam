@@ -95,6 +95,29 @@
       </p>
   </div>
 
+  <div class="card">
+    <h2>WB-045 Phase Result Card Matrix</h2>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>phase</th><th>step</th><th>title</th><th>result cards</th><th>actions</th><th>evidence anchors</th></tr>
+        </thead>
+        <tbody>
+          {% for row in phase_result_matrix %}
+          <tr>
+            <td><span class="pill">{{ row.phase_label }}</span></td>
+            <td><code>{{ row.step }}</code></td>
+            <td>{{ row.title }}</td>
+            <td>{{ row.result_cards | join(" | ") }}</td>
+            <td>{{ row.actions | join(" | ") }}</td>
+            <td>{{ row.evidence_focus | join(" | ") }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
   {% if selected_session %}
       {% set s = selected_session.session %}
     <div class="card" id="workbench-session-detail" data-session-id="{{ s.session_id }}" data-event-count="{{ selected_session.event_count }}">
@@ -304,11 +327,15 @@
       {% endif %}
 
       <h3>Result Cards ({{ selected_session.cards_count }})</h3>
-      {% if selected_session.cards and selected_session.cards|length > 0 %}
+      {% if selected_session.phase_cards and selected_session.phase_cards|length > 0 %}
       <div class="card-stack">
-        {% for card in selected_session.cards %}
-        <div class="card">
-          <p><strong>{{ card.phase_label }}</strong> | {{ card.title }} | <code>{{ card.card_id }}</code></p>
+        {% for phase_row in selected_session.phase_cards %}
+        {% set card = phase_row.card if phase_row.card else {} %}
+        <div class="card" data-testid="workbench-phase-card-{{ phase_row.step }}">
+          <p><strong>{{ phase_row.phase_label }}</strong> | {{ phase_row.title }} | <code>{{ card.card_id if phase_row.available else "pending" }}</code></p>
+          <p class="muted">Expected result cards: {{ phase_row.result_cards | join(" | ") }}</p>
+          <p class="muted">Expected actions: {{ phase_row.actions | join(" | ") }}</p>
+          {% if phase_row.available %}
           {% if card.summary_lines and card.summary_lines|length > 0 %}
           <ul>
             {% for line in card.summary_lines %}
@@ -600,6 +627,9 @@
             <pre class="code">{{ card.details_json }}</pre>
           </details>
           <p class="muted"><code>{{ card.artifact_path }}</code></p>
+          {% else %}
+          <div class="plot-fallback">No result card yet for this phase. Continue the session to generate it.</div>
+          {% endif %}
         </div>
         {% endfor %}
       </div>

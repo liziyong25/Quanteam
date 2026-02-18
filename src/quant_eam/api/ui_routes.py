@@ -272,12 +272,117 @@ WORKBENCH_ENDPOINT_SCHEMA_VERSIONS: dict[str, str] = {
     "draft_rollback_response": "workbench_step_draft_rollback_response_v1",
     "step_rerun_response": "workbench_step_rerun_response_v1",
 }
+WORKBENCH_PHASE_RESULT_CARD_MATRIX: dict[str, dict[str, Any]] = {
+    "idea": {
+        "phase_no": 0,
+        "phase_label": "Phase-0",
+        "title": "Phase-0 Idea -> Blueprint Draft",
+        "result_cards": [
+            "DataIntent card",
+            "FetchRequest card",
+            "FetchPreview table card",
+            "Evaluation protocol card",
+            "Budget card",
+        ],
+        "actions": [
+            "toggle auto_symbols/sample",
+            "select fetch fields",
+            "adjust date window",
+            "run fetch probe",
+        ],
+        "evidence_focus": [
+            "ui_intake_bundle",
+            "fetch_request",
+            "fetch_evidence_paths",
+            "fetch_probe_preview_rows",
+        ],
+    },
+    "strategy_spec": {
+        "phase_no": 1,
+        "phase_label": "Phase-1",
+        "title": "Phase-1 Strategy Spec Confirmation",
+        "result_cards": [
+            "strategy_pseudocode card",
+            "variable_dictionary summary card",
+            "calc_trace_plan summary card",
+            "Spec-QA risk card",
+        ],
+        "actions": [
+            "edit and apply strategy draft",
+            "rollback to previous draft",
+        ],
+        "evidence_focus": [
+            "signal_dsl_path",
+            "calc_trace_plan_path",
+            "selected_draft_path",
+        ],
+    },
+    "trace_preview": {
+        "phase_no": 2,
+        "phase_label": "Phase-2",
+        "title": "Phase-2 Demo Validation",
+        "result_cards": [
+            "K-line overlay card",
+            "trace assertion card",
+            "fetch evidence summary card",
+            "sanity metrics card",
+        ],
+        "actions": [
+            "rerun current step when checks fail",
+            "rollback to Phase-1 draft and retry",
+        ],
+        "evidence_focus": [
+            "calc_trace_preview_path",
+            "trace_meta_path",
+            "calc_trace_plan_path",
+            "fetch_result_meta_path",
+        ],
+    },
+    "runspec": {
+        "phase_no": 3,
+        "phase_label": "Phase-3",
+        "title": "Phase-3 Research Backtest",
+        "result_cards": [
+            "backtest summary card",
+            "trade sample card",
+            "signal summary card",
+            "gate summary card",
+            "run jump card",
+        ],
+        "actions": [
+            "continue to Phase-4",
+            "rerun current step",
+        ],
+        "evidence_focus": [
+            "dossier_path",
+            "gate_results_path",
+            "run_id",
+        ],
+    },
+    "improvements": {
+        "phase_no": 4,
+        "phase_label": "Phase-4",
+        "title": "Phase-4 Evaluation / Improvement / Registry / Compose",
+        "result_cards": [
+            "attribution summary card",
+            "improvement candidates card",
+            "registry state card",
+            "composer result card",
+        ],
+        "actions": [
+            "generate and apply improvement candidates",
+            "run compose and review result",
+        ],
+        "evidence_focus": [
+            "attribution_report.json",
+            "improvement_proposals_path",
+            "report_summary_path",
+            "composer_agent_plan_path",
+        ],
+    },
+}
 WORKBENCH_PHASE_TITLES: dict[str, str] = {
-    "idea": "Phase-0 Idea Intake",
-    "strategy_spec": "Phase-1 Strategy Spec",
-    "trace_preview": "Phase-2 Demo Trace Preview",
-    "runspec": "Phase-3 Research Backtest",
-    "improvements": "Phase-4 Improvements and Registry",
+    step: str(spec.get("title") or step) for step, spec in WORKBENCH_PHASE_RESULT_CARD_MATRIX.items()
 }
 WORKBENCH_STEP_RERUN_AGENT_MAP: dict[str, str] = {
     "idea": "intent_agent_v1",
@@ -480,6 +585,11 @@ def _collect_workbench_evidence_artifact_rows(card_doc: dict[str, Any]) -> list[
             refs.append(token)
     artifacts_raw = evidence.get("artifacts") if isinstance(evidence.get("artifacts"), list) else []
     for item in artifacts_raw:
+        token = str(item).strip()
+        if token:
+            refs.append(token)
+    blocked_raw = evidence.get("blocked_artifacts") if isinstance(evidence.get("blocked_artifacts"), list) else []
+    for item in blocked_raw:
         token = str(item).strip()
         if token:
             refs.append(token)
@@ -723,18 +833,93 @@ def _workbench_persistence_baseline(session_id: str, *, job_id: str) -> dict[str
 
 
 def _workbench_phase_no(step: str) -> int:
+    spec = _workbench_phase_result_spec(step)
     try:
-        return WORKBENCH_PHASE_STEPS.index(str(step))
-    except ValueError:
+        return int(spec.get("phase_no") or 0)
+    except Exception:
         return 0
 
 
 def _workbench_phase_label(step: str) -> str:
+    spec = _workbench_phase_result_spec(step)
+    token = str(spec.get("phase_label") or "").strip()
+    if token:
+        return token
     return f"Phase-{_workbench_phase_no(step)}"
 
 
 def _workbench_phase_title(step: str) -> str:
-    return str(WORKBENCH_PHASE_TITLES.get(str(step)) or str(step))
+    spec = _workbench_phase_result_spec(step)
+    token = str(spec.get("title") or "").strip()
+    if token:
+        return token
+    return str(step)
+
+
+def _workbench_phase_result_spec(step: str) -> dict[str, Any]:
+    step_id = str(step or "").strip()
+    spec = WORKBENCH_PHASE_RESULT_CARD_MATRIX.get(step_id)
+    if isinstance(spec, dict):
+        return spec
+    try:
+        phase_no = WORKBENCH_PHASE_STEPS.index(step_id)
+    except ValueError:
+        phase_no = 0
+    return {
+        "phase_no": phase_no,
+        "phase_label": f"Phase-{phase_no}",
+        "title": str(step_id or "unknown"),
+        "result_cards": [],
+        "actions": [],
+        "evidence_focus": [],
+    }
+
+
+def _workbench_phase_text_list(raw: Any) -> list[str]:
+    if not isinstance(raw, list):
+        return []
+    out: list[str] = []
+    seen: set[str] = set()
+    for item in raw:
+        token = str(item).strip()
+        if (not token) or (token in seen):
+            continue
+        seen.add(token)
+        out.append(token)
+    return out
+
+
+def _workbench_phase_summary_lines(step: str) -> list[str]:
+    spec = _workbench_phase_result_spec(step)
+    cards = _workbench_phase_text_list(spec.get("result_cards"))
+    actions = _workbench_phase_text_list(spec.get("actions"))
+    evidence_focus = _workbench_phase_text_list(spec.get("evidence_focus"))
+    return [
+        f"Result cards: {', '.join(cards) if cards else '(none)'}",
+        f"Actions: {', '.join(actions) if actions else '(none)'}",
+        f"Evidence anchors: {', '.join(evidence_focus) if evidence_focus else '(none)'}",
+    ]
+
+
+def _workbench_phase_result_matrix_rows() -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for step in WORKBENCH_PHASE_STEPS:
+        spec = _workbench_phase_result_spec(step)
+        rows.append(
+            {
+                "step": step,
+                "phase_no": _workbench_phase_no(step),
+                "phase_label": _workbench_phase_label(step),
+                "title": _workbench_phase_title(step),
+                "result_cards": _workbench_phase_text_list(spec.get("result_cards")),
+                "actions": _workbench_phase_text_list(spec.get("actions")),
+                "evidence_focus": _workbench_phase_text_list(spec.get("evidence_focus")),
+            }
+        )
+    rows.sort(key=lambda row: int(row.get("phase_no") or 0))
+    for i, row in enumerate(rows, start=1):
+        row["index"] = i
+    return rows
 
 
 def _workbench_registered_route_pairs() -> set[tuple[str, str]]:
@@ -1291,6 +1476,31 @@ def _bump_workbench_revision(session: dict[str, Any]) -> int:
     return rev
 
 
+def _workbench_normalize_artifact_refs(artifacts: list[str]) -> tuple[list[str], list[str]]:
+    safe_refs: list[str] = []
+    blocked_refs: list[str] = []
+    seen_safe: set[str] = set()
+    seen_blocked: set[str] = set()
+    for item in artifacts:
+        token = str(item).strip()
+        if not token:
+            continue
+        resolved, _ = _resolve_workbench_evidence_path(token)
+        if resolved is None:
+            if token not in seen_blocked:
+                seen_blocked.add(token)
+                blocked_refs.append(token)
+            continue
+        normalized = resolved.as_posix()
+        if normalized in seen_safe:
+            continue
+        seen_safe.add(normalized)
+        safe_refs.append(normalized)
+    safe_refs.sort()
+    blocked_refs.sort()
+    return safe_refs, blocked_refs
+
+
 def _ensure_workbench_phase_card(
     *,
     session_id: str,
@@ -1325,7 +1535,11 @@ def _ensure_workbench_phase_card(
     card_index = len(cards) + 1
     now = _now_iso()
     card_path = _workbench_cards_root(session_id) / f"card_{card_index:03d}_{step}.json"
-    evidence_artifacts = [str(x).strip() for x in artifacts if str(x).strip()]
+    phase_spec = _workbench_phase_result_spec(step)
+    phase_label = _workbench_phase_label(step)
+    phase_title = _workbench_phase_title(step)
+    summary = [str(x).strip() for x in summary_lines if str(x).strip()] or _workbench_phase_summary_lines(step)
+    evidence_artifacts, blocked_artifacts = _workbench_normalize_artifact_refs(artifacts)
     card_doc = {
         "schema_version": "workbench_card_v1",
         "card_id": f"{session_id}-{card_index:03d}",
@@ -1334,9 +1548,9 @@ def _ensure_workbench_phase_card(
         "job_id": str(session.get("job_id") or ""),
         "phase": step,
         "phase_no": _workbench_phase_no(step),
-        "phase_label": _workbench_phase_label(step),
-        "title": _workbench_phase_title(step),
-        "summary_lines": summary_lines,
+        "phase_label": phase_label,
+        "title": phase_title,
+        "summary_lines": summary,
         "details": details,
         "created_at": now,
         "artifact_path": card_path.as_posix(),
@@ -1348,9 +1562,20 @@ def _ensure_workbench_phase_card(
             "event_index": int(trigger_event.get("event_index") or 0),
             "event_type": str(trigger_event.get("event_type") or ""),
             "artifacts": evidence_artifacts,
+            "blocked_artifacts": blocked_artifacts,
+            "result_card_definition": {
+                "requirement_id": "WB-045",
+                "step": step,
+                "phase_label": phase_label,
+                "title": phase_title,
+                "result_cards": _workbench_phase_text_list(phase_spec.get("result_cards")),
+                "actions": _workbench_phase_text_list(phase_spec.get("actions")),
+                "evidence_focus": _workbench_phase_text_list(phase_spec.get("evidence_focus")),
+            },
             "governance": {
                 "append_only": True,
                 "replay_hint": "Replay from events.jsonl in event_index order and open each card artifact path.",
+                "safe_artifact_paths_only": True,
             },
         },
     }
@@ -1708,16 +1933,15 @@ def _workbench_step_summary(session: dict[str, Any], *, step: str) -> tuple[list
         symbols = [str(x).strip() for x in symbols_raw if str(x).strip()]
     elif isinstance(symbols_raw, str):
         symbols = [x.strip() for x in symbols_raw.split(",") if x.strip()]
-    title = str(idea_doc.get("title") or "").strip()
     hypothesis = str(idea_doc.get("hypothesis_text") or "").strip()
+    summary = _workbench_phase_summary_lines(step)
 
     if step == "idea":
-        summary = [
-            f"Idea: {title or '(untitled)'}",
-            f"Symbols: {', '.join(symbols) if symbols else '(none)'}",
-            "Session created and ready for strategy drafting.",
-        ]
-        return summary, {"idea": idea_doc}, []
+        details = {
+            "idea": idea_doc,
+            "symbol_count": len(symbols),
+        }
+        return summary, details, []
     if step == "strategy_spec":
         draft_meta = session.get("drafts") if isinstance(session.get("drafts"), dict) else {}
         sel = draft_meta.get("strategy_spec") if isinstance(draft_meta.get("strategy_spec"), dict) else {}
@@ -1732,13 +1956,6 @@ def _workbench_step_summary(session: dict[str, Any], *, step: str) -> tuple[list
         trace_step_count = int(trace_summary.get("step_count") or 0) if isinstance(trace_summary, dict) else 0
         assertion_count = int(trace_summary.get("assertion_count") or 0) if isinstance(trace_summary, dict) else 0
         source_paths = readable.get("source_paths") if isinstance(readable, dict) else {}
-        summary = [
-            "Strategy summary prepared for review and draft editing.",
-            f"Pseudocode lines: {len(pseudo_lines) if isinstance(pseudo_lines, list) else 0}",
-            f"Variable dictionary: {variable_count} vars ({lagged_count} lagged)",
-            f"Trace plan: {trace_step_count} steps, {assertion_count} assertions",
-            f"Selected draft: {sel_path if sel_path else '(none)'}",
-        ]
         arts = [sel_path] if sel_path else []
         if isinstance(source_paths, dict):
             for ref in source_paths.values():
@@ -1754,12 +1971,12 @@ def _workbench_step_summary(session: dict[str, Any], *, step: str) -> tuple[list
             arts,
         )
     if step == "trace_preview":
-        details, summary, artifacts = _workbench_trace_preview_feedback(session)
+        details, _, artifacts = _workbench_trace_preview_feedback(session)
         return summary, details, artifacts
     if step == "runspec":
-        details, summary, artifacts = _workbench_runspec_feedback(session)
+        details, _, artifacts = _workbench_runspec_feedback(session)
         return summary, details, artifacts
-    details, summary, artifacts = _workbench_improvements_feedback(session)
+    details, _, artifacts = _workbench_improvements_feedback(session)
     return summary, details, artifacts
 
 
@@ -2285,6 +2502,27 @@ def _job_checkpoint_from_events(events: list[dict[str, Any]]) -> str:
     return "idea"
 
 
+def _workbench_phase_cards_for_view(cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_phase: dict[str, dict[str, Any]] = {}
+    for card in cards:
+        if not isinstance(card, dict):
+            continue
+        phase = str(card.get("phase") or "").strip()
+        if (not phase) or (phase in by_phase):
+            continue
+        by_phase[phase] = card
+
+    out: list[dict[str, Any]] = []
+    for row in _workbench_phase_result_matrix_rows():
+        step = str(row.get("step") or "")
+        current = dict(row)
+        card = by_phase.get(step)
+        current["available"] = isinstance(card, dict)
+        current["card"] = card if isinstance(card, dict) else {}
+        out.append(current)
+    return out
+
+
 def _workbench_index_context() -> dict[str, Any]:
     sessions_root = _workbench_sessions_root()
     session_rows: list[dict[str, Any]] = []
@@ -2315,6 +2553,7 @@ def _workbench_index_context() -> dict[str, Any]:
         "session_count": len(session_rows),
         "route_inventory": _workbench_route_inventory(),
         "requirement_entry_aliases": list(WORKBENCH_REQUIREMENT_ENTRY_ALIASES),
+        "phase_result_matrix": _workbench_phase_result_matrix_rows(),
     }
 
 
@@ -2322,6 +2561,7 @@ def _workbench_session_context(session_id: str) -> dict[str, Any]:
     payload = _load_workbench_session(session_id)
     events = _read_workbench_events(session_id)
     cards = _workbench_cards_for_view(payload)
+    phase_cards = _workbench_phase_cards_for_view(cards)
     current_step = str(payload.get("current_step") or WORKBENCH_PHASE_STEPS[0])
     if current_step not in WORKBENCH_PHASE_STEPS:
         current_step = WORKBENCH_PHASE_STEPS[0]
@@ -2339,6 +2579,8 @@ def _workbench_session_context(session_id: str) -> dict[str, Any]:
         "event_count": len(events),
         "cards": cards,
         "cards_count": len(cards),
+        "phase_cards": phase_cards,
+        "phase_result_matrix": _workbench_phase_result_matrix_rows(),
         "steps": WORKBENCH_PHASE_STEPS,
         "cards_path": _workbench_cards_root(session_id).as_posix(),
         "current_step_recovery": {
