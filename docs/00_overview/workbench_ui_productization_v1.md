@@ -6,12 +6,13 @@
 - 适用范围: `3002 UI` 产品化改造，不替换现有审阅链路
 - 本文性质: 改造背景 + 需求 + 方案 + 主控/子代理开发流程（本轮不改代码）
 
-## 0.1 状态说明（`2026-02-17`）
+## 0.1 状态说明（`2026-02-18`）
 - 本文包含“目标态”与“当前实现态”两层信息。
 - 目标态用于产品规划；当前实现态以代码为准：
   - `src/quant_eam/api/ui_routes.py`
   - `src/quant_eam/orchestrator/workflow.py`
   - `src/quant_eam/agents/harness.py`
+- G357 已闭环 `WB-011/WB-012/WB-013/WB-014/WB-020`：会话与真实 job 绑定、continue 自动审批推进、Phase‑0 fetch 预览可视化、Strategy 可读摘要、会话事件审计增强。
 
 ## 0.2 两套主控链路（必须区分）
 - `开发执行层主控 + Subagent`（Codex 自动化交付）：
@@ -201,34 +202,36 @@
 
 ### 11.1 FR 对齐状态（按代码现状）
 
-1. `FR-001` 部分实现：
-   - 已有 `POST /workbench/sessions`，但当前仅生成 session + 占位 `job_<session_id>`，未创建真实 `jobs` 主链 job。
-   - 代码：`src/quant_eam/api/ui_routes.py:5269`
-2. `FR-002` 部分实现：
-   - 已有 `continue` 接口，但仅推进 session step，不会触发 worker/orchestrator 审批推进。
-   - 代码：`src/quant_eam/api/ui_routes.py:5370`
-3. `FR-003` 部分实现（当前为 mock）：
-   - 已有 `fetch-probe`，但当前写入 `sample_rows`，不是 qa_fetch runtime 实取。
-   - 代码：`src/quant_eam/api/ui_routes.py:5463`
-4. `FR-004` 部分实现：
-   - 有结果卡机制，但 strategy/spec/trace 内容主要是摘要占位，非真实 artifacts 组装。
+1. `FR-001` 已实现：
+   - `POST /workbench/sessions` 在 real-jobs 模式下支持基于 Idea 约束创建真实 idea job，并绑定 workbench session。
+   - 代码：`src/quant_eam/api/ui_routes.py`
+2. `FR-002` 已实现：
+   - `POST /workbench/sessions/{session_id}/continue` 在 checkpoint 上自动追加 APPROVED 并驱动 `advance_job_once` 推进到下一 checkpoint 或终态。
+   - 代码：`src/quant_eam/api/ui_routes.py`
+3. `FR-003` 已实现：
+   - `POST /workbench/sessions/{session_id}/fetch-probe` 支持 runtime 预览、错误状态回写与样本表格展示。
+   - 代码：`src/quant_eam/api/ui_routes.py`、`src/quant_eam/ui/templates/workbench.html`
+4. `FR-004` 已实现：
+   - Strategy checkpoint 展示 pseudocode、variable dictionary 摘要、trace plan 摘要（基于 job outputs 组装）。
+   - 代码：`src/quant_eam/api/ui_routes.py`、`src/quant_eam/ui/templates/workbench.html`
 5. `FR-005/FR-006/FR-007` 未完成：
    - demo/backtest/attribution/composer 卡片未通过 workbench 真实链路驱动。
 6. `FR-008` 基础实现：
    - 卡片详情支持 `<details>` 展开 evidence。
 7. `FR-009` 未完成：
    - 未形成“失败后重跑当前 step / 回退到上一步草稿并重跑 job”的闭环控制。
-8. `FR-010` 部分实现：
-   - session 事件有 append-only 日志；但与真实 `jobs/<job_id>/events.jsonl` 尚未打通。
+8. `FR-010` 已实现（会话侧）：
+   - 用户动作（create/message/continue/fetch-probe/draft）与系统动作（auto-approve/advance/fetch success|failed）均写入 session 事件日志。
+   - 代码：`src/quant_eam/api/ui_routes.py`
 
-### 11.2 与运行时 Agents Plane 的对齐缺口
+### 11.2 与运行时 Agents Plane 的已闭环项
 
-要把 workbench 对齐到运行时 `6.4 Agents Plane`，最小必须补齐：
+G357 已完成以下最小闭环：
 
-1. `workbench_session_create` 改为真实创建 idea job（复用 `create_job_from_ideaspec`）。
-2. `workbench_session_continue` 改为驱动 `approve + advance_job_once/worker`。
-3. `workbench_session_fetch_probe` 改为调用 `qa_fetch.facade.execute_fetch_request(...)` 或 runtime 等价入口。
-4. 卡片数据源改为 `artifacts/jobs/<job_id>/outputs/outputs.json` + `artifacts/dossiers/<run_id>/*`，不再用会话摘要占位。
+1. `workbench_session_create`：真实创建 idea job（`create_job_from_ideaspec`）并写回 session 绑定。
+2. `workbench_session_continue`：按 checkpoint 自动审批并推进状态机，不绕过等待审批语义。
+3. `workbench_session_fetch_probe`：使用 runtime 查询路径并将 preview/attempt evidence 写入会话上下文。
+4. Strategy 卡片改为读取 job outputs 生成可读摘要，不再仅依赖占位摘要。
 
 ### 11.3 前后端 + agent + LLM 的正确调用方式
 
@@ -245,21 +248,9 @@
 
 ### 11.4 Recipe 对齐状态（代码现实）
 
-为支持 recipe（如 MA250 one-shot）并保持与代码一致，当前仍有以下对齐缺口：
+为支持 recipe（如 MA250 one-shot）并保持与代码一致，当前主要剩余：
 
-1. `POST /workbench/sessions` 仍要求 `title/symbols/hypothesis_text`：
-   - 尚未支持 message-only 输入，也尚未在创建时调用 `POST /jobs/idea` 生成真实 job。
-   - 代码：`src/quant_eam/api/ui_routes.py:5269`
-2. `POST /workbench/sessions/{session_id}/continue` 仍是会话状态推进：
-   - 尚未读取真实 `WAITING_APPROVAL`，未调用 `/jobs/{job_id}/approve` 与 `advance_job_once(...)`。
-   - 代码：`src/quant_eam/api/ui_routes.py:5370`
-3. `POST /workbench/sessions/{session_id}/fetch-probe` 仍返回 mock `sample_rows`：
-   - 尚未调用 QA-Fetch runtime 的 intent-first 执行与 attempts 证据落盘。
-   - 代码：`src/quant_eam/api/ui_routes.py:5463`
-4. Workbench 的 job 绑定仍是占位 ID：
-   - 当前使用 `job_<session_id>`，不是 `create_job_from_ideaspec` 创建的真实 job id。
-   - 代码：`src/quant_eam/api/ui_routes.py:281`
-5. 对“投资结论”的输出尚未形成 report 扩展规范：
+1. 对“投资结论”的输出尚未形成 report 扩展规范：
    - 需在 recipe 中明确 `report_context.json` 输入与 `report_summary.json.decision` 输出字段。
    - 代码基线：`src/quant_eam/agents/report_agent.py`、`src/quant_eam/agents/harness.py`
 

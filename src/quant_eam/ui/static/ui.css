@@ -521,6 +521,11 @@ tbody tr:last-child td {
   outline-offset: 2px;
 }
 
+.btn.btn-small {
+  padding: 0.28rem 0.56rem;
+  font-size: 0.6875rem;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

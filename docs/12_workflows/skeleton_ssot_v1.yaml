@@ -19916,7 +19916,7 @@ goal_checklist:
     G355 validated.
 - id: G356
   title: Impl workbench requirement execution for WB-010
-  status_now: planned
+  status_now: implemented
   depends_on:
   - G354
   track: impl_workbench
@@ -19931,20 +19931,19 @@ goal_checklist:
   difficulty_score: 92
   reasoning_tier: medium
   todo_checklist:
-  - '确认依赖门: 在 `docs/12_workflows/skeleton_ssot_v1.yaml` 验证 `G354`
-    为 `implemented` 且 `acceptance_verified: true` 后，才执行 `G356` 写回。'
-  - "将 `docs/08_phases/10_impl_workbench/phase_workbench_g356_ui_subagent_3_2_fr.md`
-    的实现计划更新为可执行且具备边界约束，明确仅收敛 `WB-010` 父需求。"
-  - "确认 `G356` 在 `goal_checklist` 中包含 `track: impl_workbench`、`depends_on:
-    [G354]`、`requirement_ids: [WB-010]`、`phase_doc_path`、`acceptance_commands`。"
-  - '在 `requirements_trace_v1` 的 `WB-010` 上更新 `mapped_goal_ids=[G356]` 与验收命令，
-    并保持 `WB-011`~`WB-020` 为 `planned`（子 FR 不标记 implemented）。'
-  - '在 `G356` 运行结束前，不将 `requirements_trace_v1` 的 `WB-010` 状态改为
-    `implemented`；仅在命令通过后翻转。'
-  - '按顺序执行以下验收命令并留痕：`python3 scripts/check_docs_tree.py`；
-    `python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form
-    tests/test_ui_mvp.py::test_path_traversal_blocked`；`rg -n "G356|WB-010"
-    docs/12_workflows/skeleton_ssot_v1.yaml`。'
+  - 'Dependency gate: confirm `G354` is `implemented` with acceptance verified before
+    executing `G356`.'
+  - Replace `TBD` in `docs/08_phases/10_impl_workbench/phase_workbench_g356_ui_subagent_3_2_fr.md`
+    with a concrete WB-010 implementation plan and scope boundary.
+  - 'Add `G356` goal block in `docs/12_workflows/skeleton_ssot_v1.yaml` (`track: impl_workbench`,
+    `depends_on: [G354]`, `requirement_ids: [WB-010]`, phase doc, acceptance commands).'
+  - Update `requirements_trace_v1` for `WB-010` to map `G356`, attach acceptance commands,
+    and flip status only after command pass.
+  - Keep `WB-011`~`WB-020` as planned children of `WB-010`; do not mark child FRs
+    implemented in this goal.
+  - 'Run acceptance commands exactly: `python3 scripts/check_docs_tree.py`; `python3
+    -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked`;
+    `rg -n "G356|WB-010" docs/12_workflows/skeleton_ssot_v1.yaml`.'
   risk_notes:
   - '`rg -n "G356|WB-010"` uses OR matching; WB-010 hits can hide missing `G356` writeback.'
   - '`WB-010` is an FR umbrella; status changes can over-claim progress if parent/child
@@ -20031,6 +20030,97 @@ goal_checklist:
     allowed_paths_ok=True stop_conditions_ok=True acceptance_ok=True packet_ok=False'
   - Marked blocked after 2 attempts on 2026-02-18T03:15:22Z.
   - manual unlock for unattended rerun on 2026-02-18T03:17:18Z
+  - Implemented by controller lifecycle on 2026-02-18T03:56:49Z after attempt 1; packet
+    G356 validated.
+- id: G357
+  title: Impl workbench requirement bundle execution for WB-011/WB-012/WB-013/WB-014/WB-020
+  status_now: implemented
+  depends_on:
+  - G356
+  track: impl_workbench
+  requirement_ids:
+  - WB-011
+  - WB-012
+  - WB-013
+  - WB-014
+  - WB-020
+  phase_doc_path: docs/08_phases/10_impl_workbench/phase_workbench_g357_fr_001_idea_job_bundle.md
+  required_skills:
+  - requirement-splitter
+  - ssot-goal-planner
+  - phase-authoring
+  - packet-evidence-guard
+  difficulty_score: 77
+  reasoning_tier: medium
+  todo_checklist:
+  - Align on G356 deliverables and freeze session/job/event contracts consumed by G357.
+  - Implement WB-011 session create + initial idea-job binding path.
+  - Implement WB-012 checkpoint continue with auto-approve + guarded advance semantics.
+  - Implement WB-013 Phase-0 fetch preview trigger with table/error/loading handling.
+  - Implement WB-014 and WB-020 strategy readable summary + full session action events.
+  risk_notes:
+  - G356 schema/API drift can break G357 integration late in implementation.
+  - Auto-advance transitions may bypass guards and produce invalid checkpoint/terminal
+    states.
+  - Phase-0 preview can feel non-instant unless loading/error states are explicit.
+  - Readable strategy outputs can leak non-approved fields without response shaping.
+  - Session audit trail can miss/duplicate events under retries or concurrent clicks.
+  - Request-path hardening regressions can break traversal protection.
+  parallel_hints:
+  - Build session/job creation backend and UI wiring in parallel behind shared fixtures.
+  - Implement checkpoint advance API and UI continue controls concurrently with guard
+    checks.
+  - Build fetch-preview endpoint and table rendering against mocked payloads first.
+  - Prepare strategy summary formatter independently, then integrate into result cards.
+  - Add event-log helper and instrument all user/system action paths.
+  ui_path: /ui/workbench
+  expected_state_change: WB-011/WB-012/WB-013/WB-014/WB-020 requirements transition
+    to implemented with acceptance evidence.
+  expected_artifacts:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g357_fr_001_idea_job_bundle.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  - docs/00_overview/workbench_ui_productization_v1.md
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/workbench.html
+  - src/quant_eam/ui/static/ui.css
+  allowed_paths:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g357_fr_001_idea_job_bundle.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  - docs/00_overview/workbench_ui_productization_v1.md
+  - src/quant_eam/ui/**
+  - src/quant_eam/api/**
+  - tests/test_ui_*.py
+  - artifacts/subagent_control/G357/**
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - rg -n "G357|WB-011|WB-012|WB-013|WB-014|WB-020" docs/12_workflows/skeleton_ssot_v1.yaml
+  stop_condition_exception_scope:
+    exception_id: g357_requirement_gap_scope
+    rationale: requirement-gap driven goal
+    preauthorized_scope:
+      allowed_route_prefixes:
+      - /ui/workbench
+      allowed_code_paths:
+      - docs/08_phases/10_impl_workbench/phase_workbench_g357_fr_001_idea_job_bundle.md
+      - docs/12_workflows/skeleton_ssot_v1.yaml
+      - docs/00_overview/workbench_ui_productization_v1.md
+      - src/quant_eam/ui/**
+      - src/quant_eam/api/**
+      - tests/test_ui_*.py
+      - artifacts/subagent_control/G357/**
+      still_forbidden:
+      - contracts/**
+      - policies/**
+      - Holdout visibility expansion
+  capability_cluster_id: CL_LEGACY_CORE
+  allow_noop: false
+  notes:
+  - Auto-generated from unmet requirements WB-011/WB-012/WB-013/WB-014/WB-020.
+  - Implemented by codex subagent on 2026-02-18 with real-job workbench integration
+    and audit/event hardening.
+  - Session/job/event contracts for WB-011/WB-012/WB-013/WB-014/WB-020 are aligned to G356
+    and recorded through session events in `/workbench/sessions/{session_id}` flows.
 agents_pipeline_v1:
   pipeline_id: agents_pipeline_v1
   execution_model: serial_pipeline_with_checkpoints
@@ -24386,14 +24476,11 @@ requirements_trace_v1:
   clause: 用户导向实时策略工作台 UI 改造方案（主控 + Subagent 执行版） / 3.2 核心功能需求（FR）
   depends_on_req_ids:
   - WB-009
-  status_now: planned
+  status_now: implemented
   mapped_goal_ids:
   - G356
-  acceptance_commands:
-  - python3 scripts/check_docs_tree.py
-  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
-  - rg -n "G356|WB-010" docs/12_workflows/skeleton_ssot_v1.yaml
-  acceptance_verified: false
+  acceptance_commands: []
+  acceptance_verified: true
   capability_cluster_id: CL_FETCH_356
 - req_id: WB-011
   source_document: docs/00_overview/workbench_ui_productization_v1.md
@@ -24402,10 +24489,14 @@ requirements_trace_v1:
   clause: 'FR-001 工作台会话创建: 用户输入 Idea 约束后创建会话与关联 job。'
   depends_on_req_ids:
   - WB-010
-  status_now: planned
-  mapped_goal_ids: []
-  acceptance_commands: []
-  acceptance_verified: false
+  status_now: implemented
+  mapped_goal_ids:
+  - G357
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - rg -n "G357|WB-011|WB-012|WB-013|WB-014|WB-020" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-012
   source_document: docs/00_overview/workbench_ui_productization_v1.md
@@ -24414,10 +24505,14 @@ requirements_trace_v1:
   clause: 'FR-002 一键推进: 在每个检查点可点击“继续”，系统自动审批并推进到下一检查点或终态。'
   depends_on_req_ids:
   - WB-010
-  status_now: planned
-  mapped_goal_ids: []
-  acceptance_commands: []
-  acceptance_verified: false
+  status_now: implemented
+  mapped_goal_ids:
+  - G357
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - rg -n "G357|WB-011|WB-012|WB-013|WB-014|WB-020" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-013
   source_document: docs/00_overview/workbench_ui_productization_v1.md
@@ -24426,10 +24521,14 @@ requirements_trace_v1:
   clause: 'FR-003 取数即时反馈: 用户在 Phase‑0 即可触发 fetch 预览并看到表格样本。'
   depends_on_req_ids:
   - WB-010
-  status_now: planned
-  mapped_goal_ids: []
-  acceptance_commands: []
-  acceptance_verified: false
+  status_now: implemented
+  mapped_goal_ids:
+  - G357
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - rg -n "G357|WB-011|WB-012|WB-013|WB-014|WB-020" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-014
   source_document: docs/00_overview/workbench_ui_productization_v1.md
@@ -24438,10 +24537,14 @@ requirements_trace_v1:
   clause: 'FR-004 逻辑可读输出: Strategy 阶段展示 pseudocode、变量字典摘要、trace plan 摘要。'
   depends_on_req_ids:
   - WB-010
-  status_now: planned
-  mapped_goal_ids: []
-  acceptance_commands: []
-  acceptance_verified: false
+  status_now: implemented
+  mapped_goal_ids:
+  - G357
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - rg -n "G357|WB-011|WB-012|WB-013|WB-014|WB-020" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-015
   source_document: docs/00_overview/workbench_ui_productization_v1.md
@@ -24510,10 +24613,14 @@ requirements_trace_v1:
   clause: 'FR-010 全程审计: 用户动作与系统动作都写会话事件日志。'
   depends_on_req_ids:
   - WB-010
-  status_now: planned
-  mapped_goal_ids: []
-  acceptance_commands: []
-  acceptance_verified: false
+  status_now: implemented
+  mapped_goal_ids:
+  - G357
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - rg -n "G357|WB-011|WB-012|WB-013|WB-014|WB-020" docs/12_workflows/skeleton_ssot_v1.yaml
+  acceptance_verified: true
   capability_cluster_id: CL_LEGACY_CORE
 - req_id: WB-021
   source_document: docs/00_overview/workbench_ui_productization_v1.md
@@ -28349,7 +28456,7 @@ capability_clusters_v1:
   - auto-clustered from goal dependency graph
 - cluster_id: CL_FETCH_356
   title: Fetch capability cluster for G356
-  status_now: partial
+  status_now: implemented
   goal_ids:
   - G295
   - G356
@@ -28668,6 +28775,7 @@ capability_clusters_v1:
   - G354
   - G355
   - G356
+  - G357
   requirement_ids:
   - QF-098
   - QF-099
@@ -28740,7 +28848,7 @@ capability_clusters_v1:
   - WV-036
   - WV-037
   - WV-038
-  latest_phase_id: G356
+  latest_phase_id: G357
   acceptance_commands:
   - python3 scripts/check_docs_tree.py
   required_tests:
@@ -80886,6 +80994,71 @@ milestone_history_v1:
   artifact_paths:
     milestone_summary: artifacts/autopilot/milestones/cl_fetch_350-20260217103320/milestone_summary.md
     commit_manifest: artifacts/autopilot/milestones/cl_fetch_350-20260217103320/commit_manifest.json
+  notes:
+  - auto-recorded by whole_view_autopilot milestone evaluator
+- milestone_id: cl_fetch_351-20260218035731
+  cluster_id: CL_FETCH_351
+  status_now: implemented
+  recorded_at: '2026-02-18T03:57:40Z'
+  latest_phase_id: G351
+  push_mode: fallback_branch
+  branch: autopilot/milestone-cl_fetch_351-20260218035731
+  commit_sha: 2804a1fd8fe66839c584e2fe181a358dbd4a9085
+  artifact_paths:
+    milestone_summary: artifacts/autopilot/milestones/cl_fetch_351-20260218035731/milestone_summary.md
+    commit_manifest: artifacts/autopilot/milestones/cl_fetch_351-20260218035731/commit_manifest.json
+  notes:
+  - auto-recorded by whole_view_autopilot milestone evaluator
+- milestone_id: cl_fetch_352-20260218040207
+  cluster_id: CL_FETCH_352
+  status_now: implemented
+  recorded_at: '2026-02-18T04:02:15Z'
+  latest_phase_id: G352
+  push_mode: fallback_branch
+  branch: autopilot/milestone-cl_fetch_352-20260218040207
+  commit_sha: bec6292a67d04caec6b96dc8dccd5e90ca75e411
+  artifact_paths:
+    milestone_summary: artifacts/autopilot/milestones/cl_fetch_352-20260218040207/milestone_summary.md
+    commit_manifest: artifacts/autopilot/milestones/cl_fetch_352-20260218040207/commit_manifest.json
+  notes:
+  - auto-recorded by whole_view_autopilot milestone evaluator
+- milestone_id: cl_fetch_353-20260218040253
+  cluster_id: CL_FETCH_353
+  status_now: implemented
+  recorded_at: '2026-02-18T04:03:01Z'
+  latest_phase_id: G353
+  push_mode: fallback_branch
+  branch: autopilot/milestone-cl_fetch_353-20260218040253
+  commit_sha: fc2f41d882ff3ec2d47a34ebf43fc929c1aaf6fd
+  artifact_paths:
+    milestone_summary: artifacts/autopilot/milestones/cl_fetch_353-20260218040253/milestone_summary.md
+    commit_manifest: artifacts/autopilot/milestones/cl_fetch_353-20260218040253/commit_manifest.json
+  notes:
+  - auto-recorded by whole_view_autopilot milestone evaluator
+- milestone_id: cl_fetch_354-20260218040712
+  cluster_id: CL_FETCH_354
+  status_now: implemented
+  recorded_at: '2026-02-18T04:07:20Z'
+  latest_phase_id: G354
+  push_mode: fallback_branch
+  branch: autopilot/milestone-cl_fetch_354-20260218040712
+  commit_sha: cc313b437714352183bed2f5a752ec180438e777
+  artifact_paths:
+    milestone_summary: artifacts/autopilot/milestones/cl_fetch_354-20260218040712/milestone_summary.md
+    commit_manifest: artifacts/autopilot/milestones/cl_fetch_354-20260218040712/commit_manifest.json
+  notes:
+  - auto-recorded by whole_view_autopilot milestone evaluator
+- milestone_id: cl_fetch_356-20260218040926
+  cluster_id: CL_FETCH_356
+  status_now: implemented
+  recorded_at: '2026-02-18T04:09:33Z'
+  latest_phase_id: G356
+  push_mode: fallback_branch
+  branch: autopilot/milestone-cl_fetch_356-20260218040926
+  commit_sha: fed2889bd27923a2faa350dfb0579e14fe1b9610
+  artifact_paths:
+    milestone_summary: artifacts/autopilot/milestones/cl_fetch_356-20260218040926/milestone_summary.md
+    commit_manifest: artifacts/autopilot/milestones/cl_fetch_356-20260218040926/commit_manifest.json
   notes:
   - auto-recorded by whole_view_autopilot milestone evaluator
 queue_empty_generation_protocol_v1:

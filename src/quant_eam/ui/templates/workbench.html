@@ -41,7 +41,7 @@
 
     <div class="card">
       <h2>Create Session (UI)</h2>
-      <form method="post" action="/workbench/sessions" class="form-grid">
+      <form method="post" action="/workbench/sessions" class="form-grid" data-loading-form="1">
         <input type="hidden" name="_ui" value="1"/>
         <label>
           <span>title</span>
@@ -55,6 +55,10 @@
           <span>hypothesis_text</span>
           <textarea name="hypothesis_text" rows="3" required>Mean revert entry</textarea>
         </label>
+        <label class="full">
+          <span>message (real-jobs mode)</span>
+          <textarea name="message" rows="2" placeholder="帮我检查A股 MA250 的有效性"></textarea>
+        </label>
         <label>
           <span>frequency</span>
           <input name="frequency" value="1d"/>
@@ -64,7 +68,7 @@
           <input name="evaluation_intent" value="demo_e2e"/>
         </label>
         <div class="full">
-          <button type="submit" class="btn">Create Workbench Session</button>
+          <button type="submit" class="btn" data-loading-label="Creating...">Create Workbench Session</button>
         </div>
       </form>
     </div>
@@ -103,7 +107,7 @@ POST /workbench/sessions/{session_id}/steps/{step}/drafts/{version}/apply
       <h3>Actions</h3>
       <div class="grid">
         <div>
-          <form method="post" action="/workbench/sessions/{{ s.session_id }}/continue" class="form-grid">
+          <form method="post" action="/workbench/sessions/{{ s.session_id }}/continue" class="form-grid" data-loading-form="1">
             <input type="hidden" name="_ui" value="1"/>
             <label>
               <span>target_step (optional)</span>
@@ -115,30 +119,65 @@ POST /workbench/sessions/{session_id}/steps/{step}/drafts/{version}/apply
               </select>
             </label>
             <div class="full">
-              <button type="submit" class="btn">Continue / Refresh</button>
+              <button type="submit" class="btn" data-loading-label="Continuing...">Continue / Refresh</button>
             </div>
           </form>
         </div>
         <div>
-          <form method="post" action="/workbench/sessions/{{ s.session_id }}/fetch-probe" class="form-grid">
+          <form method="post" action="/workbench/sessions/{{ s.session_id }}/fetch-probe" class="form-grid" data-loading-form="1">
             <input type="hidden" name="_ui" value="1"/>
             <label>
               <span>symbols</span>
               <input name="symbols" value="{{ (s.idea.symbols | join(',')) if s.idea and s.idea.symbols else '' }}" placeholder="AAPL,MSFT"/>
             </label>
             <div class="full">
-              <button type="submit" class="btn">Run Fetch Probe</button>
+              <button type="submit" class="btn" data-loading-label="Fetching...">Run Fetch Probe</button>
             </div>
           </form>
         </div>
       </div>
+
+      <h3>Phase-0 Fetch Preview</h3>
+      {% set fetch_status = s.fetch_probe_status if s.fetch_probe_status else 'idle' %}
+      <p><strong>Status:</strong> <span class="pill">{{ fetch_status }}</span></p>
+      {% if s.fetch_probe_error %}
+        <div class="plot-fallback">Last fetch error: {{ s.fetch_probe_error }}</div>
+      {% elif fetch_status == "running" %}
+        <div class="plot-fallback">Fetch probe is running. Refresh this page to see the latest preview state.</div>
+      {% endif %}
+      {% if s.fetch_probe_preview_rows and s.fetch_probe_preview_rows|length > 0 %}
+      {% set preview_rows = s.fetch_probe_preview_rows %}
+      {% set preview_cols = preview_rows[0].keys() %}
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              {% for c in preview_cols %}
+              <th>{{ c }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in preview_rows %}
+            <tr>
+              {% for c in preview_cols %}
+              <td>{{ row.get(c, '') }}</td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="plot-fallback">No fetch preview rows yet.</div>
+      {% endif %}
 
       <h3>Trace</h3>
       {% if s.trace and s.trace|length > 0 %}
       <div class="table-wrap">
         <table class="table">
           <thead>
-            <tr><th>step</th><th>status</th><th>status_text</th></tr>
+            <tr><th>step</th><th>status</th><th>status_text</th><th>action</th></tr>
           </thead>
           <tbody>
             {% for row in s.trace %}
@@ -146,6 +185,17 @@ POST /workbench/sessions/{session_id}/steps/{step}/drafts/{version}/apply
               <td>{{ row.step }}</td>
               <td>{{ row.status }}</td>
               <td>{{ row.status_text }}</td>
+              <td>
+                {% if row.step == s.current_step %}
+                  <form method="post" action="/workbench/sessions/{{ s.session_id }}/continue" data-loading-form="1">
+                    <input type="hidden" name="_ui" value="1"/>
+                    <input type="hidden" name="target_step" value="{{ row.step }}"/>
+                    <button type="submit" class="btn btn-small" data-loading-label="继续中...">继续</button>
+                  </form>
+                {% else %}
+                  <span class="muted">-</span>
+                {% endif %}
+              </td>
             </tr>
             {% endfor %}
           </tbody>
@@ -192,6 +242,50 @@ POST /workbench/sessions/{session_id}/steps/{step}/drafts/{version}/apply
           {% else %}
           <div class="plot-fallback">No summary lines.</div>
           {% endif %}
+          {% if card.phase == "strategy_spec" and card.details %}
+            {% set readable = card.details.get("strategy_readable", {}) %}
+            {% if readable and readable.get("available") %}
+              <p><strong>Pseudocode</strong></p>
+              <pre class="code">{{ readable.get("pseudocode_text", "") }}</pre>
+              {% set var_summary = readable.get("variable_dictionary_summary", {}) %}
+              {% set trace_summary = readable.get("trace_plan_summary", {}) %}
+              <div class="table-wrap">
+                <table class="table">
+                  <tbody>
+                    <tr><th>variable_count</th><td>{{ var_summary.get("variable_count", 0) }}</td></tr>
+                    <tr><th>lagged_variable_count</th><td>{{ var_summary.get("lagged_variable_count", 0) }}</td></tr>
+                    <tr><th>trace_steps</th><td>{{ trace_summary.get("step_count", 0) }}</td></tr>
+                    <tr><th>trace_assertions</th><td>{{ trace_summary.get("assertion_count", 0) }}</td></tr>
+                    <tr><th>sample_windows</th><td>{{ trace_summary.get("sample_windows", []) | join(" ; ") }}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            {% endif %}
+          {% endif %}
+          {% if card.phase == "trace_preview" and card.details and card.details.get("sample_rows") %}
+            {% set card_rows = card.details.get("sample_rows", []) %}
+            {% set card_cols = card_rows[0].keys() %}
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr>
+                    {% for c in card_cols %}
+                    <th>{{ c }}</th>
+                    {% endfor %}
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for row in card_rows %}
+                  <tr>
+                    {% for c in card_cols %}
+                    <td>{{ row.get(c, "") }}</td>
+                    {% endfor %}
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
           <details>
             <summary>Evidence details (collapsed by default)</summary>
             <pre class="code">{{ card.evidence_json }}</pre>
@@ -209,4 +303,18 @@ POST /workbench/sessions/{session_id}/steps/{step}/drafts/{version}/apply
       {% endif %}
     </div>
   {% endif %}
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      document.querySelectorAll("form[data-loading-form='1']").forEach(function (form) {
+        form.addEventListener("submit", function () {
+          var btn = form.querySelector("button[type='submit']");
+          if (!btn || btn.disabled) {
+            return;
+          }
+          btn.disabled = true;
+          btn.textContent = btn.getAttribute("data-loading-label") || "Loading...";
+        });
+      });
+    });
+  </script>
 {% endblock %}

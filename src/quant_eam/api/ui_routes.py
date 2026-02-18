@@ -423,17 +423,34 @@ def _write_workbench_session(session_id: str, doc: dict[str, Any]) -> None:
     _write_json(_workbench_session_path(session_id), doc)
 
 
-def _append_workbench_event(session_id: str, *, step: str, action: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+def _append_workbench_event(
+    session_id: str,
+    *,
+    step: str,
+    action: str,
+    payload: dict[str, Any] | None = None,
+    actor: str = "system",
+    source: str = "",
+    status: str = "",
+) -> dict[str, Any]:
     event_index = len(_read_workbench_events(session_id)) + 1
+    actor_norm = "user" if str(actor).strip().lower() == "user" else "system"
     event: dict[str, Any] = {
         "schema_version": "workbench_event_v1",
         "event_id": f"wev_{event_index:04d}",
         "event_index": event_index,
         "event_type": action,
+        "actor": actor_norm,
         "session_id": session_id,
         "step": step,
         "created_at": _now_iso(),
     }
+    source_text = str(source).strip()
+    if source_text:
+        event["source"] = source_text
+    status_text = str(status).strip()
+    if status_text:
+        event["status"] = status_text
     if payload:
         event["payload"] = payload
     _append_jsonl(_workbench_events_path(session_id), event)
@@ -586,13 +603,37 @@ def _workbench_step_summary(session: dict[str, Any], *, step: str) -> tuple[list
         draft_meta = session.get("drafts") if isinstance(session.get("drafts"), dict) else {}
         sel = draft_meta.get("strategy_spec") if isinstance(draft_meta.get("strategy_spec"), dict) else {}
         sel_path = str(sel.get("path") or "").strip()
+        job_id = str(session.get("job_id") or "").strip()
+        readable = _workbench_strategy_readable_summary(job_id=job_id) if job_id else {}
+        var_summary = readable.get("variable_dictionary_summary") if isinstance(readable, dict) else {}
+        trace_summary = readable.get("trace_plan_summary") if isinstance(readable, dict) else {}
+        pseudo_lines = readable.get("pseudocode_lines") if isinstance(readable, dict) else []
+        variable_count = int(var_summary.get("variable_count") or 0) if isinstance(var_summary, dict) else 0
+        lagged_count = int(var_summary.get("lagged_variable_count") or 0) if isinstance(var_summary, dict) else 0
+        trace_step_count = int(trace_summary.get("step_count") or 0) if isinstance(trace_summary, dict) else 0
+        assertion_count = int(trace_summary.get("assertion_count") or 0) if isinstance(trace_summary, dict) else 0
+        source_paths = readable.get("source_paths") if isinstance(readable, dict) else {}
         summary = [
             "Strategy summary prepared for review and draft editing.",
-            "Use step drafts to persist and apply spec revisions.",
+            f"Pseudocode lines: {len(pseudo_lines) if isinstance(pseudo_lines, list) else 0}",
+            f"Variable dictionary: {variable_count} vars ({lagged_count} lagged)",
+            f"Trace plan: {trace_step_count} steps, {assertion_count} assertions",
             f"Selected draft: {sel_path if sel_path else '(none)'}",
         ]
         arts = [sel_path] if sel_path else []
-        return summary, {"selected_draft_path": sel_path, "hypothesis_text": hypothesis}, arts
+        if isinstance(source_paths, dict):
+            for ref in source_paths.values():
+                if isinstance(ref, str) and ref.strip():
+                    arts.append(ref.strip())
+        return (
+            summary,
+            {
+                "selected_draft_path": sel_path,
+                "hypothesis_text": hypothesis,
+                "strategy_readable": readable,
+            },
+            arts,
+        )
     if step == "trace_preview":
         probe_path = str(session.get("last_fetch_probe") or "").strip()
         summary = [
@@ -662,6 +703,7 @@ def _workbench_cards_for_view(session: dict[str, Any]) -> list[dict[str, Any]]:
                 "title": str(doc.get("title") or ""),
                 "summary_lines": [str(x) for x in summary_lines if str(x).strip()],
                 "artifact_path": p.as_posix(),
+                "details": details if isinstance(details, dict) else {},
                 "evidence_json": json.dumps(evidence, ensure_ascii=True, indent=2, sort_keys=True),
                 "details_json": json.dumps(details, ensure_ascii=True, indent=2, sort_keys=True),
                 "created_at": str(doc.get("created_at") or ""),
@@ -696,11 +738,182 @@ def _initial_workbench_session(*, session_id: str, idea: dict[str, Any], job_id:
         "cards": [],
         "phase_cards": {},
         "selected_drafts": {},
+        "fetch_probe_status": "idle",
+        "fetch_probe_error": "",
+        "fetch_probe_preview_rows": [],
+        "contract_freeze": {
+            "session_schema_version": "workbench_session_v1",
+            "session_event_schema_version": "workbench_event_v1",
+            "job_event_schema_version": "job_event_v2",
+        },
         "revision": 1,
         "session_json_path": _workbench_session_store_url(session_id),
         "events_path": _workbench_events_path(session_id).as_posix(),
         "cards_index_path": _workbench_cards_index_path(session_id).as_posix(),
         "snapshot_artifacts_path": f"artifacts/workbench/sessions/{session_id}/session.json",
+    }
+
+
+def _load_json_dict(path_text: str) -> dict[str, Any] | None:
+    path = Path(str(path_text).strip())
+    if not path.is_file():
+        return None
+    try:
+        doc = _load_json(path)
+    except Exception:
+        return None
+    if not isinstance(doc, dict):
+        return None
+    return doc
+
+
+def _signal_expr_to_pseudocode(expr: Any, *, depth: int = 0) -> str:
+    if depth > 6:
+        return "..."
+    if not isinstance(expr, dict):
+        return repr(expr)
+    expr_type = str(expr.get("type") or "").strip().lower()
+    if expr_type == "const":
+        return repr(expr.get("value"))
+    if expr_type == "var":
+        var_id = str(expr.get("var_id") or "").strip()
+        return var_id or "var"
+    if expr_type == "not":
+        inner = _signal_expr_to_pseudocode(expr.get("value"), depth=depth + 1)
+        return f"not ({inner})"
+
+    op_map = {
+        "and": "and",
+        "or": "or",
+        "eq": "==",
+        "ne": "!=",
+        "gt": ">",
+        "ge": ">=",
+        "lt": "<",
+        "le": "<=",
+        "add": "+",
+        "sub": "-",
+        "mul": "*",
+        "div": "/",
+    }
+    if expr_type in op_map:
+        left = _signal_expr_to_pseudocode(expr.get("left"), depth=depth + 1)
+        right = _signal_expr_to_pseudocode(expr.get("right"), depth=depth + 1)
+        return f"({left} {op_map[expr_type]} {right})"
+
+    args = expr.get("args")
+    if isinstance(args, list) and args:
+        rendered = ", ".join(_signal_expr_to_pseudocode(x, depth=depth + 1) for x in args[:6])
+        return f"{expr_type}({rendered})" if expr_type else f"fn({rendered})"
+
+    raw_blob = json.dumps(expr, ensure_ascii=True, sort_keys=True)
+    return raw_blob if len(raw_blob) <= 120 else f"{raw_blob[:117]}..."
+
+
+def _workbench_strategy_readable_summary(*, job_id: str) -> dict[str, Any]:
+    outputs = _load_job_outputs_index(job_id)
+    signal_dsl_path = str(outputs.get("signal_dsl_path") or "").strip()
+    variable_dictionary_path = str(outputs.get("variable_dictionary_path") or "").strip()
+    calc_trace_plan_path = str(outputs.get("calc_trace_plan_path") or "").strip()
+
+    signal_dsl = _load_json_dict(signal_dsl_path) if signal_dsl_path else None
+    variable_dictionary = _load_json_dict(variable_dictionary_path) if variable_dictionary_path else None
+    calc_trace_plan = _load_json_dict(calc_trace_plan_path) if calc_trace_plan_path else None
+
+    pseudocode_lines: list[str] = []
+    if isinstance(signal_dsl, dict):
+        signals = signal_dsl.get("signals") if isinstance(signal_dsl.get("signals"), dict) else {}
+        expressions = signal_dsl.get("expressions") if isinstance(signal_dsl.get("expressions"), dict) else {}
+        entry_id = str(signals.get("entry") or "entry").strip() or "entry"
+        exit_id = str(signals.get("exit") or "exit").strip() or "exit"
+        pseudocode_lines.append(f"entry_raw = {_signal_expr_to_pseudocode(expressions.get(entry_id))}")
+        pseudocode_lines.append(f"exit_raw = {_signal_expr_to_pseudocode(expressions.get(exit_id))}")
+        execution = signal_dsl.get("execution") if isinstance(signal_dsl.get("execution"), dict) else {}
+        order_timing = str(execution.get("order_timing") or "").strip()
+        if order_timing:
+            pseudocode_lines.append(f"order_timing = '{order_timing}'")
+
+    kind_counts: dict[str, int] = {}
+    lagged_rows: list[str] = []
+    sample_var_ids: list[str] = []
+    variable_count = 0
+    if isinstance(variable_dictionary, dict):
+        variables = variable_dictionary.get("variables") if isinstance(variable_dictionary.get("variables"), list) else []
+        for row in variables:
+            if not isinstance(row, dict):
+                continue
+            variable_count += 1
+            var_id = str(row.get("var_id") or "").strip()
+            if var_id and len(sample_var_ids) < 6:
+                sample_var_ids.append(var_id)
+            kind = str(row.get("kind") or "unknown").strip() or "unknown"
+            kind_counts[kind] = int(kind_counts.get(kind, 0)) + 1
+            alignment = row.get("alignment") if isinstance(row.get("alignment"), dict) else {}
+            lag_bars = alignment.get("lag_bars")
+            if not isinstance(lag_bars, int) or lag_bars <= 0:
+                continue
+            src_var = ""
+            compute = row.get("compute") if isinstance(row.get("compute"), dict) else {}
+            ast = compute.get("ast") if isinstance(compute.get("ast"), dict) else {}
+            if str(ast.get("type") or "") == "var":
+                src_var = str(ast.get("var_id") or "").strip()
+            if src_var:
+                lagged_rows.append(f"{var_id} = lag({src_var}, {lag_bars})")
+            else:
+                lagged_rows.append(f"{var_id} uses lag={lag_bars}")
+        for item in lagged_rows[:2]:
+            if item not in pseudocode_lines:
+                pseudocode_lines.append(item)
+
+    trace_step_count = 0
+    assertion_count = 0
+    sample_count = 0
+    first_step_title = ""
+    first_step_variables: list[str] = []
+    sample_windows: list[str] = []
+    if isinstance(calc_trace_plan, dict):
+        steps = calc_trace_plan.get("steps") if isinstance(calc_trace_plan.get("steps"), list) else []
+        assertions = calc_trace_plan.get("assertions") if isinstance(calc_trace_plan.get("assertions"), list) else []
+        samples = calc_trace_plan.get("samples") if isinstance(calc_trace_plan.get("samples"), list) else []
+        trace_step_count = len(steps)
+        assertion_count = len(assertions)
+        sample_count = len(samples)
+        if steps and isinstance(steps[0], dict):
+            first_step_title = str(steps[0].get("title") or "").strip()
+            vars0 = steps[0].get("variables") if isinstance(steps[0].get("variables"), list) else []
+            first_step_variables = [str(x).strip() for x in vars0 if str(x).strip()][:8]
+        for sample in samples[:3]:
+            if not isinstance(sample, dict):
+                continue
+            symbols = sample.get("symbols") if isinstance(sample.get("symbols"), list) else []
+            symbols_text = ",".join(str(x).strip() for x in symbols if str(x).strip()) or "(auto)"
+            start = str(sample.get("start") or "").strip() or "?"
+            end = str(sample.get("end") or "").strip() or "?"
+            sample_windows.append(f"{symbols_text} {start}..{end}")
+
+    return {
+        "available": bool(signal_dsl or variable_dictionary or calc_trace_plan),
+        "pseudocode_lines": pseudocode_lines[:12],
+        "pseudocode_text": "\n".join(pseudocode_lines[:12]),
+        "variable_dictionary_summary": {
+            "variable_count": variable_count,
+            "kind_counts": kind_counts,
+            "lagged_variable_count": len(lagged_rows),
+            "sample_var_ids": sample_var_ids,
+        },
+        "trace_plan_summary": {
+            "step_count": trace_step_count,
+            "assertion_count": assertion_count,
+            "sample_count": sample_count,
+            "first_step_title": first_step_title,
+            "first_step_variables": first_step_variables,
+            "sample_windows": sample_windows,
+        },
+        "source_paths": {
+            "signal_dsl_path": signal_dsl_path,
+            "variable_dictionary_path": variable_dictionary_path,
+            "calc_trace_plan_path": calc_trace_plan_path,
+        },
     }
 
 
@@ -5625,10 +5838,20 @@ async def workbench_session_create(request: Request) -> Any:
         }
         session_doc = _initial_workbench_session(session_id=session_id, idea=idea, job_id=job_id)
         _write_workbench_session(session_id, session_doc)
+        _append_workbench_event(
+            session_id=session_id,
+            step=WORKBENCH_PHASE_STEPS[0],
+            action="session_create_requested",
+            actor="user",
+            source="workbench_session_create",
+            payload={"mode": "simulation", "symbol_count": len(symbols), "title": idea["title"]},
+        )
         event = _append_workbench_event(
             session_id=session_id,
             step=WORKBENCH_PHASE_STEPS[0],
             action="session_created",
+            actor="system",
+            source="workbench_session_create",
             payload={"job_id": job_id, "title": idea["title"]},
         )
         summary_lines, details, artifacts = _workbench_step_summary(session_doc, step=WORKBENCH_PHASE_STEPS[0])
@@ -5739,6 +5962,8 @@ async def workbench_session_create(request: Request) -> Any:
     fetch_evidence_paths: dict[str, Any] = {}
     fetch_review_checkpoint: dict[str, Any] = {}
     fetch_preview_rows: list[dict[str, Any]] = []
+    fetch_probe_status = "idle"
+    fetch_probe_error = ""
     try:
         fetch_query_result = execute_ui_llm_query(
             {
@@ -5755,7 +5980,10 @@ async def workbench_session_create(request: Request) -> Any:
         query_result = fetch_query_result.get("query_result")
         if isinstance(query_result, dict) and isinstance(query_result.get("preview"), list):
             fetch_preview_rows = [row for row in query_result["preview"] if isinstance(row, dict)][:20]
+        fetch_probe_status = "ok"
     except Exception as e:  # noqa: BLE001
+        fetch_probe_status = "error"
+        fetch_probe_error = str(e)
         err_path = _workbench_fetch_evidence_root_for_job(job_id) / "ui_intake_fetch_error.json"
         _write_json(
             err_path,
@@ -5775,14 +6003,27 @@ async def workbench_session_create(request: Request) -> Any:
     session_doc["fetch_evidence_paths"] = fetch_evidence_paths
     session_doc["fetch_review_checkpoint"] = fetch_review_checkpoint
     session_doc["fetch_probe_preview_rows"] = fetch_preview_rows
+    session_doc["fetch_probe_status"] = fetch_probe_status
+    session_doc["fetch_probe_error"] = fetch_probe_error
     if isinstance(fetch_evidence_paths.get("fetch_result_meta_path"), str):
         session_doc["last_fetch_probe"] = str(fetch_evidence_paths.get("fetch_result_meta_path"))
     _write_workbench_session(session_id, session_doc)
+    _append_workbench_event(
+        session_id=session_id,
+        step=WORKBENCH_PHASE_STEPS[0],
+        action="session_create_requested",
+        actor="user",
+        source="workbench_session_create",
+        payload={"mode": "real_jobs", "message": message, "sample_n": _coerce_workbench_sample_n(payload.get("sample_n"), default=50)},
+    )
 
     event = _append_workbench_event(
         session_id=session_id,
         step=WORKBENCH_PHASE_STEPS[0],
         action="session_created_real_job",
+        actor="system",
+        source="workbench_session_create",
+        status="ok" if fetch_probe_status == "ok" else "degraded",
         payload={
             "job_id": job_id,
             "title": idea_title,
@@ -5864,7 +6105,14 @@ async def workbench_session_message(session_id: str, request: Request) -> Any:
     messages.append(msg_item)
     _bump_workbench_revision(session)
     session["updated_at"] = _now_iso()
-    ev = _append_workbench_event(session_id=session_id, step=step, action="message_appended", payload={"text": message})
+    ev = _append_workbench_event(
+        session_id=session_id,
+        step=step,
+        action="message_appended",
+        actor="user",
+        source="workbench_session_message",
+        payload={"text": message},
+    )
     _write_workbench_session(session_id, session)
     if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
         return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
@@ -5877,6 +6125,12 @@ async def workbench_session_continue(session_id: str, request: Request) -> Any:
     session_id = require_safe_id(session_id, kind="session_id")
     payload = await _read_workbench_payload(request)
     session = _load_workbench_session(session_id)
+    current_step = str(session.get("current_step") or WORKBENCH_PHASE_STEPS[0])
+    if current_step not in WORKBENCH_PHASE_STEPS:
+        raise HTTPException(status_code=409, detail="invalid session step")
+    requested = str(payload.get("target_step", "")).strip()
+    if requested and requested not in WORKBENCH_PHASE_STEPS:
+        raise HTTPException(status_code=422, detail="invalid target_step")
 
     if _workbench_real_jobs_enabled():
         job_id = str(session.get("job_id") or "").strip()
@@ -5886,8 +6140,18 @@ async def workbench_session_continue(session_id: str, request: Request) -> Any:
             require_safe_job_id(job_id)
         except HTTPException:
             raise HTTPException(status_code=409, detail="workbench session job_id is not a real job id")
+        if requested and requested != current_step:
+            raise HTTPException(status_code=409, detail="target_step must match current_step in real jobs mode")
 
         from quant_eam.orchestrator.workflow import advance_job_once
+        _append_workbench_event(
+            session_id=session_id,
+            step=current_step,
+            action="continue_requested",
+            actor="user",
+            source="workbench_session_continue",
+            payload={"target_step": requested or current_step},
+        )
 
         before_events = jobs_load_events(job_id, job_root=default_job_root())
         waiting_step = _latest_job_waiting_step(before_events)
@@ -5900,13 +6164,21 @@ async def workbench_session_continue(session_id: str, request: Request) -> Any:
                 job_root=default_job_root(),
             )
             approved_step = waiting_step
+            _append_workbench_event(
+                session_id=session_id,
+                step=current_step,
+                action="checkpoint_auto_approved",
+                actor="system",
+                source="workbench_session_continue",
+                payload={"job_id": job_id, "checkpoint": waiting_step},
+            )
 
         advance_result = advance_job_once(job_id=job_id)
         after_events = jobs_load_events(job_id, job_root=default_job_root())
         checkpoint = _job_checkpoint_from_events(after_events)
         phase_step = _workbench_real_phase_for_checkpoint(checkpoint)
 
-        prev_step = str(session.get("current_step") or WORKBENCH_PHASE_STEPS[0])
+        prev_step = current_step
         prev_idx = WORKBENCH_PHASE_STEPS.index(prev_step) if prev_step in WORKBENCH_PHASE_STEPS else 0
         phase_idx = WORKBENCH_PHASE_STEPS.index(phase_step) if phase_step in WORKBENCH_PHASE_STEPS else 0
         if phase_idx < prev_idx:
@@ -5951,6 +6223,8 @@ async def workbench_session_continue(session_id: str, request: Request) -> Any:
             session_id=session_id,
             step=phase_step,
             action="real_job_continued",
+            actor="system",
+            source="workbench_session_continue",
             payload={
                 "job_id": job_id,
                 "checkpoint": checkpoint,
@@ -5996,16 +6270,17 @@ async def workbench_session_continue(session_id: str, request: Request) -> Any:
             return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
         return out
 
-    current_step = str(session.get("current_step") or WORKBENCH_PHASE_STEPS[0])
-    if current_step not in WORKBENCH_PHASE_STEPS:
-        raise HTTPException(status_code=409, detail="invalid session step")
-
-    requested = str(payload.get("target_step", "")).strip()
+    _append_workbench_event(
+        session_id=session_id,
+        step=current_step,
+        action="continue_requested",
+        actor="user",
+        source="workbench_session_continue",
+        payload={"target_step": requested or "auto_next"},
+    )
     current_idx = WORKBENCH_PHASE_STEPS.index(current_step)
     if requested:
         requested = requested.strip()
-        if requested not in WORKBENCH_PHASE_STEPS:
-            raise HTTPException(status_code=422, detail="invalid target_step")
         req_idx = WORKBENCH_PHASE_STEPS.index(requested)
         if req_idx not in (current_idx, current_idx + 1):
             raise HTTPException(status_code=409, detail="target_step must be current step or immediate next step")
@@ -6045,6 +6320,8 @@ async def workbench_session_continue(session_id: str, request: Request) -> Any:
         session_id=session_id,
         step=next_step,
         action="step_continued" if transitioned else "step_refreshed",
+        actor="system",
+        source="workbench_session_continue",
         payload={"target_step": next_step, "previous_step": current_step},
     )
     summary_lines, details, artifacts = _workbench_step_summary(session, step=next_step)
@@ -6088,6 +6365,16 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
     session_id = require_safe_id(session_id, kind="session_id")
     payload = await _read_workbench_payload(request)
     session = _load_workbench_session(session_id)
+    symbols_from_payload = _coerce_symbol_list(payload.get("symbols"))
+    request_step = str(session.get("current_step") or WORKBENCH_PHASE_STEPS[0])
+    _append_workbench_event(
+        session_id=session_id,
+        step=request_step,
+        action="fetch_probe_requested",
+        actor="user",
+        source="workbench_session_fetch_probe",
+        payload={"symbol_count": len(symbols_from_payload)},
+    )
 
     if _workbench_real_jobs_enabled():
         job_id = str(session.get("job_id") or "").strip()
@@ -6110,7 +6397,7 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
         if _contains_forbidden_fetch_function_fields(fetch_request):
             raise HTTPException(status_code=422, detail="fetch_request must be intent-first (no function/function_override)")
 
-        symbols = _coerce_symbol_list(payload.get("symbols"))
+        symbols = symbols_from_payload
         if symbols:
             req_copy = json.loads(json.dumps(fetch_request))
             intent = req_copy.get("intent") if isinstance(req_copy.get("intent"), dict) else {}
@@ -6120,16 +6407,50 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
             req_copy["auto_symbols"] = False
             fetch_request = req_copy
 
+        session["fetch_probe_status"] = "running"
+        session["fetch_probe_error"] = ""
+        _bump_workbench_revision(session)
+        session["updated_at"] = _now_iso()
+        _write_workbench_session(session_id, session)
+
         from quant_eam.qa_fetch.runtime import execute_ui_llm_query
 
-        query_result = execute_ui_llm_query(
-            {
-                "query_id": f"workbench_{session_id}_fetch_probe",
-                "query_text": str(session.get("message") or ""),
-                "fetch_request": fetch_request,
-            },
-            out_dir=_workbench_fetch_evidence_root_for_job(job_id),
-        )
+        try:
+            query_result = execute_ui_llm_query(
+                {
+                    "query_id": f"workbench_{session_id}_fetch_probe",
+                    "query_text": str(session.get("message") or ""),
+                    "fetch_request": fetch_request,
+                },
+                out_dir=_workbench_fetch_evidence_root_for_job(job_id),
+            )
+        except Exception as e:  # noqa: BLE001
+            session["fetch_probe_status"] = "error"
+            session["fetch_probe_error"] = str(e)
+            session["fetch_probe_preview_rows"] = []
+            _bump_workbench_revision(session)
+            session["updated_at"] = _now_iso()
+            ev = _append_workbench_event(
+                session_id=session_id,
+                step="trace_preview",
+                action="fetch_probe_failed",
+                actor="system",
+                source="workbench_session_fetch_probe",
+                status="error",
+                payload={"job_id": job_id, "error": str(e)},
+            )
+            _write_workbench_session(session_id, session)
+            out = {
+                "session_id": session_id,
+                "job_id": job_id,
+                "status": "error",
+                "error": str(e),
+                "event_id": str(ev.get("event_id") or ""),
+            }
+            if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
+                return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+            return out
+
         fetch_evidence_paths = query_result.get("fetch_evidence_paths") if isinstance(query_result.get("fetch_evidence_paths"), dict) else {}
         fetch_review_checkpoint = (
             query_result.get("fetch_review_checkpoint") if isinstance(query_result.get("fetch_review_checkpoint"), dict) else {}
@@ -6142,6 +6463,8 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
         session["fetch_evidence_paths"] = fetch_evidence_paths
         session["fetch_review_checkpoint"] = fetch_review_checkpoint
         session["fetch_probe_preview_rows"] = sample_rows
+        session["fetch_probe_status"] = "ok"
+        session["fetch_probe_error"] = ""
         if isinstance(fetch_evidence_paths.get("fetch_result_meta_path"), str):
             session["last_fetch_probe"] = str(fetch_evidence_paths.get("fetch_result_meta_path"))
         _bump_workbench_revision(session)
@@ -6150,6 +6473,9 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
             session_id=session_id,
             step="trace_preview",
             action="fetch_probe_real",
+            actor="system",
+            source="workbench_session_fetch_probe",
+            status="ok",
             payload={"job_id": job_id, "fetch_evidence_paths": fetch_evidence_paths},
         )
         summary_lines, details, artifacts = _workbench_step_summary(session, step="trace_preview")
@@ -6184,13 +6510,19 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
             return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
         return out
 
-    symbols = _coerce_symbol_list(payload.get("symbols"))
+    symbols = symbols_from_payload
     if not symbols:
         idea = session.get("idea")
         idea_doc = idea if isinstance(idea, dict) else {}
         symbols = _coerce_symbol_list(idea_doc.get("symbols"))
     if not symbols:
         symbols = ["BTCUSDT"]
+
+    session["fetch_probe_status"] = "running"
+    session["fetch_probe_error"] = ""
+    _bump_workbench_revision(session)
+    session["updated_at"] = _now_iso()
+    _write_workbench_session(session_id, session)
 
     sample_rows = [{"symbol": symbols[0], "sample": 100.0, "window": "demo"}, {"symbol": symbols[0], "sample": 101.2, "window": "demo"}]
     probe = {
@@ -6205,9 +6537,20 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
     _write_json(probe_path, probe)
 
     session["last_fetch_probe"] = probe_path.as_posix()
+    session["fetch_probe_preview_rows"] = sample_rows
+    session["fetch_probe_status"] = "ok"
+    session["fetch_probe_error"] = ""
     _bump_workbench_revision(session)
     session["updated_at"] = _now_iso()
-    ev = _append_workbench_event(session_id=session_id, step="trace_preview", action="fetch_probe", payload={"probe_path": probe_path.as_posix()})
+    ev = _append_workbench_event(
+        session_id=session_id,
+        step="trace_preview",
+        action="fetch_probe",
+        actor="system",
+        source="workbench_session_fetch_probe",
+        status="ok",
+        payload={"probe_path": probe_path.as_posix()},
+    )
     summary_lines, details, artifacts = _workbench_step_summary(session, step="trace_preview")
     if sample_rows:
         details = dict(details)
@@ -6276,6 +6619,8 @@ async def workbench_session_save_draft(session_id: str, step: str, request: Requ
         session_id=session_id,
         step=step,
         action="draft_saved",
+        actor="user",
+        source="workbench_session_save_draft",
         payload={"version": next_version, "draft_path": draft_path.as_posix()},
     )
     return {"session_id": session_id, "step": step, "draft_version": next_version, "artifact_path": draft_path.as_posix()}
@@ -6326,6 +6671,8 @@ async def workbench_session_apply_draft(session_id: str, step: str, version: str
         session_id=session_id,
         step=step,
         action="draft_applied",
+        actor="user",
+        source="workbench_session_apply_draft",
         payload={"version": draft_no, "selected_path": selected_path.as_posix()},
     )
 

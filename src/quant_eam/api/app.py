@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import os
+
+import fastapi.routing as fastapi_routing
+import starlette.concurrency as starlette_concurrency
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
@@ -8,6 +12,17 @@ from quant_eam.api.read_only_api import router as read_only_router
 from quant_eam.api.jobs_api import router as jobs_router
 from quant_eam.api.snapshots_api import router as snapshots_router
 from quant_eam.api.ui_routes import router as ui_router
+
+
+async def _run_sync_inline(func, *args, **kwargs):
+    return func(*args, **kwargs)
+
+
+# Test/runtime safety fallback: some environments block AnyIO worker-thread execution,
+# which otherwise hangs all sync endpoints under ASGI transports.
+if str(os.getenv("EAM_FORCE_INLINE_SYNC_ENDPOINTS", "1")).strip().lower() in {"1", "true", "yes", "on"}:
+    fastapi_routing.run_in_threadpool = _run_sync_inline
+    starlette_concurrency.run_in_threadpool = _run_sync_inline
 
 app = FastAPI(title="quant-eam")
 
