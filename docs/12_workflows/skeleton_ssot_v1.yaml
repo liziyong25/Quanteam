@@ -20944,43 +20944,43 @@ goal_checklist:
   difficulty_score: 77
   reasoning_tier: medium
   todo_checklist:
-  - Verify dependency gate `G358` is implemented and freeze current API/UI contracts
-    as baseline.
-  - Scope-lock G366 to WB-022/WB-023/WB-024/WB-025 and replace TBD in phase doc
-    with a concrete NFR plan.
+  - 'Verify dependency gate: G358 is implemented and freeze current API/UI contracts
+    as baseline.'
+  - Scope-lock G366 to WB-022/WB-023/WB-024/WB-025 and replace TBD in phase doc with
+    concrete NFR plan.
   - Implement NFR-001 guardrails to keep existing API/UI behavior unchanged, especially
     MVP form/create flow.
-  - Implement NFR-002 and NFR-004 together to preserve append-only job/event semantics
-    and enforce same-session action idempotency.
-  - Implement NFR-003 single-page timely refresh via polling/SSE-compatible events
-    endpoint without response-shape drift.
-  - Write SSOT updates for G366 and WB-022..WB-025 mapping, then run required acceptance
-    commands and collect packet evidence.
+  - 'Implement NFR-002 and NFR-004 together: preserve append-only job/event semantics
+    and enforce same-session action idempotency.'
+  - Implement NFR-003 single-page timely refresh (polling or SSE) without breaking
+    existing response shapes.
+  - 'Write SSOT updates for G366 and WB-022..WB-025 mapping, then run and record:
+    check_docs_tree, targeted pytest, and rg grep acceptance commands.'
   risk_notes:
-  - API/UI contract drift from the G358 baseline can break existing MVP behavior
-    and targeted tests.
-  - Append-only violations can silently corrupt audit/event history under retries.
+  - API/UI contract drift from G358 baseline can break existing MVP behavior and targeted
+    tests.
+  - Append-only violations may silently corrupt audit/event history under retries.
   - Missing idempotency on repeated clicks can duplicate actions or produce invalid
     session state.
-  - Polling/SSE refresh divergence can cause stale or inconsistent single-page results.
+  - SSE/polling refresh divergence can cause stale or inconsistent single-page results.
   - Path/session validation regressions can reintroduce traversal/security failures.
   - SSOT writeback mistakes can mis-map WB-022..WB-025 status or alter unrelated requirements.
   parallel_hints:
-  - Run backend idempotency/append-only hardening and frontend refresh UX adaptation
-    in parallel streams.
+  - 'Run two streams in parallel: backend idempotency/append-only enforcement and
+    frontend refresh UX adaptation.'
   - Draft phase doc and SSOT G366 mapping updates while code changes are in progress.
   - After code freeze, run `python3 scripts/check_docs_tree.py` and targeted pytest
     in parallel terminals.
   - Execute `rg -n "G366|WB-022|WB-023|WB-024|WB-025" docs/12_workflows/skeleton_ssot_v1.yaml`
     while assembling evidence artifacts.
-  - Use mocked event streams to validate polling refresh behavior before final backend
-    integration.
+  - Use mocked event streams to validate polling/SSE refresh behavior before final
+    backend integration.
   - Keep a lightweight contract-diff checklist against G358 running in parallel with
-    implementation and testing.
+    implementation/testing.
   todo_planner:
     mode: codex_assisted
     source: codex_cli_planner
-    generated_at: '2026-02-18T11:46:00Z'
+    generated_at: '2026-02-18T11:29:44Z'
     goal_id: G366
     artifact_path: artifacts/autopilot/planner/G366/todo_planner_last_message.txt
   ui_path: /ui/workbench/req/wb-022
@@ -21022,9 +21022,93 @@ goal_checklist:
   capability_cluster_id: CL_FETCH_366
   allow_noop: false
   notes:
-  - Auto-generated from unmet requirement bundle WB-022/WB-023/WB-024/WB-025 at 2026-02-18T11:46:00Z.
-  - Implemented by controller lifecycle on 2026-02-18T11:58:00Z after attempt 1; packet
+  - Auto-generated from unmet requirement bundle WB-022/WB-023/WB-024/WB-025 at 2026-02-18T11:28:32Z
+  - Implemented by controller lifecycle on 2026-02-18T11:45:45Z after attempt 1; packet
     G366 validated.
+- id: G367
+  title: Impl workbench requirement execution for WB-038
+  status_now: implemented
+  depends_on:
+  - G360
+  track: impl_workbench
+  requirement_ids:
+  - WB-038
+  phase_doc_path: docs/08_phases/10_impl_workbench/phase_workbench_g367_get_ui_workbench_session_id.md
+  required_skills:
+  - requirement-splitter
+  - ssot-goal-planner
+  - phase-authoring
+  - packet-evidence-guard
+  difficulty_score: 77
+  reasoning_tier: medium
+  todo_checklist:
+  - 'Dependency gate: confirm G360 is implemented and WB-028 route/interface contract (`WORKBENCH_ROUTE_INTERFACE_V43`) stays unchanged.'
+  - Validate/adjust `GET|HEAD /ui/workbench/{session_id}` in `src/quant_eam/api/ui_routes.py` to enforce `require_safe_id(session_id)` and render `workbench.html` with `selected_session` context.
+  - Ensure session-context loading handles existing, missing (`404`), invalid-id (`400`), and corrupt-session (`409`) cases without weakening traversal protections.
+  - Add/refresh targeted UI assertions for `/ui/workbench/{session_id}` plus route-inventory/precedence checks vs `/ui/workbench` and `/ui/workbench/req/*`.
+  - Replace `TBD` in `docs/08_phases/10_impl_workbench/phase_workbench_g367_get_ui_workbench_session_id.md` and scope-lock to WB-038 only (non-goals `WB-039+`).
+  - 'Update `docs/12_workflows/skeleton_ssot_v1.yaml` for `G367` + `WB-038` mapping/status, then run: `python3 scripts/check_docs_tree.py`; `python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked`; `rg -n "G367|WB-038" docs/12_workflows/skeleton_ssot_v1.yaml`.'
+  risk_notes:
+  - Dynamic `/ui/workbench/{session_id}` can shadow `/ui/workbench/req/*` if route ordering or validation drifts.
+  - Session ID sanitization regressions may reintroduce path traversal or alter expected 400/404 behavior.
+  - Missing/corrupt session artifacts may cause 500s during template context assembly instead of controlled 404/409.
+  - Scope creep from WB-038 into WB-039+ can add unverified work and delay closure.
+  - SSOT writeback drift (goal block, requirement mapping, latest-phase metadata) can fail doc-tree/grep acceptance.
+  - Targeted acceptance tests are narrow, so adjacent workbench regressions may slip through.
+  parallel_hints:
+  - 'Parallel A: route/session-context hardening and tests; Parallel B: phase doc + SSOT (`G367`/`WB-038`) updates.'
+  - Prepare SSOT mapping patch while a separate terminal iterates pytest on workbench session rendering.
+  - Run `python3 scripts/check_docs_tree.py` and `rg -n "G367|WB-038" docs/12_workflows/skeleton_ssot_v1.yaml` concurrently after docs edits.
+  - Keep a live contract checklist against `WORKBENCH_ROUTE_INTERFACE_V43` while implementing session-route assertions.
+  - Use a minimal fixture (`create session -> GET /ui/workbench/{session_id}`) early to validate render path before full verification.
+  - Gate final closeout only after both streams merge cleanly and all acceptance command outputs are captured.
+  todo_planner:
+    mode: codex_assisted
+    source: codex_cli_planner
+    generated_at: '2026-02-18T11:55:11Z'
+    goal_id: G367
+    artifact_path: artifacts/autopilot/planner/G367/todo_planner_last_message.txt
+  ui_path: /ui/workbench/{session_id}
+  expected_state_change: Requirement `WB-038` transitions to implemented after acceptance.
+  expected_artifacts:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g367_get_ui_workbench_session_id.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  allowed_paths:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g367_get_ui_workbench_session_id.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  - docs/00_overview/workbench_ui_productization_v1.md
+  - src/quant_eam/ui/**
+  - src/quant_eam/api/**
+  - tests/test_ui_*.py
+  - artifacts/subagent_control/G367/**
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - rg -n "G367|WB-038" docs/12_workflows/skeleton_ssot_v1.yaml
+  stop_condition_exception_scope:
+    exception_id: g367_requirement_gap_scope
+    rationale: requirement-gap driven goal
+    preauthorized_scope:
+      allowed_route_prefixes:
+      - /ui/workbench/{session_id}
+      allowed_code_paths:
+      - docs/08_phases/10_impl_workbench/phase_workbench_g367_get_ui_workbench_session_id.md
+      - docs/12_workflows/skeleton_ssot_v1.yaml
+      - docs/00_overview/workbench_ui_productization_v1.md
+      - src/quant_eam/ui/**
+      - src/quant_eam/api/**
+      - tests/test_ui_*.py
+      - artifacts/subagent_control/G367/**
+      still_forbidden:
+      - contracts/**
+      - policies/**
+      - Holdout visibility expansion
+  capability_cluster_id: CL_FETCH_367
+  allow_noop: false
+  notes:
+  - Auto-generated from unmet requirement WB-038 at 2026-02-18T11:53:58Z
+  - Implemented by controller lifecycle on 2026-02-18T11:58:12Z after attempt 1; packet
+    G367 validated.
 agents_pipeline_v1:
   pipeline_id: agents_pipeline_v1
   execution_model: serial_pipeline_with_checkpoints
@@ -25743,11 +25827,12 @@ requirements_trace_v1:
   clause: GET /ui/workbench/{session_id}
   depends_on_req_ids:
   - WB-028
-  status_now: planned
-  mapped_goal_ids: []
+  status_now: implemented
+  mapped_goal_ids:
+  - G367
   acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_367
 - req_id: WB-039
   source_document: docs/00_overview/workbench_ui_productization_v1.md
   source_line: 107
@@ -29567,6 +29652,23 @@ capability_clusters_v1:
   - python3 -m pytest -q tests/test_ui_mvp.py
   notes:
   - auto-clustered from goal dependency graph
+- cluster_id: CL_FETCH_367
+  title: Fetch capability cluster for G367
+  status_now: implemented
+  goal_ids:
+  - G295
+  - G367
+  requirement_ids:
+  - WB-038
+  latest_phase_id: G367
+  acceptance_commands:
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - python3 scripts/check_docs_tree.py
+  - rg -n "G367|WB-038" docs/12_workflows/skeleton_ssot_v1.yaml
+  required_tests:
+  - python3 -m pytest -q tests/test_ui_mvp.py
+  notes:
+  - auto-clustered from goal dependency graph
 - cluster_id: CL_LEGACY_CORE
   title: Legacy/core goal cluster
   status_now: partial
@@ -29880,13 +29982,14 @@ capability_clusters_v1:
   - G363
   - G364
   - G365
+  - G366
+  - G367
   requirement_ids:
   - QF-098
   - QF-099
   - QF-100
   - QF-101
   - WB-026
-  - WB-038
   - WB-039
   - WB-040
   - WB-041
@@ -29926,7 +30029,7 @@ capability_clusters_v1:
   - WV-036
   - WV-037
   - WV-038
-  latest_phase_id: G365
+  latest_phase_id: G367
   acceptance_commands:
   - python3 scripts/check_docs_tree.py
   required_tests:
@@ -82256,6 +82359,19 @@ milestone_history_v1:
     commit_manifest: artifacts/autopilot/milestones/cl_fetch_365-20260218112645/commit_manifest.json
   notes:
   - auto-recorded by whole_view_autopilot milestone evaluator
+- milestone_id: cl_fetch_366-20260218114808
+  cluster_id: CL_FETCH_366
+  status_now: implemented
+  recorded_at: '2026-02-18T11:48:32Z'
+  latest_phase_id: G366
+  push_mode: fallback_branch
+  branch: autopilot/milestone-cl_fetch_366-20260218114808
+  commit_sha: 23f95b090be672c237a9ef6a2885f02fff628bd3
+  artifact_paths:
+    milestone_summary: artifacts/autopilot/milestones/cl_fetch_366-20260218114808/milestone_summary.md
+    commit_manifest: artifacts/autopilot/milestones/cl_fetch_366-20260218114808/commit_manifest.json
+  notes:
+  - auto-recorded by whole_view_autopilot milestone evaluator
 queue_empty_generation_protocol_v1:
   status_now: active
   enabled: true
@@ -84498,10 +84614,9 @@ planning_policy_v2:
     latest_plan:
       mode: codex_assisted
       source: codex_cli_architect_planner
-      generated_at: '2026-02-18T11:04:40Z'
-      signature: 83f1fa278a23e9aec13c
+      generated_at: '2026-02-18T11:28:32Z'
+      signature: 3d72e60d2555d9f4dfe3
       requirement_priority:
-      - WB-019
       - WB-022
       - WB-023
       - WB-024
@@ -84528,9 +84643,9 @@ planning_policy_v2:
       - WB-056
       - WB-057
       - WB-058
+      - WB-061
       - WB-059
       - WB-060
-      - WB-061
       - WB-062
       - WB-069
       - WB-070
@@ -84546,18 +84661,14 @@ planning_policy_v2:
       bundle_hints:
       - track: impl_workbench
         requirement_ids:
-        - WB-019
         - WB-022
         - WB-023
         - WB-024
         - WB-025
         - WB-026
-        reason: 先落地失败恢复与关键NFR护栏，避免后续实现返工并约束行为边界。
-      - track: impl_workbench
-        requirement_ids:
         - WB-038
         - WB-039
-        reason: 先建立Workbench读取接口与UI改造骨架，再承接数据落盘与卡片实现。
+        reason: 先锁定NFR与/workbench接口骨架，避免后续实现偏离既有API/UI和事件语义。
       - track: impl_workbench
         requirement_ids:
         - WB-040
@@ -84565,7 +84676,7 @@ planning_policy_v2:
         - WB-042
         - WB-043
         - WB-044
-        reason: 统一session/events/cards/drafts持久化契约，为后续阶段卡和草稿操作提供基础。
+        reason: 先完成会话与产物落盘契约（append-only与draft选择），为各Phase卡片与操作提供稳定数据面。
       - track: impl_workbench
         requirement_ids:
         - WB-045
@@ -84575,7 +84686,7 @@ planning_policy_v2:
         - WB-049
         - WB-050
         - WB-051
-        reason: 按Phase-0/1先打通从Idea到规格确认的最小可用闭环。
+        reason: 优先打通Phase-0/1的人机闭环（展示+可操作+草稿编辑回退），尽早验证交互主路径。
       - track: impl_workbench
         requirement_ids:
         - WB-052
@@ -84587,45 +84698,44 @@ planning_policy_v2:
         - WB-058
         - WB-059
         - WB-060
-        reason: 在已具备草稿能力基础上扩展Phase-2~4，并保留回退与重跑路径。
+        reason: 沿同一模式扩展到Phase-2/3/4，完成回退、重跑、改进与组合执行能力。
       - track: impl_workbench
         requirement_ids:
         - WB-061
         - WB-062
-        - WB-069
-        - WB-070
-        - WB-071
-        - WB-072
-        reason: 实现Subagent API/Session Store并对齐对象模型与real-jobs入口。
-      - track: impl_workbench
-        requirement_ids:
         - WB-063
         - WB-064
         - WB-065
         - WB-066
         - WB-067
         - WB-068
-        reason: 作为最终验收与回归关口，放在核心功能完成后集中验证。
+        reason: 以Subagent API/Session Store为验收闸门，集中完成DoD、测试与回归不破坏。
+      - track: impl_workbench
+        requirement_ids:
+        - WB-069
+        - WB-070
+        - WB-071
+        - WB-072
+        reason: 最后收敛到框架对齐与真实实现映射，落实real-jobs创建绑定与代码落点可追踪。
       parallel_hints:
-      - WB-022~WB-026 在满足 WB-021 后可按稳定性维度并行推进。
-      - WB-040~WB-044 在 WB-039 完成后可并行实现（session/events/cards/drafts）。
-      - WB-050 与 WB-051 在 WB-049 后可并行，随后汇合进入 WB-052。
-      - WB-053 与 WB-054 在 WB-052 后可并行，WB-055 只需等待 WB-054。
-      - WB-059、WB-060、WB-061 在 WB-058 后可并行推进。
-      - WB-071 与 WB-072 在 WB-070 后可并行（API行为与代码落点）。
-      - WB-063~WB-068 可在主链功能落地后并行做验收与回归。
+      - WB-039完成后，WB-040/WB-041与WB-042/WB-043可并行；WB-044需优先以解锁WB-045。
+      - WB-046后，WB-047与WB-048可并行，但WB-048在关键路径上（解锁WB-049）。
+      - WB-049后，WB-050与WB-051可并行，优先WB-051以解锁WB-052。
+      - WB-052后，WB-053与WB-054可并行，优先WB-054以解锁WB-055。
+      - WB-055后，WB-056与WB-057可并行，优先WB-057以解锁WB-058。
+      - WB-058后，WB-059/WB-060可与WB-061并行，但WB-061是WB-062及后续验收关键路径。
+      - WB-062后，WB-063~WB-068可并行推进，同时启动WB-069；WB-069是WB-070/071/072前置。
+      - WB-070后，WB-071与WB-072可并行收敛。
       rationale:
-      - 采用拓扑序并在同层按编号稳定排序，保证确定性与有限性。
-      - 接口骨架与数据契约（WB-038/039/040-044）前置于Phase实现，满足“骨架先于依赖实现”。
-      - Phase链路严格按0->4推进，确保回退/重跑语义可被逐层复用。
-      - Subagent API与对象模型对齐放在功能链后段，用于收敛real-jobs模式一致性。
-      - DoD与回归项置于末段，作为最终质量闸门而非前置开发阻塞。
-      - 当前无Active goals，因此 goal_priority 为空数组。
+      - 排序遵循显式依赖拓扑，并将接口/契约骨架放在依赖实现之前。
+      - WB-022~WB-026前置以约束实现边界，降低API/UI回归与append-only语义破坏风险。
+      - 关键路径优先：WB-038→WB-039→WB-044→…→WB-061→WB-062→WB-069→WB-070→WB-071/072。
+      - 同层展示型需求与验收型需求尽量并行，保证主链路先通、覆盖随后补齐。
       skills_used:
       - architect-planner
       - requirement-splitter
       - ssot-goal-planner
-      artifact_path: artifacts/autopilot/preplan/architect_preplan_20260218T110440Z.json
+      artifact_path: artifacts/autopilot/preplan/architect_preplan_20260218T112832Z.json
 skill_registry_v1:
   status_now: active
   skills:
@@ -85260,6 +85370,15 @@ architect_preplan_history_v1:
   blocked: false
   fallback_reason: ''
   artifact_path: artifacts/autopilot/preplan/83f1fa278a23e9aec13c/architect_preplan_last_message.txt
+- generated_at: '2026-02-18T11:28:32Z'
+  signature: 3d72e60d2555d9f4dfe3
+  mode: codex_assisted
+  source: codex_cli_architect_planner
+  requirement_priority_count: 40
+  goal_priority_count: 0
+  blocked: false
+  fallback_reason: ''
+  artifact_path: artifacts/autopilot/preplan/3d72e60d2555d9f4dfe3/architect_preplan_last_message.txt
 autopilot_decision_log_v1:
 - recorded_at: '2026-02-17T09:54:42Z'
   decision_type: stop_condition_blocked

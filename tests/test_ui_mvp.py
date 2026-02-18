@@ -424,9 +424,30 @@ def test_ui_create_idea_job_from_form(tmp_path: Path, monkeypatch) -> None:
     assert job_id in rd.text
 
 
-def test_path_traversal_blocked() -> None:
+def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
+    art_root = tmp_path / "artifacts"
+    art_root.mkdir()
+    monkeypatch.setenv("EAM_ARTIFACT_ROOT", str(art_root))
+
     r = _request_via_asgi("GET", "/runs/../../etc/passwd")
     assert r.status_code in (400, 404)
+
+    invalid_sid = _request_via_asgi("GET", "/ui/workbench/bad.id")
+    assert invalid_sid.status_code == 400
+
+    missing_sid = _request_via_asgi("GET", "/ui/workbench/ws_missing_404")
+    assert missing_sid.status_code == 404
+
+    corrupt_sid = "ws_corrupt_409"
+    sess_dir = art_root / "workbench" / "sessions" / corrupt_sid
+    sess_dir.mkdir(parents=True)
+    (sess_dir / "session.json").write_text("{not-json", encoding="utf-8")
+    corrupt_doc = _request_via_asgi("GET", f"/ui/workbench/{corrupt_sid}")
+    assert corrupt_doc.status_code == 409
+
+    req_alias = _request_via_asgi("GET", "/ui/workbench/req/wb-028")
+    assert req_alias.status_code == 200
+    assert "Requirement entry alias" in req_alias.text
 
 
 def test_holdout_leak_not_rendered(tmp_path: Path, monkeypatch) -> None:
@@ -487,6 +508,12 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     for method, path in WORKBENCH_ROUTE_INTERFACE_V43:
         assert f"{method} {path}" in r.text
     assert _workbench_missing_route_pairs() == []
+    route_paths = [str(getattr(route, "path", "")) for route in app.router.routes]
+    session_route_idx = route_paths.index("/ui/workbench/{session_id}")
+    assert route_paths.index("/ui/workbench") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-015") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-002") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-028") < session_route_idx
     assert client.get("/ui/jobs").status_code == 200
     assert client.get("/ui/qa-fetch").status_code == 200
 
@@ -541,6 +568,8 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     # WB-004: UI renders readable cards and keeps evidence collapsed by default via <details>.
     page = client.get(f"/ui/workbench/{session_id}")
     assert page.status_code == 200
+    assert 'id="workbench-session-detail"' in page.text
+    assert f'data-session-id="{session_id}"' in page.text
     assert "Result Cards" in page.text
     assert "Evidence details (collapsed by default)" in page.text
     assert "<details>" in page.text

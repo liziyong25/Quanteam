@@ -8262,8 +8262,11 @@ def ui_workbench_req_wb028(request: Request) -> HTMLResponse:
 @router.api_route("/ui/workbench/{session_id}", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_workbench_session(request: Request, session_id: str) -> HTMLResponse:
     sid = require_safe_id(session_id, kind="session_id")
+    # Load selected-session context first so invalid/missing/corrupt payloads return
+    # controlled HTTP errors (400/404/409) before template render.
+    selected_session = _workbench_session_context(sid)
     ctx = _workbench_index_context()
-    ctx["selected_session"] = _workbench_session_context(sid)
+    ctx["selected_session"] = selected_session
     return TEMPLATES.TemplateResponse(request, "workbench.html", ctx)
 
 
