@@ -539,6 +539,68 @@ def test_ui_create_idea_job_from_form(tmp_path: Path, monkeypatch) -> None:
     assert int((((strategy_snapshot.get("selected") or {}).get("version")) or 0)) == 1
     assert int((((strategy_snapshot.get("previous_selected") or {}).get("version")) or 0)) == 2
 
+    # WB-055: real-jobs continue path must reach trace_preview and persist deterministic
+    # WAITING_APPROVAL(step=trace_preview) checkpoint evidence.
+    monkeypatch.setenv("EAM_WORKBENCH_REAL_JOBS", "1")
+    wb055 = _request_via_asgi(
+        "POST",
+        "/workbench/sessions",
+        json={
+            "title": "wb055-phase2",
+            "message": "验证 Phase-2 trace_preview 审阅点",
+            "symbols": "AAA,BBB",
+            "snapshot_id": snapshot_id,
+            "policy_bundle_path": "policies/policy_bundle_v1.yaml",
+            "start": "2024-01-01",
+            "end": "2024-01-10",
+        },
+    )
+    assert wb055.status_code == 201, wb055.text
+    wb055_doc = wb055.json()
+    wb055_session_id = str(wb055_doc["session_id"])
+    wb055_job_id = str(wb055_doc["job_id"])
+
+    checkpoint = ""
+    current_step = "idea"
+    for _ in range(6):
+        cont = _request_via_asgi("POST", f"/workbench/sessions/{wb055_session_id}/continue", json={})
+        assert cont.status_code == 200, cont.text
+        cont_doc = cont.json()
+        checkpoint = str(cont_doc.get("checkpoint") or "")
+        current_step = str(cont_doc.get("current_step") or "")
+        if checkpoint == "trace_preview":
+            break
+    assert checkpoint == "trace_preview"
+    assert current_step in {"trace_preview", "runspec"}
+
+    wb055_session_get = _request_via_asgi("GET", f"/workbench/sessions/{wb055_session_id}")
+    assert wb055_session_get.status_code == 200, wb055_session_get.text
+    wb055_session_payload = wb055_session_get.json().get("session")
+    assert isinstance(wb055_session_payload, dict)
+    assert str(wb055_session_payload.get("job_checkpoint") or "") == "trace_preview"
+    phase2_checkpoint = wb055_session_payload.get("phase2_checkpoint")
+    assert isinstance(phase2_checkpoint, dict)
+    assert phase2_checkpoint.get("schema_version") == "workbench_phase2_trace_preview_checkpoint_v1"
+    assert phase2_checkpoint.get("job_id") == wb055_job_id
+    assert phase2_checkpoint.get("waiting_step") == "trace_preview"
+    assert phase2_checkpoint.get("trace_preview_waiting_present") is True
+    assert phase2_checkpoint.get("evidence_stable") is True
+    phase2_checkpoint_path = Path(str(phase2_checkpoint.get("checkpoint_path") or ""))
+    assert phase2_checkpoint_path.is_file()
+
+    wb055_job_events_path = job_root / wb055_job_id / "events.jsonl"
+    assert wb055_job_events_path.is_file()
+    wb055_event_rows = [json.loads(ln) for ln in wb055_job_events_path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    wb055_trace_waiting_offsets = [
+        idx
+        for idx, ev in enumerate(wb055_event_rows, start=1)
+        if str(ev.get("event_type")) == "WAITING_APPROVAL"
+        and isinstance(ev.get("outputs"), dict)
+        and str(ev["outputs"].get("step")) == "trace_preview"
+    ]
+    assert wb055_trace_waiting_offsets
+    assert int(phase2_checkpoint["trace_preview_waiting_event_offset"]) == max(wb055_trace_waiting_offsets)
+
 
 def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     art_root = tmp_path / "artifacts"
@@ -579,6 +641,9 @@ def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     req_alias_phase1_apply_rollback = _request_via_asgi("GET", "/ui/workbench/req/wb-054")
     assert req_alias_phase1_apply_rollback.status_code == 200
     assert "Requirement entry alias" in req_alias_phase1_apply_rollback.text
+    req_alias_phase2 = _request_via_asgi("GET", "/ui/workbench/req/wb-055")
+    assert req_alias_phase2.status_code == 200
+    assert "Requirement entry alias" in req_alias_phase2.text
 
     # WB-039 baseline: create flow exposes stable persistence contracts and writes session artifacts.
     created = _request_via_asgi(
@@ -797,6 +862,8 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert r.status_code == 200
     r = client.get("/ui/workbench/req/wb-054")
     assert r.status_code == 200
+    r = client.get("/ui/workbench/req/wb-055")
+    assert r.status_code == 200
     expected_route_contract = (
         ("POST", "/workbench/sessions"),
         ("GET", "/workbench/sessions/{session_id}"),
@@ -825,6 +892,7 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert route_paths.index("/ui/workbench/req/wb-051") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-053") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-054") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-055") < session_route_idx
     assert client.get("/ui/jobs").status_code == 200
     assert client.get("/ui/qa-fetch").status_code == 200
 

@@ -172,6 +172,7 @@ IA_ROUTE_VIEW_CATALOG: dict[str, dict[str, str]] = {
     "/ui/workbench/req/wb-051": {"view_name": "Workbench phase-1 skeleton entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-053": {"view_name": "Workbench phase-1 draft operations entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-054": {"view_name": "Workbench phase-1 apply/rollback operations entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-055": {"view_name": "Workbench phase-2 skeleton entry", "template": "workbench.html"},
     "/ui/workbench/{session_id}": {"view_name": "Workbench session", "template": "workbench.html"},
 }
 IA_CHECKLIST_ROUTE_BINDINGS: dict[int, list[str]] = {
@@ -419,6 +420,7 @@ WORKBENCH_REQUIREMENT_ENTRY_ALIASES: tuple[str, ...] = (
     "/ui/workbench/req/wb-051",
     "/ui/workbench/req/wb-053",
     "/ui/workbench/req/wb-054",
+    "/ui/workbench/req/wb-055",
 )
 WORKBENCH_EVIDENCE_MAX_BYTES = 262_144
 WORKBENCH_EVIDENCE_MAX_CSV_ROWS = 24
@@ -3451,6 +3453,70 @@ def _ensure_idea_job_phase0_blueprint_checkpoint(
             "waiting_blueprint_event_added": waiting_blueprint_added,
         }
     )
+    return out
+
+
+def _ensure_real_job_phase2_trace_preview_checkpoint(
+    *,
+    job_id: str,
+    job_root: Path,
+) -> dict[str, Any]:
+    """Capture deterministic WB-055 Phase-2 evidence at trace_preview checkpoint."""
+    safe_job_id = require_safe_job_id(job_id)
+    paths = jobs_job_paths(safe_job_id, job_root=job_root)
+    events = jobs_load_events(safe_job_id, job_root=job_root)
+
+    runspec_approved_event_offset = 0
+    trace_preview_waiting_event_offset = 0
+    for idx, ev in enumerate(events, start=1):
+        event_type = str(ev.get("event_type") or "")
+        outputs = ev.get("outputs") if isinstance(ev.get("outputs"), dict) else {}
+        step = str(outputs.get("step") or "").strip()
+        if event_type == "APPROVED" and step == "runspec":
+            runspec_approved_event_offset = idx
+        if event_type == "WAITING_APPROVAL" and step == "trace_preview":
+            trace_preview_waiting_event_offset = idx
+
+    outputs_path = paths.outputs_dir / "outputs.json"
+    outputs_doc: dict[str, Any] = {}
+    if outputs_path.is_file():
+        try:
+            loaded = _load_json(outputs_path)
+            if isinstance(loaded, dict):
+                outputs_doc = loaded
+        except Exception:
+            outputs_doc = {}
+
+    trace_preview_path = str(outputs_doc.get("calc_trace_preview_path") or "").strip()
+    trace_meta_path = str(outputs_doc.get("trace_meta_path") or "").strip()
+    trace_preview_path_exists = bool(
+        trace_preview_path and _resolve_existing_evidence_path(trace_preview_path) is not None
+    )
+    trace_meta_path_exists = bool(trace_meta_path and _resolve_existing_evidence_path(trace_meta_path) is not None)
+
+    ordering_ok = runspec_approved_event_offset <= trace_preview_waiting_event_offset if runspec_approved_event_offset else True
+    evidence_stable = bool(trace_preview_waiting_event_offset and ordering_ok)
+
+    checkpoint_path = paths.outputs_dir / "workbench" / "phase2_trace_preview_checkpoint.json"
+    checkpoint_doc = {
+        "schema_version": "workbench_phase2_trace_preview_checkpoint_v1",
+        "job_id": safe_job_id,
+        "waiting_step": "trace_preview",
+        "events_path": paths.events.as_posix(),
+        "outputs_index_path": outputs_path.as_posix(),
+        "runspec_approved_event_offset": runspec_approved_event_offset,
+        "trace_preview_waiting_event_offset": trace_preview_waiting_event_offset,
+        "trace_preview_waiting_present": trace_preview_waiting_event_offset > 0,
+        "runspec_approved_before_trace_preview_waiting": ordering_ok,
+        "calc_trace_preview_path": trace_preview_path,
+        "trace_meta_path": trace_meta_path,
+        "calc_trace_preview_path_exists": trace_preview_path_exists,
+        "trace_meta_path_exists": trace_meta_path_exists,
+        "evidence_stable": evidence_stable,
+    }
+    _write_json(checkpoint_path, checkpoint_doc)
+    out = dict(checkpoint_doc)
+    out["checkpoint_path"] = checkpoint_path.as_posix()
     return out
 
 
@@ -8185,6 +8251,18 @@ async def workbench_session_continue(session_id: str, request: Request) -> Any:
 
             outputs_index = _load_job_outputs_index(job_id)
             artifact_refs = [str(v).strip() for v in outputs_index.values() if isinstance(v, str) and str(v).strip()]
+            phase2_checkpoint: dict[str, Any] = {}
+            if checkpoint == "trace_preview":
+                phase2_checkpoint = _ensure_real_job_phase2_trace_preview_checkpoint(
+                    job_id=job_id,
+                    job_root=default_job_root(),
+                )
+                session["phase2_checkpoint"] = phase2_checkpoint
+                if not bool(phase2_checkpoint.get("trace_preview_waiting_present")):
+                    raise HTTPException(
+                        status_code=409,
+                        detail="trace_preview checkpoint missing WAITING_APPROVAL(step=trace_preview)",
+                    )
 
             session["current_step"] = phase_step
             session["step_index"] = phase_idx
@@ -8222,6 +8300,8 @@ async def workbench_session_continue(session_id: str, request: Request) -> Any:
             details["approved_step"] = approved_step
             details["job_outputs_ref"] = outputs_index
             details["job_advance_result"] = advance_result
+            if phase2_checkpoint:
+                details["phase2_checkpoint"] = phase2_checkpoint
             artifacts = [*artifacts, *artifact_refs]
             card_doc = _ensure_workbench_phase_card(
                 session_id=session_id,
@@ -9222,6 +9302,12 @@ def ui_workbench_req_wb053(request: Request) -> HTMLResponse:
 @router.api_route("/ui/workbench/req/wb-054", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_workbench_req_wb054(request: Request) -> HTMLResponse:
     # Stable requirement-bound entry path used by SSOT ui_path for G378.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-055", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb055(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G379.
     return ui_workbench(request)
 
 
