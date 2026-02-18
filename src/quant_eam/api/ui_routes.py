@@ -171,6 +171,7 @@ IA_ROUTE_VIEW_CATALOG: dict[str, dict[str, str]] = {
     "/ui/workbench/req/wb-050": {"view_name": "Workbench phase-0 scope-lock entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-051": {"view_name": "Workbench phase-1 skeleton entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-053": {"view_name": "Workbench phase-1 draft operations entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-054": {"view_name": "Workbench phase-1 apply/rollback operations entry", "template": "workbench.html"},
     "/ui/workbench/{session_id}": {"view_name": "Workbench session", "template": "workbench.html"},
 }
 IA_CHECKLIST_ROUTE_BINDINGS: dict[int, list[str]] = {
@@ -405,6 +406,7 @@ WORKBENCH_ROUTE_INTERFACE_V43: tuple[tuple[str, str], ...] = (
     ("POST", "/workbench/sessions/{session_id}/fetch-probe"),
     ("POST", "/workbench/sessions/{session_id}/steps/{step}/drafts"),
     ("POST", "/workbench/sessions/{session_id}/steps/{step}/drafts/{version}/apply"),
+    ("POST", "/workbench/sessions/{session_id}/steps/{step}/drafts/rollback"),
     ("GET", "/ui/workbench"),
     ("GET", "/ui/workbench/{session_id}"),
 )
@@ -416,6 +418,7 @@ WORKBENCH_REQUIREMENT_ENTRY_ALIASES: tuple[str, ...] = (
     "/ui/workbench/req/wb-050",
     "/ui/workbench/req/wb-051",
     "/ui/workbench/req/wb-053",
+    "/ui/workbench/req/wb-054",
 )
 WORKBENCH_EVIDENCE_MAX_BYTES = 262_144
 WORKBENCH_EVIDENCE_MAX_CSV_ROWS = 24
@@ -1170,6 +1173,22 @@ def _workbench_parse_optional_positive_int(value: Any, *, field_name: str) -> in
     if not text:
         return None
     return _workbench_parse_positive_int(text, field_name=field_name)
+
+
+def _workbench_assert_expected_revision(session: dict[str, Any], *, expected_revision: int | None) -> None:
+    if expected_revision is None:
+        return
+    current = session.get("revision")
+    current_revision = int(current) if isinstance(current, int) and current >= 0 else 0
+    if expected_revision != current_revision:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "revision_conflict",
+                "expected_revision": expected_revision,
+                "current_revision": current_revision,
+            },
+        )
 
 
 def _workbench_step_rerun_agent_id(step: str) -> str:
@@ -8676,6 +8695,7 @@ async def workbench_session_save_draft(session_id: str, step: str, request: Requ
     step = _workbench_parse_step(step, allow_idea=False)
     payload = await _read_workbench_payload(request)
     is_ui = str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}
+    expected_revision = _workbench_parse_optional_positive_int(payload.get("expected_revision"), field_name="expected_revision")
     draft_content = _workbench_validate_draft_content(payload)
     content_json = json.dumps(draft_content, ensure_ascii=True, separators=(",", ":"), sort_keys=True)
     content_hash = hashlib.sha256(content_json.encode("utf-8")).hexdigest()
@@ -8683,6 +8703,7 @@ async def workbench_session_save_draft(session_id: str, step: str, request: Requ
     with WORKBENCH_DRAFT_WRITE_LOCK:
         session = _load_workbench_session(session_id)
         owner_id = _workbench_bind_or_assert_session_owner(session, request=request)
+        _workbench_assert_expected_revision(session, expected_revision=expected_revision)
         draft_dir = _workbench_step_draft_dir_from_session(session_id=session_id, session=session, step=step)
         version_list = []
         if draft_dir.is_dir():
@@ -8738,6 +8759,7 @@ async def workbench_session_apply_draft(session_id: str, step: str, version: str
     step = _workbench_parse_step(step, allow_idea=False)
     payload = await _read_workbench_payload(request)
     idempotency_key = _workbench_parse_action_idempotency_key(request=request, payload=payload)
+    expected_revision = _workbench_parse_optional_positive_int(payload.get("expected_revision"), field_name="expected_revision")
     draft_no = _workbench_parse_positive_int(version, field_name="version")
 
     with WORKBENCH_DRAFT_WRITE_LOCK:
@@ -8746,6 +8768,7 @@ async def workbench_session_apply_draft(session_id: str, step: str, version: str
         replay = _workbench_get_action_idempotent_response(session_id=session_id, action="draft_apply", key=idempotency_key)
         if replay is not None:
             return replay
+        _workbench_assert_expected_revision(session, expected_revision=expected_revision)
         draft_path, selected_path, prev_selected, selection_history, selection_snapshot = _workbench_apply_draft_locked(
             session_id=session_id,
             session=session,
@@ -8801,6 +8824,7 @@ async def workbench_session_apply_draft_from_payload(session_id: str, step: str,
     step = _workbench_parse_step(step, allow_idea=False)
     payload = await _read_workbench_payload(request)
     idempotency_key = _workbench_parse_action_idempotency_key(request=request, payload=payload)
+    expected_revision = _workbench_parse_optional_positive_int(payload.get("expected_revision"), field_name="expected_revision")
     draft_no = _workbench_parse_optional_positive_int(payload.get("version"), field_name="version")
     if draft_no is None:
         raise HTTPException(status_code=422, detail="version is required")
@@ -8813,6 +8837,7 @@ async def workbench_session_apply_draft_from_payload(session_id: str, step: str,
             if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
                 return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
             return replay
+        _workbench_assert_expected_revision(session, expected_revision=expected_revision)
         draft_path, selected_path, prev_selected, selection_history, selection_snapshot = _workbench_apply_draft_locked(
             session_id=session_id,
             session=session,
@@ -8870,6 +8895,7 @@ async def workbench_session_rollback_draft(session_id: str, step: str, request: 
     step = _workbench_parse_step(step, allow_idea=False)
     payload = await _read_workbench_payload(request)
     idempotency_key = _workbench_parse_action_idempotency_key(request=request, payload=payload)
+    expected_revision = _workbench_parse_optional_positive_int(payload.get("expected_revision"), field_name="expected_revision")
     target_version = _workbench_parse_optional_positive_int(
         payload.get("target_version") if "target_version" in payload else payload.get("version"),
         field_name="target_version",
@@ -8883,6 +8909,7 @@ async def workbench_session_rollback_draft(session_id: str, step: str, request: 
             if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
                 return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
             return replay
+        _workbench_assert_expected_revision(session, expected_revision=expected_revision)
         current_selected = _workbench_current_selected_draft_version(session, step=step)
         if current_selected is None:
             raise HTTPException(status_code=409, detail="no selected draft to rollback")
@@ -9189,6 +9216,12 @@ def ui_workbench_req_wb051(request: Request) -> HTMLResponse:
 @router.api_route("/ui/workbench/req/wb-053", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_workbench_req_wb053(request: Request) -> HTMLResponse:
     # Stable requirement-bound entry path used by SSOT ui_path for G377.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-054", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb054(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G378.
     return ui_workbench(request)
 
 

@@ -229,8 +229,9 @@
 8. `FR-008` 已实现：
    - 每张卡片支持安全路径约束下的 evidence 展开，并提供 JSON/CSV 明细预览视图。
    - 代码：`src/quant_eam/api/ui_routes.py`、`src/quant_eam/ui/templates/workbench.html`
-9. `FR-009` 未完成：
-   - 未形成“失败后重跑当前 step / 回退到上一步草稿并重跑 job”的闭环控制。
+9. `FR-009` 已部分实现（`WB-053` + `WB-054`）：
+   - 已支持当前 step 的重跑、历史草稿应用、回退上一草稿版本（含版本快照与 selected 指针）。
+   - 后续 `WB-057` 继续收敛“回退到 Phase‑1 并重跑”的跨 phase 语义闭环。
 10. `FR-010` 已实现（会话侧）：
    - 用户动作（create/message/continue/fetch-probe/draft）与系统动作（auto-approve/advance/fetch success|failed）均写入 session 事件日志。
    - 代码：`src/quant_eam/api/ui_routes.py`

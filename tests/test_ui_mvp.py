@@ -576,6 +576,9 @@ def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     req_alias_phase1_draft_ops = _request_via_asgi("GET", "/ui/workbench/req/wb-053")
     assert req_alias_phase1_draft_ops.status_code == 200
     assert "Requirement entry alias" in req_alias_phase1_draft_ops.text
+    req_alias_phase1_apply_rollback = _request_via_asgi("GET", "/ui/workbench/req/wb-054")
+    assert req_alias_phase1_apply_rollback.status_code == 200
+    assert "Requirement entry alias" in req_alias_phase1_apply_rollback.text
 
     # WB-039 baseline: create flow exposes stable persistence contracts and writes session artifacts.
     created = _request_via_asgi(
@@ -792,6 +795,8 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert r.status_code == 200
     r = client.get("/ui/workbench/req/wb-053")
     assert r.status_code == 200
+    r = client.get("/ui/workbench/req/wb-054")
+    assert r.status_code == 200
     expected_route_contract = (
         ("POST", "/workbench/sessions"),
         ("GET", "/workbench/sessions/{session_id}"),
@@ -801,6 +806,7 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
         ("POST", "/workbench/sessions/{session_id}/fetch-probe"),
         ("POST", "/workbench/sessions/{session_id}/steps/{step}/drafts"),
         ("POST", "/workbench/sessions/{session_id}/steps/{step}/drafts/{version}/apply"),
+        ("POST", "/workbench/sessions/{session_id}/steps/{step}/drafts/rollback"),
         ("GET", "/ui/workbench"),
         ("GET", "/ui/workbench/{session_id}"),
     )
@@ -818,6 +824,7 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert route_paths.index("/ui/workbench/req/wb-050") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-051") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-053") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-054") < session_route_idx
     assert client.get("/ui/jobs").status_code == 200
     assert client.get("/ui/qa-fetch").status_code == 200
 

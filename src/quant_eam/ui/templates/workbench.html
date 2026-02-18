@@ -207,6 +207,7 @@
           {% if s.current_step != "idea" %}
           <form method="post" action="/workbench/sessions/{{ s.session_id }}/steps/{{ s.current_step }}/drafts" class="form-grid" data-loading-form="1">
             <input type="hidden" name="_ui" value="1"/>
+            <input type="hidden" name="expected_revision" value="{{ s.revision if s.revision else 1 }}"/>
             <label class="full">
               <span>edit draft JSON</span>
               <textarea name="content_json" rows="5" placeholder='{"note":"refine strategy logic"}' required></textarea>
@@ -218,6 +219,7 @@
           <form method="post" action="/workbench/sessions/{{ s.session_id }}/steps/{{ s.current_step }}/drafts/apply" class="form-grid" data-loading-form="1">
             <input type="hidden" name="_ui" value="1"/>
             <input type="hidden" name="idempotency_key" value="" data-idempotency-input="draft_apply" data-session-id="{{ s.session_id }}"/>
+            <input type="hidden" name="expected_revision" value="{{ s.revision if s.revision else 1 }}"/>
             <label>
               <span>historical draft version</span>
               <input name="version" type="number" min="1" step="1" placeholder="e.g. 1" required/>
@@ -229,6 +231,7 @@
           <form method="post" action="/workbench/sessions/{{ s.session_id }}/steps/{{ s.current_step }}/drafts/rollback" class="form-grid" data-loading-form="1">
             <input type="hidden" name="_ui" value="1"/>
             <input type="hidden" name="idempotency_key" value="" data-idempotency-input="draft_rollback" data-session-id="{{ s.session_id }}"/>
+            <input type="hidden" name="expected_revision" value="{{ s.revision if s.revision else 1 }}"/>
             <div class="full">
               <button type="submit" class="btn" data-loading-label="Rolling back...">Rollback To Previous Draft</button>
             </div>

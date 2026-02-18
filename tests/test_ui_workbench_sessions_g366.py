@@ -195,6 +195,42 @@ def test_workbench_draft_apply_and_rollback_idempotency_key_replay(tmp_path: Pat
     assert rollback_after == rollback_mid
 
 
+def test_workbench_draft_revision_conflict_returns_409(tmp_path: Path, monkeypatch) -> None:
+    _setup_env(tmp_path, monkeypatch)
+    session_id = _create_session(owner="alice")
+
+    d1 = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{session_id}/steps/strategy_spec/drafts",
+        headers={"x-workbench-owner": "alice"},
+        json={"content": {"note": "draft-v1"}},
+    )
+    assert d1.status_code == 200, d1.text
+
+    session_doc = _request_via_asgi(
+        "GET",
+        f"/workbench/sessions/{session_id}",
+        headers={"x-workbench-owner": "alice"},
+    ).json()
+    session_payload = session_doc.get("session")
+    assert isinstance(session_payload, dict)
+    current_revision = int(session_payload.get("revision") or 0)
+    assert current_revision >= 2
+
+    conflict = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{session_id}/steps/strategy_spec/drafts/1/apply",
+        headers={"x-workbench-owner": "alice"},
+        json={"expected_revision": current_revision - 1},
+    )
+    assert conflict.status_code == 409, conflict.text
+    detail = conflict.json().get("detail")
+    assert isinstance(detail, dict)
+    assert detail.get("error") == "revision_conflict"
+    assert int(detail.get("expected_revision") or 0) == current_revision - 1
+    assert int(detail.get("current_revision") or 0) == current_revision
+
+
 def test_workbench_events_polling_response_shape_for_single_page_refresh(tmp_path: Path, monkeypatch) -> None:
     _setup_env(tmp_path, monkeypatch)
     session_id = _create_session(owner="alice")
