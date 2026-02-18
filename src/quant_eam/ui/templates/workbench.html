@@ -347,22 +347,87 @@
           {% endif %}
           {% if card.phase == "strategy_spec" and card.details %}
             {% set readable = card.details.get("strategy_readable", {}) %}
-            {% if readable and readable.get("available") %}
-              <p><strong>Pseudocode</strong></p>
-              <pre class="code">{{ readable.get("pseudocode_text", "") }}</pre>
-              {% set var_summary = readable.get("variable_dictionary_summary", {}) %}
-              {% set trace_summary = readable.get("trace_plan_summary", {}) %}
-              <div class="table-wrap">
+            {% set wb052 = readable.get("wb052_cards", {}) if readable else {} %}
+            {% set pseudo_card = wb052.get("strategy_pseudocode", {}) %}
+            {% set var_card = wb052.get("variable_dictionary_summary", {}) %}
+            {% set trace_card = wb052.get("calc_trace_plan_summary", {}) %}
+            {% set risk_card = wb052.get("spec_qa_risk", {}) %}
+            <p><strong>strategy_pseudocode card</strong></p>
+            <p class="muted">status={{ pseudo_card.get("status", "missing") }} | source=<code>{{ pseudo_card.get("source_path", "") }}</code></p>
+            {% if pseudo_card.get("status") == "ready" and pseudo_card.get("pseudocode_text") %}
+              <pre class="code" data-testid="wb052-card-strategy-pseudocode">{{ pseudo_card.get("pseudocode_text", "") }}</pre>
+            {% elif pseudo_card.get("status") == "error" %}
+              <div class="plot-fallback" data-testid="wb052-card-strategy-pseudocode">strategy_pseudocode unavailable: {{ pseudo_card.get("reason", "invalid_source") }}</div>
+            {% else %}
+              <div class="plot-fallback" data-testid="wb052-card-strategy-pseudocode">strategy_pseudocode pending: missing source evidence.</div>
+            {% endif %}
+
+            <p><strong>variable_dictionary summary card</strong></p>
+            <p class="muted">status={{ var_card.get("status", "missing") }} | source=<code>{{ var_card.get("source_path", "") }}</code></p>
+            {% if var_card.get("status") == "ready" %}
+              <div class="table-wrap" data-testid="wb052-card-variable-dictionary">
                 <table class="table">
                   <tbody>
-                    <tr><th>variable_count</th><td>{{ var_summary.get("variable_count", 0) }}</td></tr>
-                    <tr><th>lagged_variable_count</th><td>{{ var_summary.get("lagged_variable_count", 0) }}</td></tr>
-                    <tr><th>trace_steps</th><td>{{ trace_summary.get("step_count", 0) }}</td></tr>
-                    <tr><th>trace_assertions</th><td>{{ trace_summary.get("assertion_count", 0) }}</td></tr>
-                    <tr><th>sample_windows</th><td>{{ trace_summary.get("sample_windows", []) | join(" ; ") }}</td></tr>
+                    <tr><th>variable_count</th><td>{{ var_card.get("variable_count", 0) }}</td></tr>
+                    <tr><th>lagged_variable_count</th><td>{{ var_card.get("lagged_variable_count", 0) }}</td></tr>
+                    <tr><th>sample_var_ids</th><td>{{ var_card.get("sample_var_ids", []) | join(", ") }}</td></tr>
+                    <tr><th>kind_counts</th><td>{{ var_card.get("kind_counts", {}) | tojson }}</td></tr>
                   </tbody>
                 </table>
               </div>
+            {% elif var_card.get("status") == "error" %}
+              <div class="plot-fallback" data-testid="wb052-card-variable-dictionary">variable_dictionary summary unavailable: {{ var_card.get("reason", "invalid_source") }}</div>
+            {% else %}
+              <div class="plot-fallback" data-testid="wb052-card-variable-dictionary">variable_dictionary summary pending: missing source evidence.</div>
+            {% endif %}
+
+            <p><strong>calc_trace_plan summary card</strong></p>
+            <p class="muted">status={{ trace_card.get("status", "missing") }} | source=<code>{{ trace_card.get("source_path", "") }}</code></p>
+            {% if trace_card.get("status") == "ready" %}
+              <div class="table-wrap" data-testid="wb052-card-calc-trace-plan">
+                <table class="table">
+                  <tbody>
+                    <tr><th>step_count</th><td>{{ trace_card.get("step_count", 0) }}</td></tr>
+                    <tr><th>assertion_count</th><td>{{ trace_card.get("assertion_count", 0) }}</td></tr>
+                    <tr><th>sample_count</th><td>{{ trace_card.get("sample_count", 0) }}</td></tr>
+                    <tr><th>first_step_title</th><td>{{ trace_card.get("first_step_title", "") }}</td></tr>
+                    <tr><th>first_step_variables</th><td>{{ trace_card.get("first_step_variables", []) | join(", ") }}</td></tr>
+                    <tr><th>sample_windows</th><td>{{ trace_card.get("sample_windows", []) | join(" ; ") }}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            {% elif trace_card.get("status") == "error" %}
+              <div class="plot-fallback" data-testid="wb052-card-calc-trace-plan">calc_trace_plan summary unavailable: {{ trace_card.get("reason", "invalid_source") }}</div>
+            {% else %}
+              <div class="plot-fallback" data-testid="wb052-card-calc-trace-plan">calc_trace_plan summary pending: missing source evidence.</div>
+            {% endif %}
+
+            <p><strong>Spec-QA risk card</strong></p>
+            <p class="muted">status={{ risk_card.get("status", "missing") }} | source=<code>{{ risk_card.get("source_path", "") }}</code></p>
+            {% if risk_card.get("status") == "ready" %}
+              <div class="table-wrap" data-testid="wb052-card-spec-qa-risk">
+                <table class="table">
+                  <tbody>
+                    <tr><th>overall</th><td>{{ risk_card.get("overall", "pending") }}</td></tr>
+                    <tr><th>finding_count</th><td>{{ risk_card.get("finding_count", 0) }}</td></tr>
+                    <tr><th>error_count</th><td>{{ risk_card.get("error_count", 0) }}</td></tr>
+                    <tr><th>warn_count</th><td>{{ risk_card.get("warn_count", 0) }}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              {% if risk_card.get("highlights") and risk_card.get("highlights")|length > 0 %}
+                <ul>
+                  {% for row in risk_card.get("highlights", []) %}
+                  <li>{{ row }}</li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <div class="plot-fallback">Spec-QA risk highlights are empty.</div>
+              {% endif %}
+            {% elif risk_card.get("status") == "error" %}
+              <div class="plot-fallback" data-testid="wb052-card-spec-qa-risk">Spec-QA risk unavailable: {{ risk_card.get("reason", "invalid_source") }}</div>
+            {% else %}
+              <div class="plot-fallback" data-testid="wb052-card-spec-qa-risk">Spec-QA risk pending: missing source evidence.</div>
             {% endif %}
           {% endif %}
           {% if card.phase == "trace_preview" and card.details %}
@@ -543,6 +608,27 @@
                 </tbody>
               </table>
             </div>
+          {% endif %}
+          {% if card.details and card.details.get("wb052_dependency_field_map") %}
+            <details>
+              <summary>WB-052 dependency field map</summary>
+              <div class="table-wrap">
+                <table class="table">
+                  <thead><tr><th>field</th><th>required_by</th><th>status</th><th>reason</th><th>path</th></tr></thead>
+                  <tbody>
+                    {% for row in card.details.get("wb052_dependency_field_map", []) %}
+                    <tr>
+                      <td>{{ row.get("field", "") }}</td>
+                      <td>{{ row.get("required_by", "") }}</td>
+                      <td>{{ row.get("status", "missing") }}</td>
+                      <td>{{ row.get("reason", "") }}</td>
+                      <td><code>{{ row.get("path", "") }}</code></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            </details>
           {% endif %}
           {% if card.details and card.details.get("g356_dependency_field_map") %}
             <details>

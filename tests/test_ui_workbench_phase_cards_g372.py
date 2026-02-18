@@ -79,6 +79,9 @@ def test_workbench_phase_card_matrix_wb045_coverage_and_order(tmp_path: Path, mo
         assert isinstance(definition, dict)
         assert definition.get("requirement_id") == "WB-045"
         assert definition.get("step") == phase
+        if phase == "idea":
+            assert definition.get("phase_scope_requirement_id") == "WB-046"
+            assert definition.get("deferred_requirement_ids") == ["WB-047", "WB-048"]
 
     ui_page = _request_via_asgi("GET", f"/ui/workbench/{session_id}")
     assert ui_page.status_code == 200

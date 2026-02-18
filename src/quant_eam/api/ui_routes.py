@@ -167,6 +167,9 @@ IA_ROUTE_VIEW_CATALOG: dict[str, dict[str, str]] = {
     "/ui/workbench/req/wb-015": {"view_name": "Workbench requirement entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-002": {"view_name": "Workbench requirement entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-028": {"view_name": "Workbench route/interface entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-046": {"view_name": "Workbench phase-0 requirement entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-050": {"view_name": "Workbench phase-0 scope-lock entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-051": {"view_name": "Workbench phase-1 skeleton entry", "template": "workbench.html"},
     "/ui/workbench/{session_id}": {"view_name": "Workbench session", "template": "workbench.html"},
 }
 IA_CHECKLIST_ROUTE_BINDINGS: dict[int, list[str]] = {
@@ -408,6 +411,9 @@ WORKBENCH_REQUIREMENT_ENTRY_ALIASES: tuple[str, ...] = (
     "/ui/workbench/req/wb-015",
     "/ui/workbench/req/wb-002",
     "/ui/workbench/req/wb-028",
+    "/ui/workbench/req/wb-046",
+    "/ui/workbench/req/wb-050",
+    "/ui/workbench/req/wb-051",
 )
 WORKBENCH_EVIDENCE_MAX_BYTES = 262_144
 WORKBENCH_EVIDENCE_MAX_CSV_ROWS = 24
@@ -415,7 +421,9 @@ WORKBENCH_EVIDENCE_MAX_TEXT_CHARS = 8192
 WORKBENCH_EVIDENCE_MAX_JSON_ITEMS = 24
 WORKBENCH_G356_REQUIRED_OUTPUT_FIELDS: dict[str, str] = {
     "signal_dsl_path": "Signal summary source for WB-016.",
+    "variable_dictionary_path": "Variable dictionary source for WB-052.",
     "calc_trace_plan_path": "Trace assertions source for WB-015.",
+    "spec_qa_report_path": "Spec-QA risk source for WB-052.",
     "calc_trace_preview_path": "K-line overlay source for WB-015.",
     "trace_meta_path": "Trace sanity metrics source for WB-015.",
     "dossier_path": "Backtest/attribution evidence root for WB-016/WB-017.",
@@ -424,6 +432,24 @@ WORKBENCH_G356_REQUIRED_OUTPUT_FIELDS: dict[str, str] = {
     "report_summary_path": "Report summary source for WB-017.",
     "composer_agent_plan_path": "Composer result source for WB-017.",
 }
+WORKBENCH_WB052_SIGNAL_DSL_PATH_FIELDS: tuple[str, ...] = (
+    "signal_dsl_path",
+    "strategy_signal_dsl_path",
+)
+WORKBENCH_WB052_VARIABLE_DICTIONARY_PATH_FIELDS: tuple[str, ...] = (
+    "variable_dictionary_path",
+    "variable_dict_path",
+    "variables_path",
+)
+WORKBENCH_WB052_CALC_TRACE_PLAN_PATH_FIELDS: tuple[str, ...] = (
+    "calc_trace_plan_path",
+    "trace_plan_path",
+)
+WORKBENCH_WB052_SPEC_QA_PATH_FIELDS: tuple[str, ...] = (
+    "spec_qa_report_path",
+    "spec_qa_report_json_path",
+    "spec_qa_path",
+)
 WORKBENCH_FAILURE_REASON_READABLE: dict[str, str] = {
     "ui_intake_fetch_failed": "Session creation completed, but intake fetch evidence generation failed.",
     "fetch_probe_execution_failed": "Fetch probe failed while refreshing Phase-0/Phase-2 evidence.",
@@ -1538,6 +1564,8 @@ def _ensure_workbench_phase_card(
     phase_spec = _workbench_phase_result_spec(step)
     phase_label = _workbench_phase_label(step)
     phase_title = _workbench_phase_title(step)
+    phase_scope_requirement_id = "WB-046" if step == "idea" else ""
+    deferred_requirement_ids = ["WB-047", "WB-048"] if step == "idea" else []
     summary = [str(x).strip() for x in summary_lines if str(x).strip()] or _workbench_phase_summary_lines(step)
     evidence_artifacts, blocked_artifacts = _workbench_normalize_artifact_refs(artifacts)
     card_doc = {
@@ -1565,6 +1593,13 @@ def _ensure_workbench_phase_card(
             "blocked_artifacts": blocked_artifacts,
             "result_card_definition": {
                 "requirement_id": "WB-045",
+                "phase_scope_requirement_id": phase_scope_requirement_id,
+                "phase_scope_note": (
+                    "Phase-0 checkpoint scope is implemented here; WB-047/WB-048 display/control expansion is deferred."
+                    if step == "idea"
+                    else ""
+                ),
+                "deferred_requirement_ids": deferred_requirement_ids,
                 "step": step,
                 "phase_label": phase_label,
                 "title": phase_title,
@@ -1948,13 +1983,6 @@ def _workbench_step_summary(session: dict[str, Any], *, step: str) -> tuple[list
         sel_path = str(sel.get("path") or "").strip()
         job_id = str(session.get("job_id") or "").strip()
         readable = _workbench_strategy_readable_summary(job_id=job_id) if job_id else {}
-        var_summary = readable.get("variable_dictionary_summary") if isinstance(readable, dict) else {}
-        trace_summary = readable.get("trace_plan_summary") if isinstance(readable, dict) else {}
-        pseudo_lines = readable.get("pseudocode_lines") if isinstance(readable, dict) else []
-        variable_count = int(var_summary.get("variable_count") or 0) if isinstance(var_summary, dict) else 0
-        lagged_count = int(var_summary.get("lagged_variable_count") or 0) if isinstance(var_summary, dict) else 0
-        trace_step_count = int(trace_summary.get("step_count") or 0) if isinstance(trace_summary, dict) else 0
-        assertion_count = int(trace_summary.get("assertion_count") or 0) if isinstance(trace_summary, dict) else 0
         source_paths = readable.get("source_paths") if isinstance(readable, dict) else {}
         arts = [sel_path] if sel_path else []
         if isinstance(source_paths, dict):
@@ -1967,6 +1995,11 @@ def _workbench_step_summary(session: dict[str, Any], *, step: str) -> tuple[list
                 "selected_draft_path": sel_path,
                 "hypothesis_text": hypothesis,
                 "strategy_readable": readable,
+                "wb052_dependency_field_map": (
+                    readable.get("wb052_dependency_field_map")
+                    if isinstance(readable, dict) and isinstance(readable.get("wb052_dependency_field_map"), list)
+                    else []
+                ),
             },
             arts,
         )
@@ -2106,6 +2139,81 @@ def _load_json_dict(path_text: str) -> dict[str, Any] | None:
     return doc
 
 
+def _load_json_dict_with_state(path_text: str) -> tuple[dict[str, Any] | None, dict[str, str]]:
+    token = str(path_text or "").strip()
+    if not token:
+        return None, {"status": "missing", "path": "", "reason": "missing_path"}
+    path = Path(token)
+    if not path.is_file():
+        return None, {"status": "missing", "path": token, "reason": "file_not_found"}
+    try:
+        doc = _load_json(path)
+    except Exception:
+        return None, {"status": "error", "path": path.as_posix(), "reason": "invalid_json"}
+    if not isinstance(doc, dict):
+        return None, {"status": "error", "path": path.as_posix(), "reason": "not_object"}
+    return doc, {"status": "ready", "path": path.as_posix(), "reason": ""}
+
+
+def _workbench_load_output_doc(
+    outputs: dict[str, Any], *, path_fields: tuple[str, ...], inline_fields: tuple[str, ...]
+) -> tuple[dict[str, Any] | None, dict[str, str]]:
+    first_issue: dict[str, str] | None = None
+    for field in path_fields:
+        raw = outputs.get(field)
+        token = str(raw).strip() if isinstance(raw, str) else ""
+        if not token:
+            continue
+        doc, state = _load_json_dict_with_state(token)
+        current = {
+            "status": state.get("status") or "missing",
+            "field": field,
+            "path": state.get("path") or token,
+            "reason": state.get("reason") or "",
+        }
+        if doc is not None:
+            return doc, current
+        if first_issue is None:
+            first_issue = current
+        elif first_issue.get("status") != "error" and current.get("status") == "error":
+            first_issue = current
+
+    for field in inline_fields:
+        raw = outputs.get(field)
+        if raw is None:
+            continue
+        if isinstance(raw, dict):
+            return raw, {
+                "status": "ready",
+                "field": field,
+                "path": f"<inline:{field}>",
+                "reason": "inline_payload",
+            }
+        current = {
+            "status": "error",
+            "field": field,
+            "path": f"<inline:{field}>",
+            "reason": "inline_not_object",
+        }
+        if first_issue is None:
+            first_issue = current
+        elif first_issue.get("status") != "error":
+            first_issue = current
+
+    if first_issue is not None:
+        return None, first_issue
+
+    default_field = path_fields[0] if path_fields else (inline_fields[0] if inline_fields else "")
+    return None, {"status": "missing", "field": default_field, "path": "", "reason": "missing_source"}
+
+
+def _workbench_int_or_zero(value: Any) -> int:
+    try:
+        return int(value)
+    except Exception:
+        return 0
+
+
 def _signal_expr_to_pseudocode(expr: Any, *, depth: int = 0) -> str:
     if depth > 6:
         return "..."
@@ -2151,13 +2259,26 @@ def _signal_expr_to_pseudocode(expr: Any, *, depth: int = 0) -> str:
 
 def _workbench_strategy_readable_summary(*, job_id: str) -> dict[str, Any]:
     outputs = _load_job_outputs_index(job_id)
-    signal_dsl_path = str(outputs.get("signal_dsl_path") or "").strip()
-    variable_dictionary_path = str(outputs.get("variable_dictionary_path") or "").strip()
-    calc_trace_plan_path = str(outputs.get("calc_trace_plan_path") or "").strip()
-
-    signal_dsl = _load_json_dict(signal_dsl_path) if signal_dsl_path else None
-    variable_dictionary = _load_json_dict(variable_dictionary_path) if variable_dictionary_path else None
-    calc_trace_plan = _load_json_dict(calc_trace_plan_path) if calc_trace_plan_path else None
+    signal_dsl, signal_state = _workbench_load_output_doc(
+        outputs,
+        path_fields=WORKBENCH_WB052_SIGNAL_DSL_PATH_FIELDS,
+        inline_fields=("signal_dsl",),
+    )
+    variable_dictionary, variable_state = _workbench_load_output_doc(
+        outputs,
+        path_fields=WORKBENCH_WB052_VARIABLE_DICTIONARY_PATH_FIELDS,
+        inline_fields=("variable_dictionary",),
+    )
+    calc_trace_plan, trace_state = _workbench_load_output_doc(
+        outputs,
+        path_fields=WORKBENCH_WB052_CALC_TRACE_PLAN_PATH_FIELDS,
+        inline_fields=("calc_trace_plan",),
+    )
+    spec_qa_report, spec_qa_state = _workbench_load_output_doc(
+        outputs,
+        path_fields=WORKBENCH_WB052_SPEC_QA_PATH_FIELDS,
+        inline_fields=("spec_qa_report",),
+    )
 
     pseudocode_lines: list[str] = []
     if isinstance(signal_dsl, dict):
@@ -2230,28 +2351,117 @@ def _workbench_strategy_readable_summary(*, job_id: str) -> dict[str, Any]:
             end = str(sample.get("end") or "").strip() or "?"
             sample_windows.append(f"{symbols_text} {start}..{end}")
 
-    return {
-        "available": bool(signal_dsl or variable_dictionary or calc_trace_plan),
-        "pseudocode_lines": pseudocode_lines[:12],
-        "pseudocode_text": "\n".join(pseudocode_lines[:12]),
+    spec_summary = spec_qa_report.get("summary") if isinstance(spec_qa_report, dict) and isinstance(spec_qa_report.get("summary"), dict) else {}
+    spec_findings = (
+        spec_qa_report.get("findings") if isinstance(spec_qa_report, dict) and isinstance(spec_qa_report.get("findings"), list) else []
+    )
+    spec_highlights: list[str] = []
+    for row in spec_findings[:6]:
+        if not isinstance(row, dict):
+            continue
+        severity = str(row.get("severity") or "warn").strip() or "warn"
+        finding_id = str(row.get("id") or "").strip()
+        path = str(row.get("path") or "").strip()
+        message = str(row.get("message") or "").strip()
+        parts = [severity]
+        if finding_id:
+            parts.append(finding_id)
+        if path:
+            parts.append(path)
+        lead = " / ".join(parts)
+        spec_highlights.append(f"{lead}: {message}" if message else lead)
+
+    spec_finding_count = _workbench_int_or_zero(spec_summary.get("finding_count"))
+    if spec_finding_count <= 0:
+        spec_finding_count = len(spec_findings)
+    spec_error_count = _workbench_int_or_zero(spec_summary.get("error_count"))
+    spec_warn_count = _workbench_int_or_zero(spec_summary.get("warn_count"))
+    spec_overall = str(spec_qa_report.get("overall") or "").strip() if isinstance(spec_qa_report, dict) else ""
+
+    pseudocode_text = "\n".join(pseudocode_lines[:12])
+    var_summary = {
+        "variable_count": variable_count,
+        "kind_counts": kind_counts,
+        "lagged_variable_count": len(lagged_rows),
+        "sample_var_ids": sample_var_ids,
+    }
+    trace_summary = {
+        "step_count": trace_step_count,
+        "assertion_count": assertion_count,
+        "sample_count": sample_count,
+        "first_step_title": first_step_title,
+        "first_step_variables": first_step_variables,
+        "sample_windows": sample_windows,
+    }
+    spec_qa_risk = {
+        "status": str(spec_qa_state.get("status") or "missing"),
+        "reason": str(spec_qa_state.get("reason") or ""),
+        "source_field": str(spec_qa_state.get("field") or ""),
+        "source_path": str(spec_qa_state.get("path") or ""),
+        "overall": spec_overall or "pending",
+        "finding_count": spec_finding_count,
+        "error_count": spec_error_count,
+        "warn_count": spec_warn_count,
+        "highlights": spec_highlights,
+    }
+
+    wb052_cards = {
+        "strategy_pseudocode": {
+            "status": str(signal_state.get("status") or "missing"),
+            "reason": str(signal_state.get("reason") or ""),
+            "source_field": str(signal_state.get("field") or ""),
+            "source_path": str(signal_state.get("path") or ""),
+            "pseudocode_lines": pseudocode_lines[:12],
+            "pseudocode_text": pseudocode_text,
+        },
         "variable_dictionary_summary": {
-            "variable_count": variable_count,
-            "kind_counts": kind_counts,
-            "lagged_variable_count": len(lagged_rows),
-            "sample_var_ids": sample_var_ids,
+            "status": str(variable_state.get("status") or "missing"),
+            "reason": str(variable_state.get("reason") or ""),
+            "source_field": str(variable_state.get("field") or ""),
+            "source_path": str(variable_state.get("path") or ""),
+            **var_summary,
         },
-        "trace_plan_summary": {
-            "step_count": trace_step_count,
-            "assertion_count": assertion_count,
-            "sample_count": sample_count,
-            "first_step_title": first_step_title,
-            "first_step_variables": first_step_variables,
-            "sample_windows": sample_windows,
+        "calc_trace_plan_summary": {
+            "status": str(trace_state.get("status") or "missing"),
+            "reason": str(trace_state.get("reason") or ""),
+            "source_field": str(trace_state.get("field") or ""),
+            "source_path": str(trace_state.get("path") or ""),
+            **trace_summary,
         },
+        "spec_qa_risk": spec_qa_risk,
+    }
+    available = any(
+        isinstance(v, dict) and str(v.get("status") or "missing") == "ready"
+        for v in wb052_cards.values()
+    )
+    wb052_dependency_field_map = []
+    for key, payload in wb052_cards.items():
+        card_payload = payload if isinstance(payload, dict) else {}
+        wb052_dependency_field_map.append(
+            {
+                "field": str(card_payload.get("source_field") or ""),
+                "required_by": f"WB-052 {key}",
+                "present": bool(card_payload.get("status") == "ready"),
+                "path": str(card_payload.get("source_path") or ""),
+                "status": str(card_payload.get("status") or "missing"),
+                "reason": str(card_payload.get("reason") or ""),
+            }
+        )
+
+    return {
+        "available": available,
+        "pseudocode_lines": pseudocode_lines[:12],
+        "pseudocode_text": pseudocode_text,
+        "variable_dictionary_summary": var_summary,
+        "trace_plan_summary": trace_summary,
+        "spec_qa_risk": spec_qa_risk,
+        "wb052_cards": wb052_cards,
+        "wb052_dependency_field_map": wb052_dependency_field_map,
         "source_paths": {
-            "signal_dsl_path": signal_dsl_path,
-            "variable_dictionary_path": variable_dictionary_path,
-            "calc_trace_plan_path": calc_trace_plan_path,
+            "signal_dsl_path": str(signal_state.get("path") or ""),
+            "variable_dictionary_path": str(variable_state.get("path") or ""),
+            "calc_trace_plan_path": str(trace_state.get("path") or ""),
+            "spec_qa_report_path": str(spec_qa_state.get("path") or ""),
         },
     }
 
@@ -2981,6 +3191,157 @@ def _seed_blueprint_from_idea_spec(idea_spec: dict[str, Any], *, job_id: str) ->
             "seeded_from_ui_submit": True,
         },
     }
+
+
+def _ensure_idea_job_phase0_blueprint_checkpoint(
+    *,
+    job_id: str,
+    snapshot_id: str,
+    policy_bundle_path: str,
+    job_root: Path,
+) -> dict[str, Any]:
+    """Ensure idea job artifacts are seeded at WAITING_APPROVAL(step=blueprint)."""
+    safe_job_id = require_safe_job_id(job_id)
+    paths = jobs_job_paths(safe_job_id, job_root=job_root)
+    events = jobs_load_events(safe_job_id, job_root=job_root)
+
+    def _load_idea_spec() -> dict[str, Any]:
+        spec = jobs_load_spec(safe_job_id, job_root=job_root)
+        if not isinstance(spec, dict):
+            raise ValueError("invalid idea job spec: expected object")
+        return spec
+
+    def _has_waiting_blueprint(rows: list[dict[str, Any]]) -> bool:
+        for ev in rows:
+            if str(ev.get("event_type") or "") != "WAITING_APPROVAL":
+                continue
+            outputs = ev.get("outputs") if isinstance(ev.get("outputs"), dict) else {}
+            if str(outputs.get("step") or "") == "blueprint":
+                return True
+        return False
+
+    def _latest_blueprint_draft_path(rows: list[dict[str, Any]]) -> str:
+        for ev in reversed(rows):
+            if str(ev.get("event_type") or "") != "BLUEPRINT_PROPOSED":
+                continue
+            outputs = ev.get("outputs") if isinstance(ev.get("outputs"), dict) else {}
+            token = str(outputs.get("blueprint_draft_path") or "").strip()
+            if token:
+                return token
+        return ""
+
+    def _latest_matching_event_offset(
+        rows: list[dict[str, Any]], *, event_type: str, step: str | None = None
+    ) -> int:
+        hit = 0
+        for idx, ev in enumerate(rows, start=1):
+            if str(ev.get("event_type") or "") != event_type:
+                continue
+            if step is not None:
+                outputs = ev.get("outputs") if isinstance(ev.get("outputs"), dict) else {}
+                if str(outputs.get("step") or "") != step:
+                    continue
+            hit = idx
+        return hit
+
+    outputs_path = paths.outputs_dir / "outputs.json"
+    outputs_doc: dict[str, Any] = {}
+    if outputs_path.is_file():
+        try:
+            existing = _load_json(outputs_path)
+            if isinstance(existing, dict):
+                outputs_doc = existing
+        except Exception:
+            outputs_doc = {}
+
+    blueprint_draft_path = str(outputs_doc.get("blueprint_draft_path") or "").strip()
+    if not blueprint_draft_path:
+        blueprint_draft_path = _latest_blueprint_draft_path(events)
+
+    blueprint_proposed_added = False
+    draft_exists = bool(blueprint_draft_path and Path(blueprint_draft_path).is_file())
+    if not draft_exists:
+        spec = _load_idea_spec()
+        blueprint_draft = _seed_blueprint_from_idea_spec(spec, job_id=safe_job_id)
+        blueprint_path = paths.outputs_dir / "agents" / "intent" / "blueprint_draft.json"
+        _write_json(blueprint_path, blueprint_draft)
+
+        spec_snapshot_id = str(spec.get("snapshot_id") or snapshot_id).strip()
+        spec_policy_bundle_path = str(spec.get("policy_bundle_path") or policy_bundle_path).strip()
+        outputs_doc["blueprint_draft_path"] = blueprint_path.as_posix()
+        outputs_doc["snapshot_id"] = spec_snapshot_id
+        outputs_doc["policy_bundle_path"] = spec_policy_bundle_path
+        _write_json(outputs_path, outputs_doc)
+
+        jobs_append_event(
+            job_id=safe_job_id,
+            event_type="BLUEPRINT_PROPOSED",
+            outputs={"blueprint_draft_path": blueprint_path.as_posix()},
+            job_root=job_root,
+        )
+        blueprint_draft_path = blueprint_path.as_posix()
+        blueprint_proposed_added = True
+        events = jobs_load_events(safe_job_id, job_root=job_root)
+    else:
+        spec = _load_idea_spec()
+        spec_snapshot_id = str(spec.get("snapshot_id") or snapshot_id).strip()
+        spec_policy_bundle_path = str(spec.get("policy_bundle_path") or policy_bundle_path).strip()
+        outputs_changed = False
+        if str(outputs_doc.get("blueprint_draft_path") or "").strip() != blueprint_draft_path:
+            outputs_doc["blueprint_draft_path"] = blueprint_draft_path
+            outputs_changed = True
+        if str(outputs_doc.get("snapshot_id") or "").strip() != spec_snapshot_id:
+            outputs_doc["snapshot_id"] = spec_snapshot_id
+            outputs_changed = True
+        if str(outputs_doc.get("policy_bundle_path") or "").strip() != spec_policy_bundle_path:
+            outputs_doc["policy_bundle_path"] = spec_policy_bundle_path
+            outputs_changed = True
+        if outputs_changed:
+            _write_json(outputs_path, outputs_doc)
+
+    waiting_blueprint_added = False
+    if not _has_waiting_blueprint(events):
+        jobs_append_event(
+            job_id=safe_job_id,
+            event_type="WAITING_APPROVAL",
+            outputs={"step": "blueprint"},
+            job_root=job_root,
+        )
+        waiting_blueprint_added = True
+        events = jobs_load_events(safe_job_id, job_root=job_root)
+
+    if not blueprint_draft_path:
+        blueprint_draft_path = _latest_blueprint_draft_path(events)
+
+    blueprint_proposed_event_offset = _latest_matching_event_offset(events, event_type="BLUEPRINT_PROPOSED")
+    waiting_blueprint_event_offset = _latest_matching_event_offset(
+        events, event_type="WAITING_APPROVAL", step="blueprint"
+    )
+    checkpoint_path = paths.outputs_dir / "workbench" / "phase0_checkpoint.json"
+    checkpoint_doc = {
+        "schema_version": "idea_phase0_checkpoint_v1",
+        "job_id": safe_job_id,
+        "blueprint_draft_path": blueprint_draft_path,
+        "waiting_step": "blueprint",
+        "events_path": paths.events.as_posix(),
+        "outputs_index_path": outputs_path.as_posix(),
+        "blueprint_proposed_event_offset": blueprint_proposed_event_offset,
+        "waiting_blueprint_event_offset": waiting_blueprint_event_offset,
+        "blueprint_proposed_present": blueprint_proposed_event_offset > 0,
+        "waiting_blueprint_present": waiting_blueprint_event_offset > 0,
+        "evidence_stable": bool(blueprint_draft_path and Path(blueprint_draft_path).is_file() and waiting_blueprint_event_offset),
+    }
+    _write_json(checkpoint_path, checkpoint_doc)
+
+    out = dict(checkpoint_doc)
+    out.update(
+        {
+            "checkpoint_path": checkpoint_path.as_posix(),
+            "blueprint_proposed_event_added": blueprint_proposed_added,
+            "waiting_blueprint_event_added": waiting_blueprint_added,
+        }
+    )
+    return out
 
 
 def _reject_inline_policy_overrides(ext: Any) -> None:
@@ -7341,11 +7702,12 @@ async def workbench_session_create(request: Request) -> Any:
         idea["universe_hint"] = universe_hint
 
     try:
+        job_root = default_job_root()
         create_res = create_job_from_ideaspec(
             idea_spec=idea,
             snapshot_id=snapshot_id,
             policy_bundle_path=policy_bundle_path,
-            job_root=default_job_root(),
+            job_root=job_root,
         )
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
@@ -7355,6 +7717,17 @@ async def workbench_session_create(request: Request) -> Any:
     job_id = str(create_res.get("job_id") or "").strip()
     if not job_id:
         raise HTTPException(status_code=500, detail="failed to create idea job")
+    try:
+        phase0_checkpoint = _ensure_idea_job_phase0_blueprint_checkpoint(
+            job_id=job_id,
+            snapshot_id=snapshot_id,
+            policy_bundle_path=policy_bundle_path,
+            job_root=job_root,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"failed to seed phase-0 checkpoint: {e}")
 
     fetch_query_result: dict[str, Any] = {}
     fetch_evidence_paths: dict[str, Any] = {}
@@ -7406,6 +7779,8 @@ async def workbench_session_create(request: Request) -> Any:
     session_doc["fetch_probe_status"] = fetch_probe_status
     session_doc["fetch_probe_error"] = fetch_probe_error
     session_doc["fetch_probe_error_ref"] = fetch_probe_error_ref
+    session_doc["job_checkpoint"] = "blueprint"
+    session_doc["phase0_checkpoint"] = phase0_checkpoint
     create_failure: dict[str, Any] = {}
     if fetch_probe_status != "error":
         _workbench_clear_last_failure(session_doc)
@@ -7440,6 +7815,7 @@ async def workbench_session_create(request: Request) -> Any:
     details["message"] = message
     details["normalized_request"] = normalized
     details["fetch_evidence_paths"] = fetch_evidence_paths
+    details["phase0_checkpoint"] = phase0_checkpoint
     if fetch_probe_status == "error":
         create_failure = _workbench_record_last_failure(
             session_id,
@@ -7483,6 +7859,7 @@ async def workbench_session_create(request: Request) -> Any:
         "card": _workbench_card_api_payload(card_doc),
         "sampled_symbols": sampled_symbols,
         "fetch_evidence_paths": fetch_evidence_paths,
+        "phase0_checkpoint": phase0_checkpoint,
         "failure": create_failure,
         "contract": {
             "request_schema_version": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS["create_request"],
@@ -8690,6 +9067,24 @@ def ui_workbench_req_wb028(request: Request) -> HTMLResponse:
     return ui_workbench(request)
 
 
+@router.api_route("/ui/workbench/req/wb-046", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb046(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G373.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-050", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb050(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G374 scope lock.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-051", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb051(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G375.
+    return ui_workbench(request)
+
+
 @router.api_route("/ui/workbench/{session_id}", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_workbench_session(request: Request, session_id: str) -> HTMLResponse:
     sid = require_safe_id(session_id, kind="session_id")
@@ -9250,54 +9645,26 @@ async def ui_submit_idea_job(request: Request):
     job_id = str(res.get("job_id") or "").strip()
     if job_id and str(res.get("status") or "") == "created":
         try:
-            jr = _job_root()
-            paths = jobs_job_paths(job_id, job_root=jr)
-            events = jobs_load_events(job_id, job_root=jr)
-
-            has_blueprint_proposed = any(str(ev.get("event_type") or "") == "BLUEPRINT_PROPOSED" for ev in events)
-            if not has_blueprint_proposed:
-                spec = jobs_load_spec(job_id, job_root=jr)
-                if isinstance(spec, dict):
-                    blueprint_draft = _seed_blueprint_from_idea_spec(spec, job_id=job_id)
-                    blueprint_draft_path = paths.outputs_dir / "agents" / "intent" / "blueprint_draft.json"
-                    _write_json(blueprint_draft_path, blueprint_draft)
-
-                    outputs_path = paths.outputs_dir / "outputs.json"
-                    outputs_doc: dict[str, Any] = {}
-                    if outputs_path.is_file():
-                        try:
-                            existing = _load_json(outputs_path)
-                            if isinstance(existing, dict):
-                                outputs_doc = existing
-                        except Exception:
-                            outputs_doc = {}
-                    outputs_doc["blueprint_draft_path"] = blueprint_draft_path.as_posix()
-                    outputs_doc["snapshot_id"] = str(spec.get("snapshot_id") or sid)
-                    outputs_doc["policy_bundle_path"] = str(spec.get("policy_bundle_path") or pb)
-                    _write_json(outputs_path, outputs_doc)
-
-                    jobs_append_event(
-                        job_id=job_id,
-                        event_type="BLUEPRINT_PROPOSED",
-                        outputs={"blueprint_draft_path": blueprint_draft_path.as_posix()},
-                        job_root=jr,
-                    )
-
-            has_blueprint_waiting = any(
-                str(ev.get("event_type") or "") == "WAITING_APPROVAL"
-                and isinstance(ev.get("outputs"), dict)
-                and str((ev.get("outputs") or {}).get("step") or "") == "blueprint"
-                for ev in events
+            _ = _ensure_idea_job_phase0_blueprint_checkpoint(
+                job_id=job_id,
+                snapshot_id=sid,
+                policy_bundle_path=pb,
+                job_root=_job_root(),
             )
-            if not has_blueprint_waiting:
-                jobs_append_event(
-                    job_id=job_id,
-                    event_type="WAITING_APPROVAL",
-                    outputs={"step": "blueprint"},
-                    job_root=jr,
-                )
-        except Exception:
-            pass
+        except ValueError as e:
+            return TEMPLATES.TemplateResponse(
+                request,
+                "index.html",
+                _ui_index_context(idea_form=idea_form, idea_form_error=str(e)),
+                status_code=422,
+            )
+        except Exception as e:  # noqa: BLE001
+            return TEMPLATES.TemplateResponse(
+                request,
+                "index.html",
+                _ui_index_context(idea_form=idea_form, idea_form_error=f"failed to seed phase-0 checkpoint: {e}"),
+                status_code=500,
+            )
 
     return RedirectResponse(url=f"/ui/jobs/{res['job_id']}", status_code=303)
 

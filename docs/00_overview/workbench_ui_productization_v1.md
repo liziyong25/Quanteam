@@ -115,6 +115,8 @@
 ## 5.1 Phase‑0（Idea -> Blueprint Draft）
 - 展示卡: DataIntent 卡、FetchRequest 卡、FetchPreview 表格卡、评估协议卡、预算卡。
 - 可操作: auto_symbols/sample 开关、字段选择、时间窗调整、立即 fetch-probe。
+- 里程碑冻结（WB-046）: 本阶段先保证 `Idea -> Blueprint Draft` checkpoint 落盘与 `WAITING_APPROVAL(step=blueprint)` 证据稳定。
+- 明确递延: `WB-047`（展示卡细化）与 `WB-048`（可操作项细化）在后续目标单独收敛，不并入本次 checkpoint 实现。
 
 ## 5.2 Phase‑1（Strategy 规格确认）
 - 展示卡: strategy_pseudocode 卡、variable_dictionary 摘要卡、calc_trace_plan 摘要卡、Spec-QA 风险卡。

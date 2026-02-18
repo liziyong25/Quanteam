@@ -9,13 +9,16 @@ import httpx
 from fastapi.testclient import TestClient
 
 from quant_eam.api.app import app
-from quant_eam.api.ui_routes import WORKBENCH_ROUTE_INTERFACE_V43, _workbench_missing_route_pairs
+from quant_eam.api.ui_routes import (
+    WORKBENCH_ROUTE_INTERFACE_V43,
+    _workbench_missing_route_pairs,
+    _workbench_strategy_readable_summary,
+)
 from quant_eam.compiler.compile import main as compiler_main
 from quant_eam.data_lake.demo_ingest import main as demo_ingest_main
 from quant_eam.gaterunner.run import main as gaterunner_main
 from quant_eam.registry import cli as registry_cli
 from quant_eam.runner.run import main as runner_main
-from quant_eam.worker.main import main as worker_main
 
 
 def _repo_root() -> Path:
@@ -405,12 +408,52 @@ def test_ui_create_idea_job_from_form(tmp_path: Path, monkeypatch) -> None:
     events = [json.loads(ln) for ln in lines]
     assert events
     assert any(str(ev.get("event_type")) == "IDEA_SUBMITTED" for ev in events)
+    assert any(str(ev.get("event_type")) == "BLUEPRINT_PROPOSED" for ev in events)
+    waiting_blueprint_rows = [
+        ev
+        for ev in events
+        if str(ev.get("event_type")) == "WAITING_APPROVAL"
+        and isinstance(ev.get("outputs"), dict)
+        and str(ev["outputs"].get("step")) == "blueprint"
+    ]
+    assert waiting_blueprint_rows
 
-    # After worker advance, the workflow should stop at blueprint checkpoint.
-    print("DBG: worker once")
-    assert worker_main(["--run-jobs", "--once"]) == 0
+    outputs_index_path = job_dir / "outputs" / "outputs.json"
+    assert outputs_index_path.is_file()
+    outputs_index = json.loads(outputs_index_path.read_text(encoding="utf-8"))
+    blueprint_draft_path = Path(str(outputs_index.get("blueprint_draft_path")))
+    assert blueprint_draft_path.is_file()
+
+    checkpoint_path = job_dir / "outputs" / "workbench" / "phase0_checkpoint.json"
+    assert checkpoint_path.is_file()
+    checkpoint_doc = json.loads(checkpoint_path.read_text(encoding="utf-8"))
+    assert checkpoint_doc["schema_version"] == "idea_phase0_checkpoint_v1"
+    assert checkpoint_doc["job_id"] == job_id
+    assert checkpoint_doc["waiting_step"] == "blueprint"
+    assert checkpoint_doc["events_path"] == (job_dir / "events.jsonl").as_posix()
+    assert checkpoint_doc["outputs_index_path"] == outputs_index_path.as_posix()
+    assert checkpoint_doc["blueprint_draft_path"] == blueprint_draft_path.as_posix()
+    assert int(checkpoint_doc["blueprint_proposed_event_offset"]) >= 1
+    assert int(checkpoint_doc["waiting_blueprint_event_offset"]) >= int(checkpoint_doc["blueprint_proposed_event_offset"])
+    assert checkpoint_doc["blueprint_proposed_present"] is True
+    assert checkpoint_doc["waiting_blueprint_present"] is True
+    assert checkpoint_doc["evidence_stable"] is True
+
+    # Re-submitting the same deterministic form must not duplicate phase-0 checkpoint events.
+    r2 = _request_via_asgi("POST", "/ui/jobs/idea", data=form, follow_redirects=False)
+    assert r2.status_code == 303, r2.text
+    assert r2.headers.get("location", "") == loc
     lines2 = [ln for ln in (job_dir / "events.jsonl").read_text(encoding="utf-8").splitlines() if ln.strip()]
     events2 = [json.loads(ln) for ln in lines2]
+    waiting_blueprint_rows_2 = [
+        ev
+        for ev in events2
+        if str(ev.get("event_type")) == "WAITING_APPROVAL"
+        and isinstance(ev.get("outputs"), dict)
+        and str(ev["outputs"].get("step")) == "blueprint"
+    ]
+    assert len(waiting_blueprint_rows_2) == 1
+    assert sum(1 for ev in events2 if str(ev.get("event_type")) == "BLUEPRINT_PROPOSED") == 1
     assert any(
         str(ev.get("event_type")) == "WAITING_APPROVAL"
         and isinstance(ev.get("outputs"), dict)
@@ -448,6 +491,15 @@ def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     req_alias = _request_via_asgi("GET", "/ui/workbench/req/wb-028")
     assert req_alias.status_code == 200
     assert "Requirement entry alias" in req_alias.text
+    req_alias_phase0 = _request_via_asgi("GET", "/ui/workbench/req/wb-046")
+    assert req_alias_phase0.status_code == 200
+    assert "Requirement entry alias" in req_alias_phase0.text
+    req_alias_scope_lock = _request_via_asgi("GET", "/ui/workbench/req/wb-050")
+    assert req_alias_scope_lock.status_code == 200
+    assert "Requirement entry alias" in req_alias_scope_lock.text
+    req_alias_phase1 = _request_via_asgi("GET", "/ui/workbench/req/wb-051")
+    assert req_alias_phase1.status_code == 200
+    assert "Requirement entry alias" in req_alias_phase1.text
 
     # WB-039 baseline: create flow exposes stable persistence contracts and writes session artifacts.
     created = _request_via_asgi(
@@ -498,6 +550,112 @@ def test_holdout_leak_not_rendered(tmp_path: Path, monkeypatch) -> None:
     assert "holdout_trades" not in r.text
 
 
+def test_workbench_strategy_readable_summary_wb052_status_mapping(tmp_path: Path, monkeypatch) -> None:
+    job_root = tmp_path / "jobs"
+    job_root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setenv("EAM_JOB_ROOT", str(job_root))
+
+    job_id = "job_wb052_status_001"
+    outputs_dir = job_root / job_id / "outputs"
+    outputs_dir.mkdir(parents=True, exist_ok=True)
+
+    signal_dsl_path = outputs_dir / "signal_dsl.json"
+    signal_dsl_path.write_text(
+        json.dumps(
+            {
+                "signals": {"entry": "entry", "exit": "exit"},
+                "expressions": {
+                    "entry": {
+                        "type": "gt",
+                        "left": {"type": "var", "var_id": "close"},
+                        "right": {"type": "const", "value": 10},
+                    },
+                    "exit": {
+                        "type": "lt",
+                        "left": {"type": "var", "var_id": "close"},
+                        "right": {"type": "const", "value": 9},
+                    },
+                },
+                "execution": {"order_timing": "next_bar_open"},
+            },
+            ensure_ascii=True,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    trace_plan_path = outputs_dir / "calc_trace_plan.json"
+    trace_plan_path.write_text("{bad-json", encoding="utf-8")
+    spec_qa_report_path = outputs_dir / "spec_qa_report.json"
+    spec_qa_report_path.write_text(
+        json.dumps(
+            {
+                "overall": "pass",
+                "summary": {"finding_count": 1, "error_count": 0, "warn_count": 1},
+                "findings": [
+                    {
+                        "severity": "warn",
+                        "id": "empty_calc_trace_plan",
+                        "path": "/calc_trace_plan/formulas",
+                        "message": "formulas list is empty",
+                    }
+                ],
+            },
+            ensure_ascii=True,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    outputs_path = outputs_dir / "outputs.json"
+    outputs_path.write_text(
+        json.dumps(
+            {
+                "signal_dsl_path": signal_dsl_path.as_posix(),
+                "variable_dictionary_path": (outputs_dir / "variable_dictionary_missing.json").as_posix(),
+                "calc_trace_plan_path": trace_plan_path.as_posix(),
+                "spec_qa_report_path": spec_qa_report_path.as_posix(),
+            },
+            ensure_ascii=True,
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    readable = _workbench_strategy_readable_summary(job_id=job_id)
+    wb052_cards = readable.get("wb052_cards")
+    assert isinstance(wb052_cards, dict)
+
+    pseudo_card = wb052_cards.get("strategy_pseudocode")
+    assert isinstance(pseudo_card, dict)
+    assert pseudo_card.get("status") == "ready"
+    assert "entry_raw" in str(pseudo_card.get("pseudocode_text") or "")
+
+    var_card = wb052_cards.get("variable_dictionary_summary")
+    assert isinstance(var_card, dict)
+    assert var_card.get("status") == "missing"
+
+    trace_card = wb052_cards.get("calc_trace_plan_summary")
+    assert isinstance(trace_card, dict)
+    assert trace_card.get("status") == "error"
+
+    risk_card = wb052_cards.get("spec_qa_risk")
+    assert isinstance(risk_card, dict)
+    assert risk_card.get("status") == "ready"
+    assert int(risk_card.get("finding_count") or 0) == 1
+    assert int(risk_card.get("warn_count") or 0) == 1
+    assert isinstance(risk_card.get("highlights"), list)
+    assert risk_card.get("highlights")
+
+    dep_rows = readable.get("wb052_dependency_field_map")
+    assert isinstance(dep_rows, list)
+    assert len(dep_rows) == 4
+
+
 def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monkeypatch) -> None:
     art_root = tmp_path / "artifacts"
     job_root = tmp_path / "jobs"
@@ -530,6 +688,12 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert "Requirement entry alias" in r.text
     r = client.get("/ui/workbench/req/wb-028")
     assert r.status_code == 200
+    r = client.get("/ui/workbench/req/wb-046")
+    assert r.status_code == 200
+    r = client.get("/ui/workbench/req/wb-050")
+    assert r.status_code == 200
+    r = client.get("/ui/workbench/req/wb-051")
+    assert r.status_code == 200
     expected_route_contract = (
         ("POST", "/workbench/sessions"),
         ("GET", "/workbench/sessions/{session_id}"),
@@ -552,6 +716,9 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert route_paths.index("/ui/workbench/req/wb-015") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-002") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-028") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-046") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-050") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-051") < session_route_idx
     assert client.get("/ui/jobs").status_code == 200
     assert client.get("/ui/qa-fetch").status_code == 200
 
@@ -613,6 +780,11 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert "<details>" in page.text
     assert "Phase-0" in page.text
     assert "Phase-4" in page.text
+    assert "strategy_pseudocode card" in page.text
+    assert "variable_dictionary summary card" in page.text
+    assert "calc_trace_plan summary card" in page.text
+    assert "Spec-QA risk card" in page.text
+    assert "WB-052 dependency field map" in page.text
     assert "K-line overlay" in page.text
     assert "Trace assertions" in page.text
     assert "Sanity metrics" in page.text
