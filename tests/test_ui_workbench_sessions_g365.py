@@ -54,6 +54,17 @@ def _create_session(*, owner: str = "alice") -> str:
 def test_workbench_recovery_apply_history_and_rollback_append_only_events(tmp_path: Path, monkeypatch) -> None:
     art_root, _job_root = _setup_env(tmp_path, monkeypatch, real_jobs=False)
     session_id = _create_session(owner="alice")
+    session_doc = _request_via_asgi(
+        "GET",
+        f"/workbench/sessions/{session_id}",
+        headers={"x-workbench-owner": "alice"},
+    ).json()
+    session_payload = session_doc["session"]
+    assert isinstance(session_payload, dict)
+    job_id = str(session_payload["job_id"])
+    selected_path = art_root / "jobs" / job_id / "outputs" / "workbench" / "step_drafts" / "strategy_spec" / "selected.json"
+    assert selected_path.as_posix().endswith(f"/jobs/{job_id}/outputs/workbench/step_drafts/strategy_spec/selected.json")
+    assert ".." not in selected_path.as_posix()
 
     d1 = _request_via_asgi(
         "POST",
@@ -77,6 +88,18 @@ def test_workbench_recovery_apply_history_and_rollback_append_only_events(tmp_pa
         json={},
     )
     assert apply_v1.status_code == 200, apply_v1.text
+    apply_v1_doc = apply_v1.json()
+    assert apply_v1_doc["selected_index_path"] == selected_path.as_posix()
+    assert selected_path.is_file()
+    selected_v1 = json.loads(selected_path.read_text(encoding="utf-8"))
+    assert selected_v1["schema_version"] == "workbench_step_selected_v1"
+    assert selected_v1["session_id"] == session_id
+    assert selected_v1["step"] == "strategy_spec"
+    assert selected_v1["selected_version"] == 1
+    assert selected_v1["selected_path"] == (selected_path.parent / "draft_v1.json").as_posix()
+    assert selected_v1["selection_history"] == [1]
+    assert str(selected_v1["selected_at"]).strip()
+
     apply_v2 = _request_via_asgi(
         "POST",
         f"/workbench/sessions/{session_id}/steps/strategy_spec/drafts/apply",
@@ -84,6 +107,13 @@ def test_workbench_recovery_apply_history_and_rollback_append_only_events(tmp_pa
         json={"version": 2},
     )
     assert apply_v2.status_code == 200, apply_v2.text
+    apply_v2_doc = apply_v2.json()
+    assert apply_v2_doc["selected_index_path"] == selected_path.as_posix()
+    selected_v2 = json.loads(selected_path.read_text(encoding="utf-8"))
+    assert selected_v2["selected_version"] == 2
+    assert selected_v2["selected_path"] == (selected_path.parent / "draft_v2.json").as_posix()
+    assert selected_v2["selection_history"] == [1, 2]
+    assert str(selected_v2["selected_at"]).strip()
 
     rollback = _request_via_asgi(
         "POST",
@@ -97,6 +127,12 @@ def test_workbench_recovery_apply_history_and_rollback_append_only_events(tmp_pa
     assert rollback_doc["rollback_from_version"] == 2
     assert rollback_doc["rollback_to_version"] == 1
     assert rollback_doc["selected_draft_version"] == 1
+    assert rollback_doc["selected_index_path"] == selected_path.as_posix()
+    selected_after_rollback = json.loads(selected_path.read_text(encoding="utf-8"))
+    assert selected_after_rollback["selected_version"] == 1
+    assert selected_after_rollback["selected_path"] == (selected_path.parent / "draft_v1.json").as_posix()
+    assert selected_after_rollback["selection_history"] == [1, 2, 1]
+    assert str(selected_after_rollback["selected_at"]).strip()
 
     events = _request_via_asgi(
         "GET",
@@ -182,6 +218,17 @@ def test_workbench_rerun_step_mismatch_and_missing_input_409(tmp_path: Path, mon
     )
     assert missing_input.status_code == 409
     assert "missing rerun input" in str(missing_input.text)
+    missing_doc = missing_input.json()
+    detail = missing_doc.get("detail")
+    assert isinstance(detail, dict)
+    failure = detail.get("failure")
+    assert isinstance(failure, dict)
+    assert failure.get("schema_version") == "workbench_failure_context_v1"
+    assert failure.get("failure_reason") == "step_rerun_failed"
+    assert "missing rerun input" in str(failure.get("readable_message") or "")
+    refs = failure.get("evidence_refs")
+    assert isinstance(refs, list)
+    assert any(str(ref).endswith("/events.jsonl") for ref in refs)
 
     events = _request_via_asgi(
         "GET",
@@ -191,6 +238,18 @@ def test_workbench_rerun_step_mismatch_and_missing_input_409(tmp_path: Path, mon
     event_types = [str(ev.get("event_type") or "") for ev in events.get("events", []) if isinstance(ev, dict)]
     assert "step_rerun_requested" in event_types
     assert "step_rerun_failed" in event_types
+
+    saved_session = json.loads(session_path.read_text(encoding="utf-8"))
+    saved_failure = saved_session.get("last_failure")
+    assert isinstance(saved_failure, dict)
+    assert saved_failure.get("failure_reason") == "step_rerun_failed"
+    assert isinstance(saved_failure.get("evidence_refs"), list)
+
+    ui = _request_via_asgi("GET", f"/ui/workbench/{session_id}")
+    assert ui.status_code == 200, ui.text
+    assert "Failure Explainability (WB-026)" in ui.text
+    assert "step_rerun_failed" in ui.text
+    assert "Evidence refs" in ui.text
 
 
 def test_workbench_recovery_safe_pathing_blocks_tampered_job_id(tmp_path: Path, monkeypatch) -> None:

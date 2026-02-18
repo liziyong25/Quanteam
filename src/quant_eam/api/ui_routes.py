@@ -319,6 +319,11 @@ WORKBENCH_G356_REQUIRED_OUTPUT_FIELDS: dict[str, str] = {
     "report_summary_path": "Report summary source for WB-017.",
     "composer_agent_plan_path": "Composer result source for WB-017.",
 }
+WORKBENCH_FAILURE_REASON_READABLE: dict[str, str] = {
+    "ui_intake_fetch_failed": "Session creation completed, but intake fetch evidence generation failed.",
+    "fetch_probe_execution_failed": "Fetch probe failed while refreshing Phase-0/Phase-2 evidence.",
+    "step_rerun_failed": "Current step rerun failed before completion.",
+}
 
 
 def _workbench_root() -> Path:
@@ -618,6 +623,75 @@ def _workbench_step_drafts_root(session_id: str, step: str, *, job_id: str | Non
 
 def _workbench_cards_index_path(session_id: str, *, job_id: str | None = None) -> Path:
     return _workbench_cards_root(session_id, job_id=job_id) / "cards_index.jsonl"
+
+
+def _workbench_failure_readable_message(reason: str, *, detail: str = "") -> str:
+    base = str(WORKBENCH_FAILURE_REASON_READABLE.get(str(reason).strip()) or "Workbench action failed.")
+    detail_text = str(detail).strip()
+    if not detail_text:
+        return base
+    return f"{base} Detail: {detail_text}"
+
+
+def _workbench_failure_evidence_refs(
+    session_id: str,
+    *,
+    event: dict[str, Any] | None = None,
+    extra_refs: list[str] | None = None,
+) -> list[str]:
+    refs: list[str] = [
+        _workbench_session_path(session_id).as_posix(),
+        _workbench_events_path(session_id).as_posix(),
+    ]
+    if isinstance(event, dict):
+        event_id = str(event.get("event_id") or "").strip()
+        if event_id:
+            refs.append(f"{_workbench_events_path(session_id).as_posix()}#{event_id}")
+    if isinstance(extra_refs, list):
+        refs.extend(str(item).strip() for item in extra_refs if str(item).strip())
+    out: list[str] = []
+    seen: set[str] = set()
+    for ref in refs:
+        if ref in seen:
+            continue
+        seen.add(ref)
+        out.append(ref)
+    return out
+
+
+def _workbench_clear_last_failure(session: dict[str, Any]) -> None:
+    session["last_failure"] = {}
+
+
+def _workbench_record_last_failure(
+    session_id: str,
+    session: dict[str, Any],
+    *,
+    step: str,
+    reason: str,
+    detail: str = "",
+    source: str = "",
+    event: dict[str, Any] | None = None,
+    extra_refs: list[str] | None = None,
+) -> dict[str, Any]:
+    failure = {
+        "schema_version": "workbench_failure_context_v1",
+        "failure_reason": str(reason).strip(),
+        "readable_message": _workbench_failure_readable_message(reason, detail=detail),
+        "detail": str(detail).strip(),
+        "step": str(step).strip(),
+        "source": str(source).strip(),
+        "event_id": str((event or {}).get("event_id") or "").strip(),
+        "event_index": int((event or {}).get("event_index") or 0),
+        "occurred_at": _now_iso(),
+        "evidence_refs": _workbench_failure_evidence_refs(
+            session_id,
+            event=event,
+            extra_refs=extra_refs,
+        ),
+    }
+    session["last_failure"] = failure
+    return failure
 
 
 def _workbench_persistence_baseline(session_id: str, *, job_id: str) -> dict[str, Any]:
@@ -969,10 +1043,11 @@ def _workbench_apply_draft_locked(
     if not isinstance(step_drafts, dict):
         step_drafts = {}
 
+    selection_ts = _now_iso()
     prev_selected = _workbench_current_selected_draft_version(session, step=step)
     step_drafts["selected"] = draft_no
     step_drafts["path"] = draft_path.as_posix()
-    step_drafts["selected_at"] = _now_iso()
+    step_drafts["selected_at"] = selection_ts
     drafts[step] = step_drafts
     session["drafts"] = drafts
 
@@ -1002,11 +1077,11 @@ def _workbench_apply_draft_locked(
             "selected_version": draft_no,
             "selected_path": draft_path.as_posix(),
             "selection_history": history,
-            "selected_at": _now_iso(),
+            "selected_at": selection_ts,
         },
     )
     _bump_workbench_revision(session)
-    session["updated_at"] = _now_iso()
+    session["updated_at"] = selection_ts
     _write_workbench_session(session_id, session)
     return draft_path, selected_path, prev_selected, history
 
@@ -1776,8 +1851,10 @@ def _initial_workbench_session(*, session_id: str, idea: dict[str, Any], job_id:
         "selected_drafts": {},
         "last_rerun": {},
         "rerun_last_error": "",
+        "last_failure": {},
         "fetch_probe_status": "idle",
         "fetch_probe_error": "",
+        "fetch_probe_error_ref": "",
         "fetch_probe_preview_rows": [],
         "contract_freeze": {
             "session_schema_version": "workbench_session_v1",
@@ -7043,6 +7120,7 @@ async def workbench_session_create(request: Request) -> Any:
     fetch_preview_rows: list[dict[str, Any]] = []
     fetch_probe_status = "idle"
     fetch_probe_error = ""
+    fetch_probe_error_ref = ""
     try:
         fetch_query_result = execute_ui_llm_query(
             {
@@ -7064,6 +7142,7 @@ async def workbench_session_create(request: Request) -> Any:
         fetch_probe_status = "error"
         fetch_probe_error = str(e)
         err_path = _workbench_fetch_evidence_root_for_job(job_id) / "ui_intake_fetch_error.json"
+        fetch_probe_error_ref = err_path.as_posix()
         _write_json(
             err_path,
             {
@@ -7084,6 +7163,10 @@ async def workbench_session_create(request: Request) -> Any:
     session_doc["fetch_probe_preview_rows"] = fetch_preview_rows
     session_doc["fetch_probe_status"] = fetch_probe_status
     session_doc["fetch_probe_error"] = fetch_probe_error
+    session_doc["fetch_probe_error_ref"] = fetch_probe_error_ref
+    create_failure: dict[str, Any] = {}
+    if fetch_probe_status != "error":
+        _workbench_clear_last_failure(session_doc)
     if isinstance(fetch_evidence_paths.get("fetch_result_meta_path"), str):
         session_doc["last_fetch_probe"] = str(fetch_evidence_paths.get("fetch_result_meta_path"))
     _write_workbench_session(session_id, session_doc)
@@ -7115,6 +7198,18 @@ async def workbench_session_create(request: Request) -> Any:
     details["message"] = message
     details["normalized_request"] = normalized
     details["fetch_evidence_paths"] = fetch_evidence_paths
+    if fetch_probe_status == "error":
+        create_failure = _workbench_record_last_failure(
+            session_id,
+            session_doc,
+            step=WORKBENCH_PHASE_STEPS[0],
+            reason="ui_intake_fetch_failed",
+            detail=fetch_probe_error,
+            source="workbench_session_create",
+            event=event,
+            extra_refs=[fetch_probe_error_ref],
+        )
+        details["failure"] = create_failure
     if fetch_preview_rows:
         details["fetch_preview_rows"] = fetch_preview_rows
     artifact_rows = [str(x).strip() for x in artifacts if str(x).strip()]
@@ -7146,6 +7241,7 @@ async def workbench_session_create(request: Request) -> Any:
         "card": _workbench_card_api_payload(card_doc),
         "sampled_symbols": sampled_symbols,
         "fetch_evidence_paths": fetch_evidence_paths,
+        "failure": create_failure,
         "contract": {
             "request_schema_version": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS["create_request"],
             "response_schema_version": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS["create_response"],
@@ -7653,6 +7749,7 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
 
         session["fetch_probe_status"] = "running"
         session["fetch_probe_error"] = ""
+        session["fetch_probe_error_ref"] = ""
         _bump_workbench_revision(session)
         session["updated_at"] = _now_iso()
         _write_workbench_session(session_id, session)
@@ -7669,8 +7766,19 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
                 out_dir=_workbench_fetch_evidence_root_for_job(job_id),
             )
         except Exception as e:  # noqa: BLE001
+            error_path = _workbench_fetch_evidence_root_for_job(job_id) / "fetch_probe_error.json"
+            _write_json(
+                error_path,
+                {
+                    "schema_version": "workbench_fetch_probe_error_v1",
+                    "session_id": session_id,
+                    "job_id": job_id,
+                    "message": str(e),
+                },
+            )
             session["fetch_probe_status"] = "error"
             session["fetch_probe_error"] = str(e)
+            session["fetch_probe_error_ref"] = error_path.as_posix()
             session["fetch_probe_preview_rows"] = []
             _bump_workbench_revision(session)
             session["updated_at"] = _now_iso()
@@ -7681,7 +7789,17 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
                 actor="system",
                 source="workbench_session_fetch_probe",
                 status="error",
-                payload={"job_id": job_id, "error": str(e)},
+                payload={"job_id": job_id, "error": str(e), "error_path": error_path.as_posix()},
+            )
+            failure = _workbench_record_last_failure(
+                session_id,
+                session,
+                step="trace_preview",
+                reason="fetch_probe_execution_failed",
+                detail=str(e),
+                source="workbench_session_fetch_probe",
+                event=ev,
+                extra_refs=[error_path.as_posix()],
             )
             _write_workbench_session(session_id, session)
             out = {
@@ -7692,6 +7810,7 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
                 "status": "error",
                 "error": str(e),
                 "event_id": str(ev.get("event_id") or ""),
+                "failure": failure,
             }
             _workbench_cache_action_response(session_id=session_id, action="fetch_probe", key=idempotency_key, response=out)
             if is_ui:
@@ -7712,6 +7831,8 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
         session["fetch_probe_preview_rows"] = sample_rows
         session["fetch_probe_status"] = "ok"
         session["fetch_probe_error"] = ""
+        session["fetch_probe_error_ref"] = ""
+        _workbench_clear_last_failure(session)
         if isinstance(fetch_evidence_paths.get("fetch_result_meta_path"), str):
             session["last_fetch_probe"] = str(fetch_evidence_paths.get("fetch_result_meta_path"))
         _bump_workbench_revision(session)
@@ -7771,6 +7892,7 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
 
     session["fetch_probe_status"] = "running"
     session["fetch_probe_error"] = ""
+    session["fetch_probe_error_ref"] = ""
     _bump_workbench_revision(session)
     session["updated_at"] = _now_iso()
     _write_workbench_session(session_id, session)
@@ -7791,6 +7913,8 @@ async def workbench_session_fetch_probe(session_id: str, request: Request) -> An
     session["fetch_probe_preview_rows"] = sample_rows
     session["fetch_probe_status"] = "ok"
     session["fetch_probe_error"] = ""
+    session["fetch_probe_error_ref"] = ""
+    _workbench_clear_last_failure(session)
     _bump_workbench_revision(session)
     session["updated_at"] = _now_iso()
     ev = _append_workbench_event(
@@ -8166,19 +8290,7 @@ async def workbench_session_rerun_step(session_id: str, step: str, request: Requ
                 rerun_result = api_job_rerun(request, job_id, agent_id=agent_id)
             except HTTPException as exc:
                 err = str(exc.detail)
-                session["rerun_last_error"] = err
-                session["last_rerun"] = {
-                    "step": step,
-                    "agent_id": agent_id,
-                    "job_id": job_id,
-                    "status": "error",
-                    "error": err,
-                    "updated_at": _now_iso(),
-                }
-                _bump_workbench_revision(session)
-                session["updated_at"] = _now_iso()
-                _write_workbench_session(session_id, session)
-                _append_workbench_event(
+                failure_ev = _append_workbench_event(
                     session_id=session_id,
                     step=step,
                     action="step_rerun_failed",
@@ -8192,10 +8304,35 @@ async def workbench_session_rerun_step(session_id: str, step: str, request: Requ
                         "request_event_id": str(request_ev.get("event_id") or ""),
                     },
                 )
-                raise
+                session["rerun_last_error"] = err
+                session["last_rerun"] = {
+                    "step": step,
+                    "agent_id": agent_id,
+                    "job_id": job_id,
+                    "status": "error",
+                    "error": err,
+                    "updated_at": _now_iso(),
+                }
+                failure = _workbench_record_last_failure(
+                    session_id,
+                    session,
+                    step=step,
+                    reason="step_rerun_failed",
+                    detail=err,
+                    source="workbench_session_rerun_step",
+                    event=failure_ev,
+                )
+                _bump_workbench_revision(session)
+                session["updated_at"] = _now_iso()
+                _write_workbench_session(session_id, session)
+                raise HTTPException(
+                    status_code=exc.status_code,
+                    detail={"error": err, "failure": failure},
+                )
 
             rerun_id = str(rerun_result.get("rerun_id") or "")
             session["rerun_last_error"] = ""
+            _workbench_clear_last_failure(session)
             session["last_rerun"] = {
                 "step": step,
                 "agent_id": agent_id,
@@ -8265,6 +8402,7 @@ async def workbench_session_rerun_step(session_id: str, step: str, request: Requ
                 "event_id": str(sim_ev.get("event_id") or ""),
                 "updated_at": _now_iso(),
             }
+            _workbench_clear_last_failure(session)
             _bump_workbench_revision(session)
             session["updated_at"] = _now_iso()
             _write_workbench_session(session_id, session)

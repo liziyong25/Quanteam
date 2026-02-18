@@ -104,6 +104,29 @@
         <p><strong>job_id:</strong> {{ s.job_id }} | <strong>created:</strong> {{ s.created_at }}</p>
         <p><strong>cards:</strong> {{ selected_session.cards_path }}</p>
       </div>
+      {% set failure = s.last_failure if s.last_failure else {} %}
+      {% if failure and failure.get("readable_message") %}
+      <h3>Failure Explainability (WB-026)</h3>
+      <div class="plot-fallback">{{ failure.get("readable_message") }}</div>
+      <div class="table-wrap">
+        <table class="table">
+          <tbody>
+            <tr><th>failure_reason</th><td>{{ failure.get("failure_reason", "") }}</td></tr>
+            <tr><th>step</th><td>{{ failure.get("step", "") }}</td></tr>
+            <tr><th>source</th><td>{{ failure.get("source", "") }}</td></tr>
+            <tr><th>event_id</th><td>{{ failure.get("event_id", "") }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+      {% if failure.get("evidence_refs") and failure.get("evidence_refs")|length > 0 %}
+      <p><strong>Evidence refs</strong></p>
+      <ul>
+        {% for ref in failure.get("evidence_refs", []) %}
+        <li><code>{{ ref }}</code></li>
+        {% endfor %}
+      </ul>
+      {% endif %}
+      {% endif %}
 
       <h3>Actions</h3>
       <div class="grid">
@@ -191,6 +214,9 @@
       <p><strong>Status:</strong> <span class="pill">{{ fetch_status }}</span></p>
       {% if s.fetch_probe_error %}
         <div class="plot-fallback">Last fetch error: {{ s.fetch_probe_error }}</div>
+        {% if s.fetch_probe_error_ref %}
+        <p class="muted">fetch error evidence: <code>{{ s.fetch_probe_error_ref }}</code></p>
+        {% endif %}
       {% elif fetch_status == "running" %}
         <div class="plot-fallback">Fetch probe is running. Refresh this page to see the latest preview state.</div>
       {% endif %}
