@@ -170,6 +170,7 @@ IA_ROUTE_VIEW_CATALOG: dict[str, dict[str, str]] = {
     "/ui/workbench/req/wb-046": {"view_name": "Workbench phase-0 requirement entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-050": {"view_name": "Workbench phase-0 scope-lock entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-051": {"view_name": "Workbench phase-1 skeleton entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-053": {"view_name": "Workbench phase-1 draft operations entry", "template": "workbench.html"},
     "/ui/workbench/{session_id}": {"view_name": "Workbench session", "template": "workbench.html"},
 }
 IA_CHECKLIST_ROUTE_BINDINGS: dict[int, list[str]] = {
@@ -414,6 +415,7 @@ WORKBENCH_REQUIREMENT_ENTRY_ALIASES: tuple[str, ...] = (
     "/ui/workbench/req/wb-046",
     "/ui/workbench/req/wb-050",
     "/ui/workbench/req/wb-051",
+    "/ui/workbench/req/wb-053",
 )
 WORKBENCH_EVIDENCE_MAX_BYTES = 262_144
 WORKBENCH_EVIDENCE_MAX_CSV_ROWS = 24
@@ -1011,6 +1013,16 @@ def _parse_workbench_request_payload(payload: Any) -> dict[str, Any]:
     return out
 
 
+def _workbench_draft_selection_snapshot(session: dict[str, Any], *, step: str) -> dict[str, Any]:
+    snapshots_map = session.get("draft_selection_snapshots")
+    if not isinstance(snapshots_map, dict):
+        return {}
+    raw = snapshots_map.get(step)
+    if not isinstance(raw, dict):
+        return {}
+    return raw
+
+
 def _coerce_symbol_list(value: Any) -> list[str]:
     if isinstance(value, list):
         out = [str(x).strip() for x in value if str(x).strip()]
@@ -1212,6 +1224,17 @@ def _workbench_draft_selection_history(session: dict[str, Any], *, step: str) ->
 
 
 def _workbench_previous_selected_draft_version(session: dict[str, Any], *, step: str, current_version: int | None) -> int | None:
+    snapshot = _workbench_draft_selection_snapshot(session, step=step)
+    prev_row = snapshot.get("previous_selected")
+    if isinstance(prev_row, dict):
+        raw = prev_row.get("version")
+        if isinstance(raw, int) and raw > 0 and raw != current_version:
+            return raw
+        if isinstance(raw, str) and raw.isdigit():
+            parsed = int(raw)
+            if parsed > 0 and parsed != current_version:
+                return parsed
+
     history = _workbench_draft_selection_history(session, step=step)
     if not history:
         return None
@@ -1229,7 +1252,7 @@ def _workbench_apply_draft_locked(
     session: dict[str, Any],
     step: str,
     draft_no: int,
-) -> tuple[Path, Path, int | None, list[int]]:
+) -> tuple[Path, Path, int | None, list[int], dict[str, Any]]:
     draft_dir = _workbench_step_draft_dir_from_session(session_id=session_id, session=session, step=step)
     draft_path = draft_dir / f"draft_v{draft_no}.json"
     if not draft_path.is_file():
@@ -1244,6 +1267,12 @@ def _workbench_apply_draft_locked(
         raise HTTPException(status_code=409, detail="draft payload session/step mismatch")
     if int(draft_doc.get("version") or 0) != draft_no:
         raise HTTPException(status_code=409, detail="draft payload version mismatch")
+    selected_snapshot = {
+        "version": draft_no,
+        "path": draft_path.as_posix(),
+        "content_hash": str(draft_doc.get("content_hash") or ""),
+        "created_at": str(draft_doc.get("created_at") or ""),
+    }
 
     drafts = session.get("drafts")
     if not isinstance(drafts, dict):
@@ -1278,6 +1307,46 @@ def _workbench_apply_draft_locked(
     history_map[step] = history
     session["draft_selection_history"] = history_map
 
+    previous_snapshot: dict[str, Any] | None = None
+    if isinstance(prev_selected, int) and prev_selected > 0 and prev_selected != draft_no:
+        prev_path = draft_dir / f"draft_v{prev_selected}.json"
+        if prev_path.is_file():
+            try:
+                prev_doc = _load_json(prev_path)
+            except Exception:  # noqa: BLE001
+                prev_doc = None
+            if isinstance(prev_doc, dict):
+                if (
+                    str(prev_doc.get("session_id") or "") == session_id
+                    and str(prev_doc.get("step") or "") == step
+                    and int(prev_doc.get("version") or 0) == prev_selected
+                ):
+                    previous_snapshot = {
+                        "version": prev_selected,
+                        "path": prev_path.as_posix(),
+                        "content_hash": str(prev_doc.get("content_hash") or ""),
+                        "created_at": str(prev_doc.get("created_at") or ""),
+                    }
+        if previous_snapshot is None:
+            previous_snapshot = {"version": prev_selected}
+
+    selection_snapshot = {
+        "schema_version": "workbench_draft_selection_snapshot_v1",
+        "session_id": session_id,
+        "step": step,
+        "selected": selected_snapshot,
+        "previous_selected": previous_snapshot,
+        "selection_history": history,
+        "selected_at": selection_ts,
+    }
+    step_drafts["selection_snapshot"] = selection_snapshot
+
+    snapshots_map = session.get("draft_selection_snapshots")
+    if not isinstance(snapshots_map, dict):
+        snapshots_map = {}
+    snapshots_map[step] = selection_snapshot
+    session["draft_selection_snapshots"] = snapshots_map
+
     selected_path = draft_dir / "selected.json"
     _write_json(
         selected_path,
@@ -1287,17 +1356,36 @@ def _workbench_apply_draft_locked(
             "step": step,
             "selected_version": draft_no,
             "selected_path": draft_path.as_posix(),
+            "selected_content_hash": selected_snapshot["content_hash"],
+            "selected_created_at": selected_snapshot["created_at"],
+            "previous_selected_version": previous_snapshot.get("version") if isinstance(previous_snapshot, dict) else None,
+            "previous_selected_path": previous_snapshot.get("path", "") if isinstance(previous_snapshot, dict) else "",
+            "previous_selected_content_hash": (
+                previous_snapshot.get("content_hash", "") if isinstance(previous_snapshot, dict) else ""
+            ),
             "selection_history": history,
             "selected_at": selection_ts,
+            "selection_snapshot": selection_snapshot,
         },
     )
     _bump_workbench_revision(session)
     session["updated_at"] = selection_ts
     _write_workbench_session(session_id, session)
-    return draft_path, selected_path, prev_selected, history
+    return draft_path, selected_path, prev_selected, history, selection_snapshot
 
 
 def _workbench_validate_draft_content(payload: dict[str, Any]) -> Any:
+    if "content" not in payload and "content_json" in payload:
+        raw_json = str(payload.get("content_json") or "").strip()
+        if not raw_json:
+            raise HTTPException(status_code=422, detail="content_json must not be empty")
+        try:
+            parsed = json.loads(raw_json)
+        except Exception:  # noqa: BLE001
+            raise HTTPException(status_code=422, detail="content_json must be valid JSON")
+        payload = dict(payload)
+        payload["content"] = parsed
+
     if "content" in payload:
         content = payload.get("content")
     else:
@@ -2096,6 +2184,7 @@ def _initial_workbench_session(*, session_id: str, idea: dict[str, Any], job_id:
         "messages": [],
         "drafts": {},
         "draft_selection_history": {},
+        "draft_selection_snapshots": {},
         "cards": [],
         "phase_cards": {},
         "selected_drafts": {},
@@ -2782,6 +2871,7 @@ def _workbench_session_context(session_id: str) -> dict[str, Any]:
         else None
     )
     history = _workbench_draft_selection_history(payload, step=current_step) if current_step != "idea" else []
+    selection_snapshot = _workbench_draft_selection_snapshot(payload, step=current_step) if current_step != "idea" else {}
     return {
         "title": "Workbench Session",
         "session": payload,
@@ -2798,6 +2888,7 @@ def _workbench_session_context(session_id: str) -> dict[str, Any]:
             "selected_version": selected_version,
             "previous_version": previous_version,
             "selection_history": history,
+            "selection_snapshot": selection_snapshot,
         },
     }
 
@@ -8584,6 +8675,7 @@ async def workbench_session_save_draft(session_id: str, step: str, request: Requ
     session_id = require_safe_id(session_id, kind="session_id")
     step = _workbench_parse_step(step, allow_idea=False)
     payload = await _read_workbench_payload(request)
+    is_ui = str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}
     draft_content = _workbench_validate_draft_content(payload)
     content_json = json.dumps(draft_content, ensure_ascii=True, separators=(",", ":"), sort_keys=True)
     content_hash = hashlib.sha256(content_json.encode("utf-8")).hexdigest()
@@ -8624,7 +8716,7 @@ async def workbench_session_save_draft(session_id: str, step: str, request: Requ
         source="workbench_session_save_draft",
         payload={"version": next_version, "draft_path": draft_path.as_posix(), "content_hash": content_hash},
     )
-    return {
+    out = {
         "schema_version": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS["draft_create_response"],
         "session_id": session_id,
         "owner_id": owner_id,
@@ -8634,6 +8726,9 @@ async def workbench_session_save_draft(session_id: str, step: str, request: Requ
         "content_hash": content_hash,
         "event": ev,
     }
+    if is_ui:
+        return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
+    return out
 
 
 @router.post("/workbench/sessions/{session_id}/steps/{step}/drafts/{version}/apply")
@@ -8651,7 +8746,7 @@ async def workbench_session_apply_draft(session_id: str, step: str, version: str
         replay = _workbench_get_action_idempotent_response(session_id=session_id, action="draft_apply", key=idempotency_key)
         if replay is not None:
             return replay
-        draft_path, selected_path, prev_selected, selection_history = _workbench_apply_draft_locked(
+        draft_path, selected_path, prev_selected, selection_history, selection_snapshot = _workbench_apply_draft_locked(
             session_id=session_id,
             session=session,
             step=step,
@@ -8678,6 +8773,7 @@ async def workbench_session_apply_draft(session_id: str, step: str, version: str
             "current_version": draft_no,
             "selected_path": selected_path.as_posix(),
             "selection_history": selection_history,
+            "selection_snapshot": selection_snapshot,
         },
     )
 
@@ -8690,6 +8786,7 @@ async def workbench_session_apply_draft(session_id: str, step: str, version: str
         "path": draft_path.as_posix(),
         "selected_index_path": selected_path.as_posix(),
         "selection_history": selection_history,
+        "selection_snapshot": selection_snapshot,
         "event": apply_ev,
         "state_event": state_ev,
     }
@@ -8716,7 +8813,7 @@ async def workbench_session_apply_draft_from_payload(session_id: str, step: str,
             if str(payload.get("_ui", "")).strip() in {"1", "true", "yes"}:
                 return RedirectResponse(url=f"/ui/workbench/{session_id}", status_code=303)
             return replay
-        draft_path, selected_path, prev_selected, selection_history = _workbench_apply_draft_locked(
+        draft_path, selected_path, prev_selected, selection_history, selection_snapshot = _workbench_apply_draft_locked(
             session_id=session_id,
             session=session,
             step=step,
@@ -8743,6 +8840,7 @@ async def workbench_session_apply_draft_from_payload(session_id: str, step: str,
             "current_version": draft_no,
             "selected_path": selected_path.as_posix(),
             "selection_history": selection_history,
+            "selection_snapshot": selection_snapshot,
         },
     )
 
@@ -8755,6 +8853,7 @@ async def workbench_session_apply_draft_from_payload(session_id: str, step: str,
         "path": draft_path.as_posix(),
         "selected_index_path": selected_path.as_posix(),
         "selection_history": selection_history,
+        "selection_snapshot": selection_snapshot,
         "event": apply_ev,
         "state_event": state_ev,
     }
@@ -8805,7 +8904,7 @@ async def workbench_session_rollback_draft(session_id: str, step: str, request: 
         if rollback_to == current_selected:
             raise HTTPException(status_code=409, detail="target rollback version must differ from current selected version")
 
-        draft_path, selected_path, prev_selected, selection_history = _workbench_apply_draft_locked(
+        draft_path, selected_path, prev_selected, selection_history, selection_snapshot = _workbench_apply_draft_locked(
             session_id=session_id,
             session=session,
             step=step,
@@ -8838,6 +8937,7 @@ async def workbench_session_rollback_draft(session_id: str, step: str, request: 
             "rollback_to": rollback_to,
             "selected_path": selected_path.as_posix(),
             "selection_history": selection_history,
+            "selection_snapshot": selection_snapshot,
         },
     )
 
@@ -8852,6 +8952,7 @@ async def workbench_session_rollback_draft(session_id: str, step: str, request: 
         "path": draft_path.as_posix(),
         "selected_index_path": selected_path.as_posix(),
         "selection_history": selection_history,
+        "selection_snapshot": selection_snapshot,
         "event": rollback_ev,
         "state_event": state_ev,
     }
@@ -9082,6 +9183,12 @@ def ui_workbench_req_wb050(request: Request) -> HTMLResponse:
 @router.api_route("/ui/workbench/req/wb-051", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_workbench_req_wb051(request: Request) -> HTMLResponse:
     # Stable requirement-bound entry path used by SSOT ui_path for G375.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-053", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb053(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G377.
     return ui_workbench(request)
 
 

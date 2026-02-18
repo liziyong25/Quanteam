@@ -205,6 +205,16 @@
         </div>
         <div>
           {% if s.current_step != "idea" %}
+          <form method="post" action="/workbench/sessions/{{ s.session_id }}/steps/{{ s.current_step }}/drafts" class="form-grid" data-loading-form="1">
+            <input type="hidden" name="_ui" value="1"/>
+            <label class="full">
+              <span>edit draft JSON</span>
+              <textarea name="content_json" rows="5" placeholder='{"note":"refine strategy logic"}' required></textarea>
+            </label>
+            <div class="full">
+              <button type="submit" class="btn" data-loading-label="Saving...">Save Draft Version</button>
+            </div>
+          </form>
           <form method="post" action="/workbench/sessions/{{ s.session_id }}/steps/{{ s.current_step }}/drafts/apply" class="form-grid" data-loading-form="1">
             <input type="hidden" name="_ui" value="1"/>
             <input type="hidden" name="idempotency_key" value="" data-idempotency-input="draft_apply" data-session-id="{{ s.session_id }}"/>
@@ -225,6 +235,16 @@
           </form>
           {% if recovery.get("selection_history") and recovery.get("selection_history")|length > 0 %}
           <p class="muted">selection_history: {{ recovery.get("selection_history") | join(" -> ") }}</p>
+          {% endif %}
+          {% if recovery.get("selection_snapshot") %}
+          {% set snap = recovery.get("selection_snapshot") %}
+          {% set selected_snap = snap.get("selected") if snap.get("selected") else {} %}
+          {% set prev_snap = snap.get("previous_selected") if snap.get("previous_selected") else {} %}
+          <p class="muted">
+            snapshot selected={{ selected_snap.get("version") if selected_snap.get("version") else "none" }}
+            (hash={{ selected_snap.get("content_hash") if selected_snap.get("content_hash") else "none" }})
+            | previous={{ prev_snap.get("version") if prev_snap.get("version") else "none" }}
+          </p>
           {% endif %}
           {% else %}
           <div class="plot-fallback">Draft apply/rollback is available after entering a non-idea step.</div>

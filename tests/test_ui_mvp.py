@@ -466,6 +466,79 @@ def test_ui_create_idea_job_from_form(tmp_path: Path, monkeypatch) -> None:
     assert rd.status_code == 200
     assert job_id in rd.text
 
+    # WB-053: non-idea step supports editable drafts + deterministic apply/rollback.
+    wb = _request_via_asgi(
+        "POST",
+        "/workbench/sessions",
+        json={"title": "wb053", "symbols": "AAA,BBB", "hypothesis_text": "draft lifecycle"},
+    )
+    assert wb.status_code == 201, wb.text
+    wb_doc = wb.json()
+    session_id = str(wb_doc["session_id"])
+
+    to_strategy = _request_via_asgi("POST", f"/workbench/sessions/{session_id}/continue", json={})
+    assert to_strategy.status_code == 200, to_strategy.text
+    assert str(to_strategy.json()["current_step"]) == "strategy_spec"
+
+    draft1 = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{session_id}/steps/strategy_spec/drafts",
+        data={"content_json": json.dumps({"note": "draft-1", "threshold": 10}, ensure_ascii=True), "_ui": "1"},
+        follow_redirects=False,
+    )
+    assert draft1.status_code == 303, draft1.text
+
+    apply1 = _request_via_asgi("POST", f"/workbench/sessions/{session_id}/steps/strategy_spec/drafts/1/apply", json={})
+    assert apply1.status_code == 200, apply1.text
+    apply1_doc = apply1.json()
+    assert int(apply1_doc["selected_draft_version"]) == 1
+    snap1 = apply1_doc.get("selection_snapshot")
+    assert isinstance(snap1, dict)
+    assert int(((snap1.get("selected") or {}).get("version") or 0)) == 1
+    assert snap1.get("previous_selected") is None
+
+    draft2 = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{session_id}/steps/strategy_spec/drafts",
+        json={"content": {"note": "draft-2", "threshold": 12}},
+    )
+    assert draft2.status_code == 200, draft2.text
+    assert int(draft2.json()["draft_version"]) == 2
+
+    apply2 = _request_via_asgi("POST", f"/workbench/sessions/{session_id}/steps/strategy_spec/drafts/apply", json={"version": 2})
+    assert apply2.status_code == 200, apply2.text
+    apply2_doc = apply2.json()
+    assert int(apply2_doc["selected_draft_version"]) == 2
+    snap2 = apply2_doc.get("selection_snapshot")
+    assert isinstance(snap2, dict)
+    assert int(((snap2.get("selected") or {}).get("version") or 0)) == 2
+    assert int((((snap2.get("previous_selected") or {}).get("version")) or 0)) == 1
+
+    rollback = _request_via_asgi("POST", f"/workbench/sessions/{session_id}/steps/strategy_spec/drafts/rollback", json={})
+    assert rollback.status_code == 200, rollback.text
+    rollback_doc = rollback.json()
+    assert int(rollback_doc["rollback_from_version"]) == 2
+    assert int(rollback_doc["rollback_to_version"]) == 1
+    rb_snap = rollback_doc.get("selection_snapshot")
+    assert isinstance(rb_snap, dict)
+    assert int(((rb_snap.get("selected") or {}).get("version") or 0)) == 1
+    assert int((((rb_snap.get("previous_selected") or {}).get("version")) or 0)) == 2
+
+    selected_path = Path(str(rollback_doc["selected_index_path"]))
+    assert selected_path.is_file()
+    selected_payload = json.loads(selected_path.read_text(encoding="utf-8"))
+    assert int(selected_payload["selected_version"]) == 1
+    assert int(selected_payload["previous_selected_version"]) == 2
+    assert isinstance(selected_payload.get("selection_snapshot"), dict)
+
+    session_payload = json.loads((art_root / "workbench" / "sessions" / session_id / "session.json").read_text(encoding="utf-8"))
+    snapshots = session_payload.get("draft_selection_snapshots")
+    assert isinstance(snapshots, dict)
+    strategy_snapshot = snapshots.get("strategy_spec")
+    assert isinstance(strategy_snapshot, dict)
+    assert int((((strategy_snapshot.get("selected") or {}).get("version")) or 0)) == 1
+    assert int((((strategy_snapshot.get("previous_selected") or {}).get("version")) or 0)) == 2
+
 
 def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     art_root = tmp_path / "artifacts"
@@ -500,6 +573,9 @@ def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     req_alias_phase1 = _request_via_asgi("GET", "/ui/workbench/req/wb-051")
     assert req_alias_phase1.status_code == 200
     assert "Requirement entry alias" in req_alias_phase1.text
+    req_alias_phase1_draft_ops = _request_via_asgi("GET", "/ui/workbench/req/wb-053")
+    assert req_alias_phase1_draft_ops.status_code == 200
+    assert "Requirement entry alias" in req_alias_phase1_draft_ops.text
 
     # WB-039 baseline: create flow exposes stable persistence contracts and writes session artifacts.
     created = _request_via_asgi(
@@ -538,6 +614,26 @@ def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     assert get_session.status_code == 200, get_session.text
     get_doc = get_session.json()
     assert get_doc.get("persistence") == persistence
+
+    # WB-053 hardening: draft handlers must reject traversal-like step ids.
+    bad_draft_step_save = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{session_id}/steps/%2e%2e/drafts",
+        json={"content": {"note": "x"}},
+    )
+    assert bad_draft_step_save.status_code in (400, 422)
+    bad_draft_step_apply = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{session_id}/steps/%2e%2e/drafts/1/apply",
+        json={},
+    )
+    assert bad_draft_step_apply.status_code in (400, 422)
+    bad_draft_step_rollback = _request_via_asgi(
+        "POST",
+        f"/workbench/sessions/{session_id}/steps/%2e%2e/drafts/rollback",
+        json={},
+    )
+    assert bad_draft_step_rollback.status_code in (400, 422)
 
 
 def test_holdout_leak_not_rendered(tmp_path: Path, monkeypatch) -> None:
@@ -694,6 +790,8 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert r.status_code == 200
     r = client.get("/ui/workbench/req/wb-051")
     assert r.status_code == 200
+    r = client.get("/ui/workbench/req/wb-053")
+    assert r.status_code == 200
     expected_route_contract = (
         ("POST", "/workbench/sessions"),
         ("GET", "/workbench/sessions/{session_id}"),
@@ -719,6 +817,7 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert route_paths.index("/ui/workbench/req/wb-046") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-050") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-051") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-053") < session_route_idx
     assert client.get("/ui/jobs").status_code == 200
     assert client.get("/ui/qa-fetch").status_code == 200
 

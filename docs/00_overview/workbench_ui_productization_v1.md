@@ -101,6 +101,7 @@
 - `POST /workbench/sessions/{session_id}/fetch-probe`
 - `POST /workbench/sessions/{session_id}/steps/{step}/drafts`
 - `POST /workbench/sessions/{session_id}/steps/{step}/drafts/{version}/apply`
+- `POST /workbench/sessions/{session_id}/steps/{step}/drafts/rollback`
 - `GET /ui/workbench`
 - `GET /ui/workbench/{session_id}`
 
