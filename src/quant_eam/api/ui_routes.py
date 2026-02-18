@@ -616,8 +616,36 @@ def _workbench_step_drafts_root(session_id: str, step: str, *, job_id: str | Non
     return require_child_dir(drafts_parent, step_id)
 
 
-def _workbench_cards_index_path(session_id: str) -> Path:
-    return _workbench_cards_root(session_id) / "cards_index.jsonl"
+def _workbench_cards_index_path(session_id: str, *, job_id: str | None = None) -> Path:
+    return _workbench_cards_root(session_id, job_id=job_id) / "cards_index.jsonl"
+
+
+def _workbench_persistence_baseline(session_id: str, *, job_id: str) -> dict[str, Any]:
+    sid = require_safe_id(session_id, kind="session_id")
+    raw_job_id = str(job_id).strip() or f"job_{sid}"
+    safe_job_id = require_safe_id(raw_job_id, kind="job_id")
+    cards_root = _workbench_cards_root(sid, job_id=safe_job_id)
+    cards_index_path = _workbench_cards_index_path(sid, job_id=safe_job_id)
+    step_drafts_root = _workbench_job_outputs_root(sid, job_id=safe_job_id) / "step_drafts"
+    return {
+        "artifact_contract_version": "workbench_data_persistence_v44",
+        "session_id": sid,
+        "job_id": safe_job_id,
+        "session_json_path": _workbench_session_path(sid).as_posix(),
+        "events_jsonl_path": _workbench_events_path(sid).as_posix(),
+        "cards_index_path": cards_index_path.as_posix(),
+        "cards_glob_path": (cards_root / "*.json").as_posix(),
+        "step_draft_path_template": (step_drafts_root / "<step>" / "draft_vNN.json").as_posix(),
+        "step_selected_path_template": (step_drafts_root / "<step>" / "selected.json").as_posix(),
+        "artifacts_session_json_path": f"artifacts/workbench/sessions/{sid}/session.json",
+        "artifact_contract_templates": {
+            "session_json_path": "artifacts/workbench/sessions/<session_id>/session.json",
+            "events_jsonl_path": "artifacts/workbench/sessions/<session_id>/events.jsonl",
+            "cards_glob_path": "artifacts/jobs/<job_id>/outputs/workbench/cards/*.json",
+            "step_draft_path_template": "artifacts/jobs/<job_id>/outputs/workbench/step_drafts/<step>/draft_vNN.json",
+            "step_selected_path_template": "artifacts/jobs/<job_id>/outputs/workbench/step_drafts/<step>/selected.json",
+        },
+    }
 
 
 def _workbench_phase_no(step: str) -> int:
@@ -1720,6 +1748,7 @@ def _workbench_cards_for_view(session: dict[str, Any]) -> list[dict[str, Any]]:
 def _initial_workbench_session(*, session_id: str, idea: dict[str, Any], job_id: str, owner_id: str) -> dict[str, Any]:
     now = _now_iso()
     safe_owner_id = require_safe_id(owner_id, kind="workbench_owner_id")
+    persistence = _workbench_persistence_baseline(session_id, job_id=job_id)
     return {
         "schema_version": "workbench_session_v1",
         "session_id": session_id,
@@ -1758,10 +1787,15 @@ def _initial_workbench_session(*, session_id: str, idea: dict[str, Any], job_id:
             "endpoint_schema_versions": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS,
         },
         "revision": 1,
-        "session_json_path": _workbench_session_store_url(session_id),
-        "events_path": _workbench_events_path(session_id).as_posix(),
-        "cards_index_path": _workbench_cards_index_path(session_id).as_posix(),
-        "snapshot_artifacts_path": f"artifacts/workbench/sessions/{session_id}/session.json",
+        "session_json_path": str(persistence.get("session_json_path") or _workbench_session_store_url(session_id)),
+        "events_path": str(persistence.get("events_jsonl_path") or _workbench_events_path(session_id).as_posix()),
+        "cards_index_path": str(
+            persistence.get("cards_index_path") or _workbench_cards_index_path(session_id, job_id=job_id).as_posix()
+        ),
+        "snapshot_artifacts_path": str(
+            persistence.get("artifacts_session_json_path") or f"artifacts/workbench/sessions/{session_id}/session.json"
+        ),
+        "persistence": persistence,
     }
 
 
@@ -6908,6 +6942,11 @@ async def workbench_session_create(request: Request) -> Any:
             "owner_id": owner_id,
             "status": "created",
             "created_at": str(session_doc.get("created_at") or ""),
+            "persistence": (
+                session_doc.get("persistence")
+                if isinstance(session_doc.get("persistence"), dict)
+                else _workbench_persistence_baseline(session_id, job_id=job_id)
+            ),
             "card": _workbench_card_api_payload(card_doc),
             "contract": {
                 "request_schema_version": WORKBENCH_ENDPOINT_SCHEMA_VERSIONS["create_request"],
@@ -7099,6 +7138,11 @@ async def workbench_session_create(request: Request) -> Any:
         "owner_id": owner_id,
         "status": "created",
         "created_at": str(session_doc.get("created_at") or ""),
+        "persistence": (
+            session_doc.get("persistence")
+            if isinstance(session_doc.get("persistence"), dict)
+            else _workbench_persistence_baseline(session_id, job_id=job_id)
+        ),
         "card": _workbench_card_api_payload(card_doc),
         "sampled_symbols": sampled_symbols,
         "fetch_evidence_paths": fetch_evidence_paths,
@@ -7122,6 +7166,12 @@ def workbench_session_get(session_id: str, request: Request) -> Any:
     session_id = require_safe_id(session_id, kind="session_id")
     payload = _load_workbench_session(session_id)
     owner_id = _workbench_assert_session_owner(payload, request=request)
+    persistence = payload.get("persistence")
+    if not isinstance(persistence, dict):
+        persistence = _workbench_persistence_baseline(
+            session_id,
+            job_id=str(payload.get("job_id") or f"job_{session_id}"),
+        )
     events = _read_workbench_events(session_id)
     cards = _workbench_cards_for_view(payload)
     return {
@@ -7129,6 +7179,7 @@ def workbench_session_get(session_id: str, request: Request) -> Any:
         "session_id": session_id,
         "owner_id": owner_id,
         "session": payload,
+        "persistence": persistence,
         "cards": cards,
         "cards_count": len(cards),
         "event_count": len(events),

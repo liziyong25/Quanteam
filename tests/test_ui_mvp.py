@@ -449,6 +449,44 @@ def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     assert req_alias.status_code == 200
     assert "Requirement entry alias" in req_alias.text
 
+    # WB-039 baseline: create flow exposes stable persistence contracts and writes session artifacts.
+    created = _request_via_asgi(
+        "POST",
+        "/workbench/sessions",
+        json={"title": "wb039", "symbols": "AAA", "hypothesis_text": "persist baseline"},
+    )
+    assert created.status_code == 201, created.text
+    created_doc = created.json()
+    session_id = str(created_doc["session_id"])
+    job_id = str(created_doc["job_id"])
+    persistence = created_doc.get("persistence")
+    assert isinstance(persistence, dict)
+    assert persistence["artifact_contract_version"] == "workbench_data_persistence_v44"
+    assert persistence["artifact_contract_templates"] == {
+        "session_json_path": "artifacts/workbench/sessions/<session_id>/session.json",
+        "events_jsonl_path": "artifacts/workbench/sessions/<session_id>/events.jsonl",
+        "cards_glob_path": "artifacts/jobs/<job_id>/outputs/workbench/cards/*.json",
+        "step_draft_path_template": "artifacts/jobs/<job_id>/outputs/workbench/step_drafts/<step>/draft_vNN.json",
+        "step_selected_path_template": "artifacts/jobs/<job_id>/outputs/workbench/step_drafts/<step>/selected.json",
+    }
+    assert session_id in str(persistence["session_json_path"])
+    assert session_id in str(persistence["events_jsonl_path"])
+    assert job_id in str(persistence["cards_glob_path"])
+    assert "<step>" in str(persistence["step_draft_path_template"])
+    assert "<step>" in str(persistence["step_selected_path_template"])
+    assert ".." not in str(persistence["session_json_path"])
+    assert ".." not in str(persistence["cards_glob_path"])
+
+    persisted_session_path = art_root / "workbench" / "sessions" / session_id / "session.json"
+    assert persisted_session_path.is_file()
+    persisted_session = json.loads(persisted_session_path.read_text(encoding="utf-8"))
+    assert persisted_session.get("persistence") == persistence
+
+    get_session = _request_via_asgi("GET", f"/workbench/sessions/{session_id}")
+    assert get_session.status_code == 200, get_session.text
+    get_doc = get_session.json()
+    assert get_doc.get("persistence") == persistence
+
 
 def test_holdout_leak_not_rendered(tmp_path: Path, monkeypatch) -> None:
     run_id, _card_id = _build_demo_evidence(tmp_path, monkeypatch)
