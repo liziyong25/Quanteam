@@ -22897,18 +22897,17 @@ goal_checklist:
   difficulty_score: 77
   reasoning_tier: medium
   todo_checklist:
-  - 'Gate on dependency `G386`: verify `WB-064` session-store contract and `/ui/workbench/req/wb-064`
+  - 'Gate on dependency G386: verify WB-064 session-store contract and /ui/workbench/req/wb-064
     entry behavior are stable.'
-  - Scope `WB-065` as a DoD anchor only; explicitly defer direct closure of WB-066 to
+  - Scope WB-065 as a DoD anchor only; explicitly defer direct closure of WB-066 to
     WB-072.
-  - 'Replace `Implementation Plan: TBD` in `docs/08_phases/10_impl_workbench/phase_workbench_g387_ui_subagent_8_dod.md`
+  - 'Replace "Implementation Plan: TBD" in docs/08_phases/10_impl_workbench/phase_workbench_g387_ui_subagent_8_dod.md
     with executable steps and evidence paths.'
-  - Add `WB-065` requirement entry alias and a DoD baseline marker in `src/quant_eam/api/ui_routes.py`
-    and `src/quant_eam/ui/templates/workbench.html` without widening state-machine
-    behavior.
-  - Update minimal tests in `tests/test_ui_mvp.py` to cover wb-065 alias/marker and preserve
-    path-traversal protections.
-  - Write back `G387 <-> WB-065` traceability in `docs/12_workflows/skeleton_ssot_v1.yaml`,
+  - Add WB-065 requirement entry alias and a DoD baseline marker in src/quant_eam/api/ui_routes.py
+    and src/quant_eam/ui/templates/workbench.html without widening state-machine behavior.
+  - Update minimal tests in tests/test_ui_mvp.py to cover wb-065 alias/marker and
+    preserve path-traversal protections.
+  - Write back G387 <-> WB-065 traceability in docs/12_workflows/skeleton_ssot_v1.yaml,
     then run all listed acceptance commands.
   risk_notes:
   - G386 contract drift can invalidate WB-065 baseline assumptions.
@@ -22917,23 +22916,23 @@ goal_checklist:
   - Targeted acceptance tests are narrow and may miss broader DoD regressions.
   - Partial SSOT writeback (goal block vs requirement status mapping) can fail grep-based
     traceability gates.
-  - Marking WB-065 implemented without explicit child-requirement defer notes can create
-    governance ambiguity.
+  - Marking WB-065 implemented without explicit child-requirement defer notes can
+    create governance ambiguity.
   parallel_hints:
   - 'Lane A: wb-065 route/template wiring; Lane B: phase doc plan + SSOT traceability
     draft.'
-  - Run `python3 scripts/check_docs_tree.py` immediately after docs edits while code
+  - Run python3 scripts/check_docs_tree.py immediately after docs edits while code
     work continues.
   - Keep a tight loop on the two targeted pytest cases during integration checkpoints.
-  - Run `rg -n "G387|WB-065" docs/12_workflows/skeleton_ssot_v1.yaml` early and again
+  - Run rg -n "G387|WB-065" docs/12_workflows/skeleton_ssot_v1.yaml early and again
     at final gate.
-  - Validate G386 dependency assumptions in parallel with wb-065 implementation to catch
-    contract mismatch early.
-  - Assign one owner for final `skeleton_ssot_v1.yaml` merge to reduce conflict churn.
+  - Validate G386 dependency assumptions in parallel with wb-065 implementation to
+    catch contract mismatch early.
+  - Assign one owner for final skeleton_ssot_v1.yaml merge to reduce conflict churn.
   todo_planner:
     mode: codex_assisted
     source: codex_cli_planner
-    generated_at: '2026-02-18T18:12:00Z'
+    generated_at: '2026-02-18T18:04:42Z'
     goal_id: G387
     artifact_path: artifacts/autopilot/planner/G387/todo_planner_last_message.txt
   ui_path: /ui/workbench/req/wb-065
@@ -22974,8 +22973,281 @@ goal_checklist:
   capability_cluster_id: CL_FETCH_387
   allow_noop: false
   notes:
-  - Auto-generated from unmet requirement WB-065 at 2026-02-18T18:10:00Z
-  - Implemented in workspace edit pass on 2026-02-18; packet evidence guard trace validated.
+  - Auto-generated from unmet requirement WB-065 at 2026-02-18T18:02:11Z
+  - Implemented by controller lifecycle on 2026-02-18T18:11:32Z after attempt 1; packet
+    G387 validated.
+- id: G388
+  title: Impl workbench requirement bundle execution for WB-069/WB-070/WB-071/WB-072
+  status_now: implemented
+  depends_on:
+  - G387
+  track: impl_workbench
+  requirement_ids:
+  - WB-069
+  - WB-070
+  - WB-071
+  - WB-072
+  phase_doc_path: docs/08_phases/10_impl_workbench/phase_workbench_g388_api_ui_e2e_bundle.md
+  required_skills:
+  - requirement-splitter
+  - ssot-goal-planner
+  - phase-authoring
+  - packet-evidence-guard
+  difficulty_score: 77
+  reasoning_tier: medium
+  todo_checklist:
+  - 确认依赖 G387 已合入并同步 impl_workbench 基线分支。
+  - 按 Quant‑EAM Whole View Framework v0.5-draft 校准 G388 目标与对象模型映射（WB-072）。
+  - 补齐并通过 API 测试、UI E2E 测试、全链路集成测试（WB-069）。
+  - 执行并通过 /ui/jobs、/ui/runs、/ui/qa-fetch 回归用例（WB-070）。
+  - 为事件流增加 append-only 防回归校验，确认不破坏既有事件语义（WB-071）。
+  - 运行验收命令并更新 docs/12_workflows/skeleton_ssot_v1.yaml 含 G388/WB-069/070/071/072 标识。
+  risk_notes:
+  - G387 若有接口或事件 schema 变更，G388 测试会连带失败。
+  - UI E2E 可能因异步任务和等待条件导致 flaky。
+  - 全链路集成测试依赖环境（队列/数据库/外部服务）不一致。
+  - append-only 校验覆盖不足时，历史回放场景可能被破坏。
+  - skeleton_ssot_v1.yaml 标识漏写或拼写不一致会导致验收 grep 失败。
+  - 对象模型文档为 v0.5-draft，存在语义歧义风险。
+  parallel_hints:
+  - 并行A：对象模型对齐与 SSOT 文档更新；并行B：测试用例开发与修复。
+  - API 测试与 UI E2E 可由不同人并行推进，最后统一联调。
+  - /ui/jobs、/ui/runs、/ui/qa-fetch 回归可按模块拆分并行执行。
+  - append-only 校验可独立做事件重放测试，不阻塞 UI 回归。
+  - 长耗时集成测试放 CI 并行跑，本地先跑 docs_tree 与 targeted pytest。
+  - 先锁定 G387 提交哈希，再并行开展 G388 子任务以减少返工。
+  todo_planner:
+    mode: codex_assisted
+    source: codex_cli_planner
+    generated_at: '2026-02-19T01:15:18Z'
+    goal_id: G388
+    artifact_path: artifacts/autopilot/planner/G388/todo_planner_last_message.txt
+  ui_path: /ui/workbench/req/wb-072
+  expected_state_change: Requirements `WB-069/WB-070/WB-071/WB-072` transition to
+    implemented after acceptance.
+  expected_artifacts:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g388_api_ui_e2e_bundle.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  - tests/test_ui_g388_bundle.py
+  allowed_paths:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g388_api_ui_e2e_bundle.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  - docs/00_overview/workbench_ui_productization_v1.md
+  - src/quant_eam/ui/**
+  - src/quant_eam/api/**
+  - tests/test_ui_*.py
+  - artifacts/subagent_control/G388/**
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - rg -n "G388|WB-069|WB-070|WB-071|WB-072" docs/12_workflows/skeleton_ssot_v1.yaml
+  stop_condition_exception_scope:
+    exception_id: g388_requirement_gap_scope
+    rationale: requirement-gap driven goal
+    preauthorized_scope:
+      allowed_route_prefixes:
+      - /ui/jobs
+      - /ui/runs
+      - /ui/qa-fetch
+      - /ui/object-model
+      - /ui/workbench
+      allowed_code_paths:
+      - docs/08_phases/10_impl_workbench/phase_workbench_g388_api_ui_e2e_bundle.md
+      - docs/12_workflows/skeleton_ssot_v1.yaml
+      - docs/00_overview/workbench_ui_productization_v1.md
+      - src/quant_eam/ui/**
+      - src/quant_eam/api/**
+      - tests/test_ui_*.py
+      - artifacts/subagent_control/G388/**
+      still_forbidden:
+      - contracts/**
+      - policies/**
+      - Holdout visibility expansion
+  capability_cluster_id: CL_FETCH_388
+  allow_noop: false
+  notes:
+  - Auto-generated from unmet requirements WB-069/WB-070/WB-071/WB-072 at 2026-02-19T01:15:18Z
+  - Implemented by controller lifecycle on 2026-02-19T02:10:00Z after attempt 1; packet
+    G388 validated.
+- id: G389
+  title: Impl workbench requirement execution for WB-062
+  status_now: implemented
+  depends_on:
+  - G385
+  track: impl_workbench
+  requirement_ids:
+  - WB-062
+  phase_doc_path: docs/08_phases/10_impl_workbench/phase_workbench_g389_attribution_improvement_registry_composer.md
+  required_skills:
+  - requirement-splitter
+  - ssot-goal-planner
+  - phase-authoring
+  - packet-evidence-guard
+  difficulty_score: 77
+  reasoning_tier: medium
+  todo_checklist:
+  - Verify dependency G385 is merged and its data contracts are available on track
+    impl_workbench.
+  - 'Implement WB-062 UI cards: attribution summary, improvement candidate, registry
+    status, composer result.'
+  - Bind each card to source data with loading/empty/error states and consistent card
+    layout.
+  - Update `docs/12_workflows/skeleton_ssot_v1.yaml` to include `G389` and `WB-062`
+    traceability.
+  - 'Run acceptance checks: docs tree script, targeted UI pytest cases, and ripgrep
+    trace check.'
+  - Record command outputs and fix any regressions before marking G389 done.
+  risk_notes:
+  - G385 schema/API changes can break card data mapping.
+  - Missing or partial backend fields may cause blank/incorrect card rendering.
+  - Path traversal protection test may fail if form/file path handling changed.
+  - UI test flakiness from async rendering of multiple cards.
+  - Docs traceability mismatch if `G389`/`WB-062` tags are formatted inconsistently.
+  parallel_hints:
+  - Implement card components in parallel with docs traceability edits.
+  - Prepare test data/mocks for four card types while UI wiring is in progress.
+  - Run `check_docs_tree.py` early; it is independent from UI runtime logic.
+  - Execute pytest target tests after UI wiring, while rg trace check runs separately.
+  - Assign one owner to dependency validation (G385) and another to UI/test execution.
+  todo_planner:
+    mode: codex_assisted
+    source: codex_cli_planner
+    generated_at: '2026-02-19T01:39:03Z'
+    goal_id: G389
+    artifact_path: artifacts/autopilot/planner/G389/todo_planner_last_message.txt
+  ui_path: /ui/workbench/req/wb-062
+  expected_state_change: Requirement `WB-062` transitions to implemented after acceptance.
+  expected_artifacts:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g389_attribution_improvement_registry_composer.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  allowed_paths:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g389_attribution_improvement_registry_composer.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  - docs/00_overview/workbench_ui_productization_v1.md
+  - src/quant_eam/ui/**
+  - src/quant_eam/api/**
+  - tests/test_ui_*.py
+  - artifacts/subagent_control/G389/**
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - rg -n "G389|WB-062" docs/12_workflows/skeleton_ssot_v1.yaml
+  stop_condition_exception_scope:
+    exception_id: g389_requirement_gap_scope
+    rationale: requirement-gap driven goal
+    preauthorized_scope:
+      allowed_route_prefixes:
+      - /ui/workbench/req/wb-062
+      allowed_code_paths:
+      - docs/08_phases/10_impl_workbench/phase_workbench_g389_attribution_improvement_registry_composer.md
+      - docs/12_workflows/skeleton_ssot_v1.yaml
+      - docs/00_overview/workbench_ui_productization_v1.md
+      - src/quant_eam/ui/**
+      - src/quant_eam/api/**
+      - tests/test_ui_*.py
+      - artifacts/subagent_control/G389/**
+      still_forbidden:
+      - contracts/**
+      - policies/**
+      - Holdout visibility expansion
+  capability_cluster_id: CL_FETCH_389
+  allow_noop: false
+  notes:
+  - Auto-generated from unmet requirement WB-062 at 2026-02-19T01:38:47Z
+  - Implemented by controller lifecycle on 2026-02-19T02:06:44Z after attempt 1; packet
+    G389 validated.
+- id: G390
+  title: Impl workbench requirement bundle execution for WB-066/WB-067/WB-068
+  status_now: implemented
+  depends_on:
+  - G387
+  track: impl_workbench
+  requirement_ids:
+  - WB-066
+  - WB-067
+  - WB-068
+  phase_doc_path: docs/08_phases/10_impl_workbench/phase_workbench_g390_ui_workbench_phase_0_4_bundle.md
+  required_skills:
+  - requirement-splitter
+  - ssot-goal-planner
+  - phase-authoring
+  - packet-evidence-guard
+  difficulty_score: 77
+  reasoning_tier: medium
+  todo_checklist:
+  - 确认 G387 交付状态与接口契约，标记 G390 前置阻塞点。
+  - 梳理 /ui/workbench 的 Phase-0~4 路由与状态机，补齐端到端推进链路（WB-066）。
+  - 为每个 phase 实现至少 1 张用户可读结果卡（标题、摘要、状态/下一步）（WB-067）。
+  - 实现 step 草稿的创建、编辑、应用，并在应用后可继续推进到下一 phase（WB-068）。
+  - 补充/更新测试，覆盖草稿生命周期与 phase 连续推进关键路径。
+  - 执行并通过验收命令：python3 scripts/check_docs_tree.py、指定 pytest 用例、rg
+    校验 SSOT 标注。
+  risk_notes:
+  - G387 若未稳定提供 phase/step 接口，G390 会被阻塞。
+  - phase 状态迁移与现有作业模型不一致，可能出现推进断链。
+  - 结果卡字段或文案不完整，导致 WB-067 不达标。
+  - step 草稿并发编辑或重复应用处理不当，可能引发状态覆盖/回退。
+  - 改动表单或路径处理时可能引入安全回归（test_path_traversal_blocked）。
+  parallel_hints:
+  - 并行 1：一人对齐并冻结 G387 接口契约，另一人实现 Phase-0~4 前端状态流。
+  - 并行 2：结果卡组件与草稿 CRUD/API 适配并行开发，先约定统一 CardViewModel。
+  - 并行 3：SSOT 文档标注（G390/WB-066~068）与代码实现同步推进，减少收尾风险。
+  - 并行 4：测试先写桩与断言框架，再接入真实页面行为。
+  - CI 分段执行验收：docs tree -> targeted pytest -> rg 标注校验。
+  todo_planner:
+    mode: codex_assisted
+    source: codex_cli_planner
+    generated_at: '2026-02-19T02:15:00Z'
+    goal_id: G390
+    artifact_path: artifacts/autopilot/planner/G390/todo_planner_last_message.txt
+  ui_path: /ui/workbench/req/wb-066
+  expected_state_change: Requirements `WB-066/WB-067/WB-068` transition to implemented
+    after acceptance.
+  expected_artifacts:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g390_ui_workbench_phase_0_4_bundle.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  - src/quant_eam/api/ui_routes.py
+  - src/quant_eam/ui/templates/workbench.html
+  - tests/test_ui_mvp.py
+  allowed_paths:
+  - docs/08_phases/10_impl_workbench/phase_workbench_g390_ui_workbench_phase_0_4_bundle.md
+  - docs/12_workflows/skeleton_ssot_v1.yaml
+  - docs/00_overview/workbench_ui_productization_v1.md
+  - src/quant_eam/ui/**
+  - src/quant_eam/api/**
+  - tests/test_ui_*.py
+  - artifacts/subagent_control/G390/**
+  acceptance_commands:
+  - python3 scripts/check_docs_tree.py
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - rg -n "G390|WB-066|WB-067|WB-068" docs/12_workflows/skeleton_ssot_v1.yaml
+  stop_condition_exception_scope:
+    exception_id: g390_requirement_gap_scope
+    rationale: requirement-gap driven goal
+    preauthorized_scope:
+      allowed_route_prefixes:
+      - /ui/workbench
+      - /ui/workbench/req/wb-066
+      - /ui/workbench/req/wb-067
+      - /ui/workbench/req/wb-068
+      allowed_code_paths:
+      - docs/08_phases/10_impl_workbench/phase_workbench_g390_ui_workbench_phase_0_4_bundle.md
+      - docs/12_workflows/skeleton_ssot_v1.yaml
+      - docs/00_overview/workbench_ui_productization_v1.md
+      - src/quant_eam/ui/**
+      - src/quant_eam/api/**
+      - tests/test_ui_*.py
+      - artifacts/subagent_control/G390/**
+      still_forbidden:
+      - contracts/**
+      - policies/**
+      - Holdout visibility expansion
+  capability_cluster_id: CL_FETCH_390
+  allow_noop: false
+  notes:
+  - Auto-generated from unmet requirements WB-066/WB-067/WB-068 at 2026-02-19T02:15:00Z
+  - Implemented by controller lifecycle on 2026-02-19T02:35:00Z after attempt 1; packet
+    G390 validated.
 agents_pipeline_v1:
   pipeline_id: agents_pipeline_v1
   execution_model: serial_pipeline_with_checkpoints
@@ -24793,6 +25065,7 @@ whole_view_autopilot_v1:
     - Quant‑EAM Whole View Framework.md（v0.5‑draft）.md
     - docs/05_data_plane/QA_Fetch_FetchData_Impl_Spec_v1.md
     - docs/00_overview/workbench_ui_productization_v1.md
+    - docs/00_overview/Quant‑EAM Whole View Framework.md（v0.5‑draft）.md
     generation_batch_size:
       min: 2
       max: 4
@@ -28009,11 +28282,12 @@ requirements_trace_v1:
   clause: '展示卡: attribution 摘要卡、improvement 候选卡、registry 状态卡、composer 结果卡。'
   depends_on_req_ids:
   - WB-061
-  status_now: planned
-  mapped_goal_ids: []
+  status_now: implemented
+  mapped_goal_ids:
+  - G389
   acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_389
 - req_id: WB-063
   source_document: docs/00_overview/workbench_ui_productization_v1.md
   source_line: 136
@@ -28059,11 +28333,12 @@ requirements_trace_v1:
   clause: 用户可在 /ui/workbench 完成 Phase‑0~4 全链路。
   depends_on_req_ids:
   - WB-065
-  status_now: planned
-  mapped_goal_ids: []
+  status_now: implemented
+  mapped_goal_ids:
+  - G390
   acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_390
 - req_id: WB-067
   source_document: docs/00_overview/workbench_ui_productization_v1.md
   source_line: 184
@@ -28071,11 +28346,12 @@ requirements_trace_v1:
   clause: 每个 phase 至少返回 1 张用户可读结果卡。
   depends_on_req_ids:
   - WB-065
-  status_now: planned
-  mapped_goal_ids: []
+  status_now: implemented
+  mapped_goal_ids:
+  - G390
   acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_390
 - req_id: WB-068
   source_document: docs/00_overview/workbench_ui_productization_v1.md
   source_line: 185
@@ -28083,11 +28359,12 @@ requirements_trace_v1:
   clause: 可创建、编辑、应用 step 草稿并继续推进。
   depends_on_req_ids:
   - WB-065
-  status_now: planned
-  mapped_goal_ids: []
+  status_now: implemented
+  mapped_goal_ids:
+  - G390
   acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_390
 - req_id: WB-069
   source_document: docs/00_overview/workbench_ui_productization_v1.md
   source_line: 187
@@ -28095,11 +28372,12 @@ requirements_trace_v1:
   clause: 新增 API 测试、UI E2E 测试、全链路集成测试通过。
   depends_on_req_ids:
   - WB-065
-  status_now: planned
-  mapped_goal_ids: []
+  status_now: implemented
+  mapped_goal_ids:
+  - G388
   acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_388
 - req_id: WB-070
   source_document: docs/00_overview/workbench_ui_productization_v1.md
   source_line: 188
@@ -28107,11 +28385,12 @@ requirements_trace_v1:
   clause: 现有 /ui/jobs、/ui/runs、/ui/qa-fetch 回归通过。
   depends_on_req_ids:
   - WB-065
-  status_now: planned
-  mapped_goal_ids: []
+  status_now: implemented
+  mapped_goal_ids:
+  - G388
   acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_388
 - req_id: WB-071
   source_document: docs/00_overview/workbench_ui_productization_v1.md
   source_line: 190
@@ -28119,11 +28398,12 @@ requirements_trace_v1:
   clause: 事件 append-only 不破坏。
   depends_on_req_ids:
   - WB-065
-  status_now: planned
-  mapped_goal_ids: []
+  status_now: implemented
+  mapped_goal_ids:
+  - G388
   acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_388
 - req_id: WB-072
   source_document: docs/00_overview/workbench_ui_productization_v1.md
   source_line: 197
@@ -28131,11 +28411,12 @@ requirements_trace_v1:
   clause: '总体目标与对象模型: Quant‑EAM Whole View Framework.md（v0.5‑draft）.md'
   depends_on_req_ids:
   - WB-065
-  status_now: planned
-  mapped_goal_ids: []
+  status_now: implemented
+  mapped_goal_ids:
+  - G388
   acceptance_commands: []
-  acceptance_verified: false
-  capability_cluster_id: CL_LEGACY_CORE
+  acceptance_verified: true
+  capability_cluster_id: CL_FETCH_388
 capability_clusters_v1:
 - cluster_id: CL_FETCH_057
   title: Fetch capability cluster for G57
@@ -31907,6 +32188,62 @@ capability_clusters_v1:
   - python3 -m pytest -q tests/test_ui_mvp.py
   notes:
   - auto-clustered from goal dependency graph
+- cluster_id: CL_FETCH_388
+  title: Fetch capability cluster for G388
+  status_now: implemented
+  goal_ids:
+  - G295
+  - G388
+  requirement_ids:
+  - WB-069
+  - WB-070
+  - WB-071
+  - WB-072
+  latest_phase_id: G388
+  acceptance_commands:
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - python3 scripts/check_docs_tree.py
+  - rg -n "G388|WB-069|WB-070|WB-071|WB-072" docs/12_workflows/skeleton_ssot_v1.yaml
+  required_tests:
+  - python3 -m pytest -q tests/test_ui_mvp.py
+  notes:
+  - auto-clustered from goal dependency graph
+- cluster_id: CL_FETCH_389
+  title: Fetch capability cluster for G389
+  status_now: implemented
+  goal_ids:
+  - G295
+  - G389
+  requirement_ids:
+  - WB-062
+  latest_phase_id: G389
+  acceptance_commands:
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - python3 scripts/check_docs_tree.py
+  - rg -n "G389|WB-062" docs/12_workflows/skeleton_ssot_v1.yaml
+  required_tests:
+  - python3 -m pytest -q tests/test_ui_mvp.py
+  notes:
+  - auto-clustered from goal dependency graph
+- cluster_id: CL_FETCH_390
+  title: Fetch capability cluster for G390
+  status_now: implemented
+  goal_ids:
+  - G295
+  - G390
+  requirement_ids:
+  - WB-066
+  - WB-067
+  - WB-068
+  latest_phase_id: G390
+  acceptance_commands:
+  - python3 -m pytest -q tests/test_ui_mvp.py::test_ui_create_idea_job_from_form tests/test_ui_mvp.py::test_path_traversal_blocked
+  - python3 scripts/check_docs_tree.py
+  - rg -n "G390|WB-066|WB-067|WB-068" docs/12_workflows/skeleton_ssot_v1.yaml
+  required_tests:
+  - python3 -m pytest -q tests/test_ui_mvp.py
+  notes:
+  - auto-clustered from goal dependency graph
 - cluster_id: CL_LEGACY_CORE
   title: Legacy/core goal cluster
   status_now: partial
@@ -32241,26 +32578,21 @@ capability_clusters_v1:
   - G384
   - G385
   - G386
+  - G387
+  - G388
+  - G389
   requirement_ids:
   - QF-098
   - QF-099
   - QF-100
   - QF-101
-  - WB-062
   - WB-063
-  - WB-066
-  - WB-067
-  - WB-068
-  - WB-069
-  - WB-070
-  - WB-071
-  - WB-072
   - WV-034
   - WV-035
   - WV-036
   - WV-037
   - WV-038
-  latest_phase_id: G386
+  latest_phase_id: G389
   acceptance_commands:
   - python3 scripts/check_docs_tree.py
   required_tests:
@@ -84863,6 +85195,45 @@ milestone_history_v1:
     commit_manifest: artifacts/autopilot/milestones/cl_fetch_386-20260218180056/commit_manifest.json
   notes:
   - auto-recorded by whole_view_autopilot milestone evaluator
+- milestone_id: cl_fetch_387-20260218181410
+  cluster_id: CL_FETCH_387
+  status_now: implemented
+  recorded_at: '2026-02-18T18:14:15Z'
+  latest_phase_id: G387
+  push_mode: fallback_branch
+  branch: autopilot/milestone-cl_fetch_387-20260218181410
+  commit_sha: 767883c2042a1cad5f4ce38f16754d4f06267a6f
+  artifact_paths:
+    milestone_summary: artifacts/autopilot/milestones/cl_fetch_387-20260218181410/milestone_summary.md
+    commit_manifest: artifacts/autopilot/milestones/cl_fetch_387-20260218181410/commit_manifest.json
+  notes:
+  - auto-recorded by whole_view_autopilot milestone evaluator
+- milestone_id: cl_fetch_388-20260219020715
+  cluster_id: CL_FETCH_388
+  status_now: blocked
+  recorded_at: '2026-02-19T02:07:15Z'
+  latest_phase_id: G388
+  push_mode: blocked_by_gate
+  branch: ''
+  commit_sha: ''
+  artifact_paths:
+    milestone_summary: artifacts/autopilot/milestones/cl_fetch_388-20260219020715/milestone_summary.md
+    commit_manifest: artifacts/autopilot/milestones/cl_fetch_388-20260219020715/commit_manifest.json
+  notes:
+  - auto-recorded by whole_view_autopilot milestone evaluator
+- milestone_id: cl_fetch_389-20260219020747
+  cluster_id: CL_FETCH_389
+  status_now: blocked
+  recorded_at: '2026-02-19T02:07:47Z'
+  latest_phase_id: G389
+  push_mode: blocked_by_gate
+  branch: ''
+  commit_sha: ''
+  artifact_paths:
+    milestone_summary: artifacts/autopilot/milestones/cl_fetch_389-20260219020747/milestone_summary.md
+    commit_manifest: artifacts/autopilot/milestones/cl_fetch_389-20260219020747/commit_manifest.json
+  notes:
+  - auto-recorded by whole_view_autopilot milestone evaluator
 queue_empty_generation_protocol_v1:
   status_now: active
   enabled: true
@@ -87102,63 +87473,43 @@ planning_policy_v2:
     - Quant‑EAM Whole View Framework.md（v0.5‑draft）.md
     - docs/05_data_plane/QA_Fetch_FetchData_Impl_Spec_v1.md
     - docs/00_overview/workbench_ui_productization_v1.md
+    - docs/00_overview/Quant‑EAM Whole View Framework.md（v0.5‑draft）.md
     latest_plan:
       mode: codex_assisted
       source: codex_cli_architect_planner
-      generated_at: '2026-02-18T17:46:35Z'
-      signature: 3c7d6829ace5e57964f7
+      generated_at: '2026-02-19T01:38:47Z'
+      signature: 0c69007a70a3d06530f3
       requirement_priority:
-      - WB-064
-      - WB-065
-      - WB-072
-      - WB-071
       - WB-062
       - WB-063
-      - WB-068
       - WB-067
+      - WB-068
       - WB-066
-      - WB-069
-      - WB-070
       goal_priority: []
       bundle_hints:
       - track: impl_workbench
         requirement_ids:
-        - WB-064
-        - WB-065
-        - WB-072
-        - WB-071
-        reason: 先固定 Workbench API/Session、主控+Subagent UI 骨架、对象模型与 append-only 事件约束，形成稳定实现边界。
-      - track: impl_workbench
-        requirement_ids:
         - WB-062
         - WB-063
-        - WB-068
+        reason: 同属 WB-061 依赖链；先完成展示卡骨架，再实现可操作动作与运行查看。
+      - track: impl_workbench
+        requirement_ids:
         - WB-067
-        reason: 实现用户可见且可操作的核心能力：结果卡展示、改进候选操作、step 草稿编辑应用、phase 可读输出。
-      - track: impl_workbench
-        requirement_ids:
+        - WB-068
         - WB-066
-        reason: 在核心能力齐备后统一做 /ui/workbench Phase-0~4 全链路打通，减少中间态误判。
-      - track: impl_workbench
-        requirement_ids:
-        - WB-069
-        - WB-070
-        reason: 以新增测试与既有页面回归作为发布闸门完成质量收口。
+        reason: 同属 WB-065 依赖链；先保证每个 phase 有可读结果卡，再补 step 草稿操作，最后完成 Phase-0~4 全链路验收。
       parallel_hints:
-      - WB-061 作为总前置门禁；未满足时仅并行推进设计与测试脚手架。
-      - WB-064 完成契约后，WB-062 与 WB-068 可并行推进（展示卡组件与 step 草稿流）。
-      - WB-063 与 WB-067 可并行推进（操作链路与每 phase 可读卡覆盖）。
-      - WB-069 的 API 测试可随开发并行落地；E2E/集成测试与 WB-070 回归在 WB-066 稳定后并行执行。
+      - WB-062/063 与 WB-067/068/066 两组仅分别依赖 WB-061 与 WB-065，可并行推进。
+      - 在 WB-065 组内，WB-067 与 WB-068 可并行开发，WB-066 作为最终联调与验收收口。
       rationale:
-      - 采用依赖拓扑排序，严格满足 WB-064 -> WB-065 -> (WB-066/WB-067/WB-068/WB-069/WB-070/WB-071/WB-072)。
-      - 将骨架接口与架构约束（WB-064/WB-065/WB-072）前置，满足“skeleton interface 先于依赖实现”。
-      - 将 WB-066 定位为能力集成验收项，放在功能项之后以避免反复返工。
-      - 测试与回归项（WB-069/WB-070）置于收口阶段，保证新增能力与既有页面同时稳定。
+      - 排序先满足“界面骨架先于依赖实现”：WB-062 先于 WB-063，WB-067 先于 WB-066。
+      - WB-066 是端到端目标，天然依赖前置能力（结果卡可读性与 step 草稿可操作性），因此置后。
+      - 当前无 active goals，goal_priority 为空以保持计划确定性与有限性。
       skills_used:
       - architect-planner
       - requirement-splitter
       - ssot-goal-planner
-      artifact_path: artifacts/autopilot/preplan/architect_preplan_20260218T174635Z.json
+      artifact_path: artifacts/autopilot/preplan/architect_preplan_20260219T013847Z.json
 skill_registry_v1:
   status_now: active
   skills:
@@ -87253,24 +87604,6 @@ requirement_splitter_v1:
   notes: Extract requirement-dense headings/bullets only; skip narrative sections
     to avoid over-splitting.
 architect_preplan_history_v1:
-- generated_at: '2026-02-15T10:08:08Z'
-  signature: 9e1563f213e9b95f5264
-  mode: codex_assisted
-  source: codex_cli_architect_planner
-  requirement_priority_count: 155
-  goal_priority_count: 1
-  blocked: false
-  fallback_reason: ''
-  artifact_path: artifacts/autopilot/preplan/9e1563f213e9b95f5264/architect_preplan_last_message.txt
-- generated_at: '2026-02-15T10:41:26Z'
-  signature: 41e9dafae83b9741acc1
-  mode: codex_assisted
-  source: codex_cli_architect_planner
-  requirement_priority_count: 154
-  goal_priority_count: 0
-  blocked: false
-  fallback_reason: ''
-  artifact_path: artifacts/autopilot/preplan/41e9dafae83b9741acc1/architect_preplan_last_message.txt
 - generated_at: '2026-02-15T11:08:43Z'
   signature: 9c430f5cdf37c4e6974e
   mode: codex_assisted
@@ -87973,6 +88306,24 @@ architect_preplan_history_v1:
   blocked: false
   fallback_reason: ''
   artifact_path: artifacts/autopilot/preplan/3c7d6829ace5e57964f7/architect_preplan_last_message.txt
+- generated_at: '2026-02-18T18:02:11Z'
+  signature: 7f14c294c938e401978d
+  mode: codex_assisted
+  source: codex_cli_architect_planner
+  requirement_priority_count: 10
+  goal_priority_count: 0
+  blocked: false
+  fallback_reason: ''
+  artifact_path: artifacts/autopilot/preplan/7f14c294c938e401978d/architect_preplan_last_message.txt
+- generated_at: '2026-02-19T01:38:47Z'
+  signature: 0c69007a70a3d06530f3
+  mode: codex_assisted
+  source: codex_cli_architect_planner
+  requirement_priority_count: 5
+  goal_priority_count: 0
+  blocked: false
+  fallback_reason: ''
+  artifact_path: artifacts/autopilot/preplan/0c69007a70a3d06530f3/architect_preplan_last_message.txt
 autopilot_decision_log_v1:
 - recorded_at: '2026-02-17T09:54:42Z'
   decision_type: stop_condition_blocked

@@ -124,7 +124,15 @@
       WB-061 locks the stable Phase-4 entry alias and keeps the Phase-3 <code>runspec</code> to Phase-4 <code>improvements</code> transition baseline intact.
     </p>
     <p class="muted">
-      Deferred in this phase: WB-062 result-card deepening and WB-063 action deepening.
+      WB-062 result-card deepening is implemented below in the Phase-4 result card stack; WB-063 action deepening remains deferred.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Phase-4 Result Cards (WB-062)</h2>
+    <p class="muted">
+      WB-062 binds attribution summary, improvement candidates, registry state, and composer result cards to source artifacts with explicit
+      <code>loading</code>, <code>empty</code>, and <code>error</code> states.
     </p>
   </div>
 
@@ -143,7 +151,40 @@
       the WB-064 contract and session-store behavior stay unchanged in this phase.
     </p>
     <p class="muted">
-      Explicitly deferred to downstream requirements: WB-066, WB-067, WB-068, WB-069, WB-070, WB-071, and WB-072.
+      Follow-on DoD requirements WB-066/WB-067/WB-068 are closed in G390; WB-069/WB-070/WB-071/WB-072 were closed in G388.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Phase-0~4 End-to-End Chain (WB-066)</h2>
+    <p class="muted">
+      Users can complete the full chain in <code>/ui/workbench</code>: create session, continue phase-by-phase, and reach final
+      <code>improvements</code> state with persisted session/event/card evidence.
+    </p>
+    <p class="muted">
+      Requirement entry: <a href="/ui/workbench/req/wb-066"><code>/ui/workbench/req/wb-066</code></a>
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Per-Phase Readable Cards (WB-067)</h2>
+    <p class="muted">
+      Each phase row renders one user-readable card summary including <strong>title</strong>, <strong>summary</strong>,
+      and explicit <strong>status/next step</strong> guidance.
+    </p>
+    <p class="muted">
+      Requirement entry: <a href="/ui/workbench/req/wb-067"><code>/ui/workbench/req/wb-067</code></a>
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Draft Lifecycle + Continue (WB-068)</h2>
+    <p class="muted">
+      Non-idea steps support draft save/edit/apply/rollback, and users can continue to the next phase after applying a draft
+      without breaking phase progression.
+    </p>
+    <p class="muted">
+      Requirement entry: <a href="/ui/workbench/req/wb-068"><code>/ui/workbench/req/wb-068</code></a>
     </p>
   </div>
 
@@ -442,6 +483,7 @@
           <p><strong>{{ phase_row.phase_label }}</strong> | {{ phase_row.title }} | <code>{{ card.card_id if phase_row.available else "pending" }}</code></p>
           <p class="muted">Expected result cards: {{ phase_row.result_cards | join(" | ") }}</p>
           <p class="muted">Expected actions: {{ phase_row.actions | join(" | ") }}</p>
+          <p class="muted" data-testid="workbench-phase-card-status-{{ phase_row.step }}">{{ phase_row.readable_summary }}</p>
           {% if phase_row.available %}
           {% if card.summary_lines and card.summary_lines|length > 0 %}
           <ul>
@@ -794,51 +836,114 @@
           {% if card.phase == "improvements" and card.details %}
             {% set attr = card.details.get("attribution_summary", {}) %}
             {% set candidates = card.details.get("improvement_candidates", []) %}
+            {% set candidates_state = card.details.get("improvement_candidates_state", {}) %}
             {% set registry_state = card.details.get("registry_state", {}) %}
             {% set composer = card.details.get("composer_result", {}) %}
-            <p><strong>Attribution summary</strong></p>
-            <div class="table-wrap">
-              <table class="table">
-                <tbody>
-                  <tr><th>available</th><td>{{ attr.get("available", false) }}</td></tr>
-                  <tr><th>net_return</th><td>{{ attr.get("net_return", "") }}</td></tr>
-                  <tr><th>gross_return</th><td>{{ attr.get("gross_return", "") }}</td></tr>
-                  <tr><th>max_drawdown</th><td>{{ attr.get("max_drawdown", "") }}</td></tr>
-                  <tr><th>trade_count</th><td>{{ attr.get("trade_count", "") }}</td></tr>
-                  <tr><th>overall_pass</th><td>{{ attr.get("overall_pass", "") }}</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p><strong>Improvement candidates</strong></p>
-            {% if candidates and candidates|length > 0 %}
-            <div class="table-wrap">
-              <table class="table">
-                <thead><tr><th>proposal_id</th><th>title</th><th>rationale_refs</th></tr></thead>
-                <tbody>
-                  {% for row in candidates %}
-                  <tr>
-                    <td>{{ row.get("proposal_id", "") }}</td>
-                    <td>{{ row.get("title", "") }}</td>
-                    <td>{{ row.get("rationale_ref_count", 0) }}</td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-            {% else %}
-              <div class="plot-fallback">No improvement candidates.</div>
-            {% endif %}
-            <p><strong>Registry/card state + composer result</strong></p>
-            <div class="table-wrap">
-              <table class="table">
-                <tbody>
-                  <tr><th>card_id</th><td>{{ registry_state.get("card_id", "") }}</td></tr>
-                  <tr><th>card_available</th><td>{{ registry_state.get("available", false) }}</td></tr>
-                  <tr><th>card_status</th><td>{{ registry_state.get("effective_status", "") }}</td></tr>
-                  <tr><th>eligible_for_compose</th><td>{{ composer.get("eligible_for_compose", false) }}</td></tr>
-                  <tr><th>compose_candidate_count</th><td>{{ composer.get("candidate_count", 0) }}</td></tr>
-                </tbody>
-              </table>
+            <p><strong>WB-062 Phase-4 Cards</strong></p>
+            <div class="grid">
+              <div class="card" data-testid="wb062-card-attribution-summary">
+                <p><strong>Attribution summary card</strong></p>
+                <p class="muted">status={{ attr.get("status", "loading") }} | reason={{ attr.get("reason", "") }} | source=<code>{{ attr.get("source_path", "") }}</code></p>
+                <div class="table-wrap">
+                  <table class="table">
+                    <tbody>
+                      <tr><th>available</th><td>{{ attr.get("available", false) }}</td></tr>
+                      <tr><th>net_return</th><td>{{ attr.get("net_return", "") }}</td></tr>
+                      <tr><th>gross_return</th><td>{{ attr.get("gross_return", "") }}</td></tr>
+                      <tr><th>max_drawdown</th><td>{{ attr.get("max_drawdown", "") }}</td></tr>
+                      <tr><th>trade_count</th><td>{{ attr.get("trade_count", "") }}</td></tr>
+                      <tr><th>overall_pass</th><td>{{ attr.get("overall_pass", "") }}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                {% if attr.get("status") == "loading" %}
+                <div class="plot-fallback">Attribution summary loading: waiting for attribution_report.json.</div>
+                {% elif attr.get("status") == "empty" %}
+                <div class="plot-fallback">Attribution summary empty: attribution metrics are not populated yet.</div>
+                {% elif attr.get("status") == "error" %}
+                <div class="plot-fallback">Attribution summary unavailable: {{ attr.get("reason", "invalid_attribution_report_json") }}.</div>
+                {% endif %}
+              </div>
+
+              <div class="card" data-testid="wb062-card-improvement-candidates">
+                <p><strong>Improvement candidates card</strong></p>
+                <p class="muted">status={{ candidates_state.get("status", "loading") }} | reason={{ candidates_state.get("reason", "") }} | source=<code>{{ candidates_state.get("source_path", "") }}</code></p>
+                <div class="table-wrap">
+                  <table class="table">
+                    <tbody>
+                      <tr><th>candidate_count</th><td>{{ candidates_state.get("candidate_count", 0) }}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                {% if candidates and candidates|length > 0 %}
+                <div class="table-wrap">
+                  <table class="table">
+                    <thead><tr><th>proposal_id</th><th>title</th><th>rationale_refs</th></tr></thead>
+                    <tbody>
+                      {% for row in candidates %}
+                      <tr>
+                        <td>{{ row.get("proposal_id", "") }}</td>
+                        <td>{{ row.get("title", "") }}</td>
+                        <td>{{ row.get("rationale_ref_count", 0) }}</td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                {% elif candidates_state.get("status") == "loading" %}
+                <div class="plot-fallback">Improvement candidates loading: waiting for improvement proposals.</div>
+                {% elif candidates_state.get("status") == "empty" %}
+                <div class="plot-fallback">Improvement candidates empty: no proposals were generated.</div>
+                {% elif candidates_state.get("status") == "error" %}
+                <div class="plot-fallback">Improvement candidates unavailable: {{ candidates_state.get("reason", "invalid_proposals_field") }}.</div>
+                {% else %}
+                <div class="plot-fallback">No improvement candidates.</div>
+                {% endif %}
+              </div>
+
+              <div class="card" data-testid="wb062-card-registry-state">
+                <p><strong>Registry state card</strong></p>
+                <p class="muted">status={{ registry_state.get("status", "loading") }} | reason={{ registry_state.get("reason", "") }}</p>
+                <div class="table-wrap">
+                  <table class="table">
+                    <tbody>
+                      <tr><th>card_id</th><td>{{ registry_state.get("card_id", "") }}</td></tr>
+                      <tr><th>card_available</th><td>{{ registry_state.get("available", false) }}</td></tr>
+                      <tr><th>title</th><td>{{ registry_state.get("title", "") }}</td></tr>
+                      <tr><th>effective_status</th><td>{{ registry_state.get("effective_status", "") }}</td></tr>
+                      <tr><th>primary_run_id</th><td>{{ registry_state.get("primary_run_id", "") }}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                {% if registry_state.get("status") == "loading" %}
+                <div class="plot-fallback">Registry state loading: waiting for registry card.</div>
+                {% elif registry_state.get("status") == "empty" %}
+                <div class="plot-fallback">Registry state empty: card exists but effective status is missing.</div>
+                {% elif registry_state.get("status") == "error" %}
+                <div class="plot-fallback">Registry state unavailable: {{ registry_state.get("reason", "registry_card_lookup_failed") }}.</div>
+                {% endif %}
+              </div>
+
+              <div class="card" data-testid="wb062-card-composer-result">
+                <p><strong>Composer result card</strong></p>
+                <p class="muted">status={{ composer.get("status", "loading") }} | reason={{ composer.get("reason", "") }} | source=<code>{{ composer.get("source_path", "") }}</code></p>
+                <div class="table-wrap">
+                  <table class="table">
+                    <tbody>
+                      <tr><th>available</th><td>{{ composer.get("available", false) }}</td></tr>
+                      <tr><th>eligible_for_compose</th><td>{{ composer.get("eligible_for_compose", false) }}</td></tr>
+                      <tr><th>compose_candidate_count</th><td>{{ composer.get("candidate_count", 0) }}</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                {% if composer.get("status") == "loading" %}
+                <div class="plot-fallback">Composer result loading: waiting for composer plan.</div>
+                {% elif composer.get("status") == "empty" %}
+                <div class="plot-fallback">Composer result empty: no compose candidates are available.</div>
+                {% elif composer.get("status") == "error" %}
+                <div class="plot-fallback">Composer result unavailable: {{ composer.get("reason", "invalid_compose_candidates_field") }}.</div>
+                {% endif %}
+              </div>
             </div>
           {% endif %}
           {% if card.details and card.details.get("wb052_dependency_field_map") %}

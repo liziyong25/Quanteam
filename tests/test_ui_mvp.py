@@ -539,6 +539,10 @@ def test_ui_create_idea_job_from_form(tmp_path: Path, monkeypatch) -> None:
     assert isinstance(strategy_snapshot, dict)
     assert int((((strategy_snapshot.get("selected") or {}).get("version")) or 0)) == 1
     assert int((((strategy_snapshot.get("previous_selected") or {}).get("version")) or 0)) == 2
+    # WB-068: applying/editing drafts does not block forward phase progression.
+    after_draft_continue = _request_via_asgi("POST", f"/workbench/sessions/{session_id}/continue", json={})
+    assert after_draft_continue.status_code == 200, after_draft_continue.text
+    assert str(after_draft_continue.json().get("current_step") or "") == "trace_preview"
 
     # WB-058: real-jobs continue path must reach runspec and persist deterministic
     # WAITING_APPROVAL(step=runspec) checkpoint evidence.
@@ -868,6 +872,10 @@ def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     assert req_alias_phase4_skeleton.status_code == 200
     assert "Requirement entry alias" in req_alias_phase4_skeleton.text
     assert "Phase-4 Baseline (WB-061)" in req_alias_phase4_skeleton.text
+    req_alias_phase4_cards = _request_via_asgi("GET", "/ui/workbench/req/wb-062")
+    assert req_alias_phase4_cards.status_code == 200
+    assert "Requirement entry alias" in req_alias_phase4_cards.text
+    assert "Phase-4 Result Cards (WB-062)" in req_alias_phase4_cards.text
     req_alias_subagent_a = _request_via_asgi("GET", "/ui/workbench/req/wb-064")
     assert req_alias_subagent_a.status_code == 200
     assert "Requirement entry alias" in req_alias_subagent_a.text
@@ -876,6 +884,18 @@ def test_path_traversal_blocked(tmp_path: Path, monkeypatch) -> None:
     assert req_alias_dod_baseline.status_code == 200
     assert "Requirement entry alias" in req_alias_dod_baseline.text
     assert "DoD Baseline Anchor (WB-065)" in req_alias_dod_baseline.text
+    req_alias_phase_chain = _request_via_asgi("GET", "/ui/workbench/req/wb-066")
+    assert req_alias_phase_chain.status_code == 200
+    assert "Requirement entry alias" in req_alias_phase_chain.text
+    assert "Phase-0~4 End-to-End Chain (WB-066)" in req_alias_phase_chain.text
+    req_alias_readable_cards = _request_via_asgi("GET", "/ui/workbench/req/wb-067")
+    assert req_alias_readable_cards.status_code == 200
+    assert "Requirement entry alias" in req_alias_readable_cards.text
+    assert "Per-Phase Readable Cards (WB-067)" in req_alias_readable_cards.text
+    req_alias_draft_lifecycle = _request_via_asgi("GET", "/ui/workbench/req/wb-068")
+    assert req_alias_draft_lifecycle.status_code == 200
+    assert "Requirement entry alias" in req_alias_draft_lifecycle.text
+    assert "Draft Lifecycle + Continue (WB-068)" in req_alias_draft_lifecycle.text
 
     # WB-039 baseline: create flow exposes stable persistence contracts and writes session artifacts.
     created = _request_via_asgi(
@@ -1128,12 +1148,24 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     r = client.get("/ui/workbench/req/wb-061")
     assert r.status_code == 200
     assert "Phase-4 Baseline (WB-061)" in r.text
+    r = client.get("/ui/workbench/req/wb-062")
+    assert r.status_code == 200
+    assert "Phase-4 Result Cards (WB-062)" in r.text
     r = client.get("/ui/workbench/req/wb-064")
     assert r.status_code == 200
     assert "Subagent-A API + Session Store Skeleton (WB-064)" in r.text
     r = client.get("/ui/workbench/req/wb-065")
     assert r.status_code == 200
     assert "DoD Baseline Anchor (WB-065)" in r.text
+    r = client.get("/ui/workbench/req/wb-066")
+    assert r.status_code == 200
+    assert "Phase-0~4 End-to-End Chain (WB-066)" in r.text
+    r = client.get("/ui/workbench/req/wb-067")
+    assert r.status_code == 200
+    assert "Per-Phase Readable Cards (WB-067)" in r.text
+    r = client.get("/ui/workbench/req/wb-068")
+    assert r.status_code == 200
+    assert "Draft Lifecycle + Continue (WB-068)" in r.text
     expected_route_contract = (
         ("POST", "/workbench/sessions"),
         ("GET", "/workbench/sessions/{session_id}"),
@@ -1169,8 +1201,12 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert route_paths.index("/ui/workbench/req/wb-059") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-060") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-061") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-062") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-064") < session_route_idx
     assert route_paths.index("/ui/workbench/req/wb-065") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-066") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-067") < session_route_idx
+    assert route_paths.index("/ui/workbench/req/wb-068") < session_route_idx
     assert client.get("/ui/jobs").status_code == 200
     assert client.get("/ui/qa-fetch").status_code == 200
 
@@ -1230,8 +1266,16 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert "Result Cards" in page.text
     assert "Evidence details (collapsed by default)" in page.text
     assert "<details>" in page.text
+    assert "Phase-0~4 End-to-End Chain (WB-066)" in page.text
+    assert "Per-Phase Readable Cards (WB-067)" in page.text
+    assert "Draft Lifecycle + Continue (WB-068)" in page.text
     assert "Phase-0" in page.text
     assert "Phase-4" in page.text
+    assert 'data-testid="workbench-phase-card-status-idea"' in page.text
+    assert 'data-testid="workbench-phase-card-status-strategy_spec"' in page.text
+    assert 'data-testid="workbench-phase-card-status-trace_preview"' in page.text
+    assert 'data-testid="workbench-phase-card-status-runspec"' in page.text
+    assert 'data-testid="workbench-phase-card-status-improvements"' in page.text
     assert "strategy_pseudocode card" in page.text
     assert "variable_dictionary summary card" in page.text
     assert "calc_trace_plan summary card" in page.text
@@ -1249,9 +1293,18 @@ def test_workbench_bundle_phase_chain_cards_and_governance(tmp_path: Path, monke
     assert "signal summary card" in page.text
     assert "gate summary card" in page.text
     assert "run jump card" in page.text
-    assert "Attribution summary" in page.text
-    assert "Improvement candidates" in page.text
-    assert "Registry/card state + composer result" in page.text
+    assert "Attribution summary card" in page.text
+    assert "Improvement candidates card" in page.text
+    assert "Registry state card" in page.text
+    assert "Composer result card" in page.text
+    assert 'data-testid="wb062-card-attribution-summary"' in page.text
+    assert 'data-testid="wb062-card-improvement-candidates"' in page.text
+    assert 'data-testid="wb062-card-registry-state"' in page.text
+    assert 'data-testid="wb062-card-composer-result"' in page.text
+    assert "Attribution summary loading: waiting for attribution_report.json." in page.text
+    assert "Improvement candidates loading: waiting for improvement proposals." in page.text
+    assert "Registry state loading: waiting for registry card." in page.text
+    assert "Composer result loading: waiting for composer plan." in page.text
     assert "Raw artifact path" in page.text
 
     sess_doc = client.get(f"/workbench/sessions/{session_id}").json()

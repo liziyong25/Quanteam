@@ -235,6 +235,11 @@
 10. `FR-010` 已实现（会话侧）：
    - 用户动作（create/message/continue/fetch-probe/draft）与系统动作（auto-approve/advance/fetch success|failed）均写入 session 事件日志。
    - 代码：`src/quant_eam/api/ui_routes.py`
+11. `WB-066/WB-067/WB-068` 已实现：
+   - `/ui/workbench` 可完成 Phase‑0~4 连续推进，新增稳定入口别名 `/ui/workbench/req/wb-066|wb-067|wb-068`。
+   - 每个 phase 卡片提供可读标题/摘要，并显示 `status + next step` 文本提示。
+   - 非 idea step 支持草稿创建、编辑、应用、回退，且应用后可继续推进到下一 phase。
+   - 代码：`src/quant_eam/api/ui_routes.py`、`src/quant_eam/ui/templates/workbench.html`、`tests/test_ui_mvp.py`
 
 ### 11.2 与运行时 Agents Plane 的已闭环项
 

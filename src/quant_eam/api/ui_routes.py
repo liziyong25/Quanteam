@@ -179,8 +179,12 @@ IA_ROUTE_VIEW_CATALOG: dict[str, dict[str, str]] = {
     "/ui/workbench/req/wb-059": {"view_name": "Workbench phase-3 cards entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-060": {"view_name": "Workbench phase-3 actions entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-061": {"view_name": "Workbench phase-4 skeleton entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-062": {"view_name": "Workbench phase-4 cards entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-064": {"view_name": "Workbench Subagent-A API/session-store entry", "template": "workbench.html"},
     "/ui/workbench/req/wb-065": {"view_name": "Workbench DoD baseline entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-066": {"view_name": "Workbench phase-0~4 chain entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-067": {"view_name": "Workbench phase readable cards entry", "template": "workbench.html"},
+    "/ui/workbench/req/wb-068": {"view_name": "Workbench draft lifecycle entry", "template": "workbench.html"},
     "/ui/workbench/{session_id}": {"view_name": "Workbench session", "template": "workbench.html"},
 }
 IA_CHECKLIST_ROUTE_BINDINGS: dict[int, list[str]] = {
@@ -445,8 +449,12 @@ WORKBENCH_REQUIREMENT_ENTRY_ALIASES: tuple[str, ...] = (
     "/ui/workbench/req/wb-059",
     "/ui/workbench/req/wb-060",
     "/ui/workbench/req/wb-061",
+    "/ui/workbench/req/wb-062",
     "/ui/workbench/req/wb-064",
     "/ui/workbench/req/wb-065",
+    "/ui/workbench/req/wb-066",
+    "/ui/workbench/req/wb-067",
+    "/ui/workbench/req/wb-068",
 )
 WORKBENCH_EVIDENCE_MAX_BYTES = 262_144
 WORKBENCH_EVIDENCE_MAX_CSV_ROWS = 24
@@ -1017,6 +1025,16 @@ def _workbench_phase_result_matrix_rows() -> list[dict[str, Any]]:
     for i, row in enumerate(rows, start=1):
         row["index"] = i
     return rows
+
+
+def _workbench_next_step(step: str) -> str:
+    step_id = str(step or "").strip()
+    if step_id not in WORKBENCH_PHASE_STEPS:
+        return ""
+    idx = WORKBENCH_PHASE_STEPS.index(step_id)
+    if idx >= len(WORKBENCH_PHASE_STEPS) - 1:
+        return ""
+    return WORKBENCH_PHASE_STEPS[idx + 1]
 
 
 def _workbench_registered_route_pairs() -> set[tuple[str, str]]:
@@ -2442,21 +2460,91 @@ def _workbench_improvements_feedback(session: dict[str, Any]) -> tuple[dict[str,
     dossier_token = str(outputs_index.get("dossier_path") or "").strip()
     proposals_token = str(outputs_index.get("improvement_proposals_path") or "").strip()
     composer_plan_token = str(outputs_index.get("composer_agent_plan_path") or "").strip()
+    attribution_source = ""
+    attribution_doc: dict[str, Any] | None = None
+    attribution_state: dict[str, Any] = {
+        "status": "loading",
+        "reason": "missing_dossier_path",
+        "source_path": "",
+    }
+    if dossier_token:
+        dossier_path, dossier_error = _resolve_workbench_evidence_path(dossier_token)
+        if dossier_path is None:
+            attribution_state = {
+                "status": "error",
+                "reason": dossier_error or "path_outside_allowed_roots",
+                "source_path": dossier_token,
+            }
+        else:
+            attribution_source = (dossier_path / "attribution_report.json").as_posix()
+            attribution_state["source_path"] = attribution_source
+            if not (dossier_path / "attribution_report.json").is_file():
+                attribution_state = {
+                    "status": "loading",
+                    "reason": "attribution_report_not_ready",
+                    "source_path": attribution_source,
+                }
+            else:
+                try:
+                    loaded_attr = _load_json(dossier_path / "attribution_report.json")
+                except Exception:
+                    loaded_attr = None
+                if not isinstance(loaded_attr, dict):
+                    attribution_state = {
+                        "status": "error",
+                        "reason": "invalid_attribution_report_json",
+                        "source_path": attribution_source,
+                    }
+                else:
+                    attribution_doc = loaded_attr
+                    attribution_state = {
+                        "status": "ready",
+                        "reason": "",
+                        "source_path": attribution_source,
+                    }
 
-    dossier_path = _resolve_existing_evidence_path(dossier_token)
-    attribution_path = _resolve_existing_evidence_path((dossier_path / "attribution_report.json").as_posix()) if dossier_path is not None else None
-    proposals_path = _resolve_existing_evidence_path(proposals_token)
-    composer_plan_path = _resolve_existing_evidence_path(composer_plan_token)
+    proposals_doc, proposals_state_raw = _load_json_dict_with_state(proposals_token)
+    proposals_status = str(proposals_state_raw.get("status") or "missing")
+    if proposals_status == "missing":
+        proposals_status = "loading"
+    proposals_reason = str(proposals_state_raw.get("reason") or "")
+    if proposals_status == "ready":
+        proposals_reason = ""
+    elif not proposals_reason:
+        proposals_reason = "missing_improvement_proposals_path" if not proposals_token else "improvement_proposals_not_ready"
+    proposals_state = {
+        "status": proposals_status,
+        "reason": proposals_reason,
+        "source_path": str(proposals_state_raw.get("path") or proposals_token),
+    }
 
-    attribution_doc = _load_json_dict(attribution_path.as_posix()) if attribution_path is not None else {}
-    proposals_doc = _load_json_dict(proposals_path.as_posix()) if proposals_path is not None else {}
-    composer_doc = _load_json_dict(composer_plan_path.as_posix()) if composer_plan_path is not None else {}
+    composer_doc, composer_state_raw = _load_json_dict_with_state(composer_plan_token)
+    composer_status = str(composer_state_raw.get("status") or "missing")
+    if composer_status == "missing":
+        composer_status = "loading"
+    composer_reason = str(composer_state_raw.get("reason") or "")
+    if composer_status == "ready":
+        composer_reason = ""
+    elif not composer_reason:
+        composer_reason = "missing_composer_plan_path" if not composer_plan_token else "composer_plan_not_ready"
+    composer_state = {
+        "status": composer_status,
+        "reason": composer_reason,
+        "source_path": str(composer_state_raw.get("path") or composer_plan_token),
+    }
 
-    returns_doc = attribution_doc.get("returns") if isinstance(attribution_doc.get("returns"), dict) else {}
-    drawdown_doc = attribution_doc.get("drawdown") if isinstance(attribution_doc.get("drawdown"), dict) else {}
-    trades_doc = attribution_doc.get("trades") if isinstance(attribution_doc.get("trades"), dict) else {}
-    gate_summary_doc = attribution_doc.get("gate_summary") if isinstance(attribution_doc.get("gate_summary"), dict) else {}
+    returns_doc = attribution_doc.get("returns") if isinstance(attribution_doc, dict) and isinstance(attribution_doc.get("returns"), dict) else {}
+    drawdown_doc = attribution_doc.get("drawdown") if isinstance(attribution_doc, dict) and isinstance(attribution_doc.get("drawdown"), dict) else {}
+    trades_doc = attribution_doc.get("trades") if isinstance(attribution_doc, dict) and isinstance(attribution_doc.get("trades"), dict) else {}
+    gate_summary_doc = (
+        attribution_doc.get("gate_summary")
+        if isinstance(attribution_doc, dict) and isinstance(attribution_doc.get("gate_summary"), dict)
+        else {}
+    )
     attribution_summary = {
+        "status": str(attribution_state.get("status") or "loading"),
+        "reason": str(attribution_state.get("reason") or ""),
+        "source_path": str(attribution_state.get("source_path") or attribution_source),
         "available": bool(attribution_doc),
         "net_return": returns_doc.get("net_return"),
         "gross_return": returns_doc.get("gross_return"),
@@ -2464,8 +2552,16 @@ def _workbench_improvements_feedback(session: dict[str, Any]) -> tuple[dict[str,
         "trade_count": trades_doc.get("trade_count"),
         "overall_pass": gate_summary_doc.get("overall_pass"),
     }
+    if attribution_summary["status"] == "ready":
+        if all(
+            attribution_summary.get(field) is None
+            for field in ("net_return", "gross_return", "max_drawdown", "trade_count", "overall_pass")
+        ):
+            attribution_summary["status"] = "empty"
+            attribution_summary["reason"] = "attribution_summary_empty"
+        attribution_summary["available"] = True
 
-    proposals = proposals_doc.get("proposals") if isinstance(proposals_doc.get("proposals"), list) else []
+    proposals = proposals_doc.get("proposals") if isinstance(proposals_doc, dict) and isinstance(proposals_doc.get("proposals"), list) else []
     improvement_candidates: list[dict[str, Any]] = []
     for row in proposals[:10]:
         if not isinstance(row, dict):
@@ -2478,59 +2574,137 @@ def _workbench_improvements_feedback(session: dict[str, Any]) -> tuple[dict[str,
                 "rationale_ref_count": len(refs),
             }
         )
+    improvement_candidates_state = {
+        "status": str(proposals_state.get("status") or "loading"),
+        "reason": str(proposals_state.get("reason") or ""),
+        "source_path": str(proposals_state.get("source_path") or ""),
+        "candidate_count": len(improvement_candidates),
+    }
+    if improvement_candidates_state["status"] == "ready":
+        if not isinstance(proposals_doc, dict):
+            improvement_candidates_state["status"] = "error"
+            improvement_candidates_state["reason"] = "invalid_improvement_proposals_json"
+        elif not isinstance(proposals_doc.get("proposals"), list):
+            improvement_candidates_state["status"] = "error"
+            improvement_candidates_state["reason"] = "invalid_proposals_field"
+        elif improvement_candidates:
+            improvement_candidates_state["reason"] = ""
+        else:
+            improvement_candidates_state["status"] = "empty"
+            improvement_candidates_state["reason"] = "no_improvement_candidates"
 
     card_id = str(outputs_index.get("card_id") or "").strip()
-    registry_state: dict[str, Any] = {"card_id": card_id, "available": False}
+    registry_state: dict[str, Any] = {
+        "card_id": card_id,
+        "available": False,
+        "title": "",
+        "effective_status": "",
+        "primary_run_id": "",
+        "status": "loading",
+        "reason": "missing_card_id",
+    }
     if card_id:
         try:
-            card_doc = reg_show_card(registry_root=registry_root(), card_id=card_id)
-        except Exception:
-            card_doc = {}
-        if isinstance(card_doc, dict):
-            registry_state = {
-                "card_id": card_id,
-                "available": True,
-                "title": str(card_doc.get("title") or ""),
-                "effective_status": str(card_doc.get("effective_status") or ""),
-                "primary_run_id": str(card_doc.get("primary_run_id") or ""),
-            }
+            safe_card_id = require_safe_id(card_id, kind="card_id")
+        except HTTPException:
+            registry_state["status"] = "error"
+            registry_state["reason"] = "invalid_card_id"
+        else:
+            try:
+                card_doc = reg_show_card(registry_root=registry_root(), card_id=safe_card_id)
+            except Exception as exc:  # noqa: BLE001
+                err_text = str(exc).strip().lower()
+                if "not found" in err_text:
+                    registry_state["status"] = "loading"
+                    registry_state["reason"] = "registry_card_not_ready"
+                else:
+                    registry_state["status"] = "error"
+                    registry_state["reason"] = "registry_card_lookup_failed"
+            else:
+                if isinstance(card_doc, dict):
+                    registry_state = {
+                        "card_id": card_id,
+                        "available": True,
+                        "title": str(card_doc.get("title") or ""),
+                        "effective_status": str(card_doc.get("effective_status") or ""),
+                        "primary_run_id": str(card_doc.get("primary_run_id") or ""),
+                        "status": "ready",
+                        "reason": "",
+                    }
+                    if not registry_state.get("effective_status"):
+                        registry_state["status"] = "empty"
+                        registry_state["reason"] = "missing_effective_status"
+                else:
+                    registry_state["status"] = "error"
+                    registry_state["reason"] = "invalid_registry_card_payload"
 
-    compose_candidates = composer_doc.get("compose_candidates") if isinstance(composer_doc.get("compose_candidates"), list) else []
+    compose_candidates = (
+        composer_doc.get("compose_candidates")
+        if isinstance(composer_doc, dict) and isinstance(composer_doc.get("compose_candidates"), list)
+        else []
+    )
     composer_result = {
+        "status": str(composer_state.get("status") or "loading"),
+        "reason": str(composer_state.get("reason") or ""),
+        "source_path": str(composer_state.get("source_path") or ""),
         "available": bool(composer_doc),
         "eligible_for_compose": bool(composer_doc.get("eligible_for_compose")) if isinstance(composer_doc, dict) else False,
         "candidate_count": len(compose_candidates),
     }
+    if composer_result["status"] == "ready":
+        if not isinstance(composer_doc, dict):
+            composer_result["status"] = "error"
+            composer_result["reason"] = "invalid_composer_result_json"
+        elif not isinstance(composer_doc.get("compose_candidates"), list):
+            composer_result["status"] = "error"
+            composer_result["reason"] = "invalid_compose_candidates_field"
+        elif composer_result["candidate_count"] <= 0:
+            composer_result["status"] = "empty"
+            composer_result["reason"] = "no_compose_candidates"
+        else:
+            composer_result["reason"] = ""
+        composer_result["available"] = True
 
     summary_lines = [
-        "Improvement feedback card assembled from attribution/improvement/composer artifacts.",
+        "WB-062 Phase-4 cards assembled from attribution/improvement/registry/composer sources.",
         (
-            "Attribution summary: "
+            "Attribution summary card: "
+            f"status={attribution_summary['status']}, "
             f"net_return={attribution_summary['net_return']}, "
-            f"max_drawdown={attribution_summary['max_drawdown']}, "
-            f"trade_count={attribution_summary['trade_count']}"
+            f"max_drawdown={attribution_summary['max_drawdown']}"
         ),
-        f"Improvement candidates: {len(improvement_candidates)}",
         (
-            "Registry/card + composer: "
+            "Improvement candidates card: "
+            f"status={improvement_candidates_state['status']}, "
+            f"count={improvement_candidates_state['candidate_count']}"
+        ),
+        (
+            "Registry state card: "
+            f"status={registry_state.get('status')}, "
             f"card={registry_state.get('card_id') or '(none)'}, "
-            f"status={registry_state.get('effective_status') or '(unknown)'}, "
-            f"eligible_for_compose={composer_result['eligible_for_compose']}"
+            f"effective_status={registry_state.get('effective_status') or '(none)'}"
+        ),
+        (
+            "Composer result card: "
+            f"status={composer_result['status']}, "
+            f"eligible_for_compose={composer_result['eligible_for_compose']}, "
+            f"candidate_count={composer_result['candidate_count']}"
         ),
     ]
     artifacts = [
         token
         for token in [
-            attribution_path.as_posix() if attribution_path is not None else "",
-            proposals_path.as_posix() if proposals_path is not None else proposals_token,
-            composer_plan_path.as_posix() if composer_plan_path is not None else composer_plan_token,
+            attribution_summary.get("source_path", ""),
+            improvement_candidates_state.get("source_path", ""),
+            composer_result.get("source_path", ""),
             str(outputs_index.get("report_summary_path") or "").strip(),
         ]
-        if token
+        if str(token).strip()
     ]
     details = {
         "attribution_summary": attribution_summary,
         "improvement_candidates": improvement_candidates,
+        "improvement_candidates_state": improvement_candidates_state,
         "registry_state": registry_state,
         "composer_result": composer_result,
         "g356_dependency_field_map": _workbench_dependency_field_map(outputs_index),
@@ -3297,7 +3471,12 @@ def _job_checkpoint_from_events(events: list[dict[str, Any]]) -> str:
     return "idea"
 
 
-def _workbench_phase_cards_for_view(cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _workbench_phase_cards_for_view(
+    cards: list[dict[str, Any]],
+    *,
+    current_step: str,
+    session_status: str,
+) -> list[dict[str, Any]]:
     by_phase: dict[str, dict[str, Any]] = {}
     for card in cards:
         if not isinstance(card, dict):
@@ -3307,13 +3486,44 @@ def _workbench_phase_cards_for_view(cards: list[dict[str, Any]]) -> list[dict[st
             continue
         by_phase[phase] = card
 
+    current_step_id = str(current_step or "").strip()
+    if current_step_id not in WORKBENCH_PHASE_STEPS:
+        current_step_id = WORKBENCH_PHASE_STEPS[0]
+    current_idx = WORKBENCH_PHASE_STEPS.index(current_step_id)
+    final_idx = len(WORKBENCH_PHASE_STEPS) - 1
+    session_completed = str(session_status or "").strip().lower() == "completed"
+    status_labels = {
+        "completed": "Completed",
+        "active": "In Progress",
+        "pending": "Pending",
+    }
+
     out: list[dict[str, Any]] = []
     for row in _workbench_phase_result_matrix_rows():
         step = str(row.get("step") or "")
+        row_idx = WORKBENCH_PHASE_STEPS.index(step) if step in WORKBENCH_PHASE_STEPS else 0
         current = dict(row)
         card = by_phase.get(step)
         current["available"] = isinstance(card, dict)
         current["card"] = card if isinstance(card, dict) else {}
+        if row_idx < current_idx:
+            phase_status = "completed"
+        elif row_idx == current_idx:
+            phase_status = "completed" if (session_completed and row_idx == final_idx) else "active"
+        else:
+            phase_status = "pending"
+        next_step = _workbench_next_step(step)
+        if phase_status == "pending":
+            next_step_label = f"Continue to {current.get('phase_label', '')} ({step})"
+        elif next_step:
+            next_step_label = f"{_workbench_phase_label(next_step)} ({next_step})"
+        else:
+            next_step_label = "Completed"
+        current["status"] = phase_status
+        current["status_label"] = status_labels.get(phase_status, "Pending")
+        current["next_step"] = next_step
+        current["next_step_label"] = next_step_label
+        current["readable_summary"] = f"Status: {current['status_label']} | Next step: {next_step_label}"
         out.append(current)
     return out
 
@@ -3356,10 +3566,14 @@ def _workbench_session_context(session_id: str) -> dict[str, Any]:
     payload = _load_workbench_session(session_id)
     events = _read_workbench_events(session_id)
     cards = _workbench_cards_for_view(payload)
-    phase_cards = _workbench_phase_cards_for_view(cards)
     current_step = str(payload.get("current_step") or WORKBENCH_PHASE_STEPS[0])
     if current_step not in WORKBENCH_PHASE_STEPS:
         current_step = WORKBENCH_PHASE_STEPS[0]
+    phase_cards = _workbench_phase_cards_for_view(
+        cards,
+        current_step=current_step,
+        session_status=str(payload.get("status") or ""),
+    )
     selected_version = _workbench_current_selected_draft_version(payload, step=current_step) if current_step != "idea" else None
     previous_version = (
         _workbench_previous_selected_draft_version(payload, step=current_step, current_version=selected_version)
@@ -10188,6 +10402,12 @@ def ui_workbench_req_wb061(request: Request) -> HTMLResponse:
     return ui_workbench(request)
 
 
+@router.api_route("/ui/workbench/req/wb-062", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb062(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G389.
+    return ui_workbench(request)
+
+
 @router.api_route("/ui/workbench/req/wb-064", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_workbench_req_wb064(request: Request) -> HTMLResponse:
     # Stable requirement-bound entry path used by SSOT ui_path for G386.
@@ -10197,6 +10417,24 @@ def ui_workbench_req_wb064(request: Request) -> HTMLResponse:
 @router.api_route("/ui/workbench/req/wb-065", methods=["GET", "HEAD"], response_class=HTMLResponse)
 def ui_workbench_req_wb065(request: Request) -> HTMLResponse:
     # Stable requirement-bound entry path used by SSOT ui_path for G387.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-066", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb066(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G390.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-067", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb067(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G390.
+    return ui_workbench(request)
+
+
+@router.api_route("/ui/workbench/req/wb-068", methods=["GET", "HEAD"], response_class=HTMLResponse)
+def ui_workbench_req_wb068(request: Request) -> HTMLResponse:
+    # Stable requirement-bound entry path used by SSOT ui_path for G390.
     return ui_workbench(request)
 
 
